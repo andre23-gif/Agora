@@ -1,32 +1,56 @@
 <!DOCTYPE html>
 <html lang="fr">
   <head>
+    <!-- Encodage standard -->
     <meta charset="UTF-8">
+
+    <!-- Titre de l'application -->
     <title>AgoraMosaïque</title>
 
-    <!-- Manifest PWA -->
+    <!-- Manifest PWA : permet l'installation de l'app -->
     <link rel="manifest" href="manifest.json">
 
-    <!-- Supabase JS (CDN, une seule fois) -->
+    <!-- Chargement de la librairie Supabase (UNE SEULE FOIS) -->
+    <!-- Elle expose window.supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
 
   <body>
+    <!-- Titre principal -->
     <h1>AgoraMosaïque</h1>
-    <p>Application en cours de création.</p>
 
-    <!-- Bouton test pour vérifier la connexion Supabase -->
+    <!-- Bouton de navigation vers la page Import / Export -->
+    <!-- Il ne fait RIEN tout seul : il est piloté par le script module -->
+    <button id="goImportExport">
+      Import / Export
+    </button>
+
+    <!-- Zone centrale de l'application -->
+    <!-- Toutes les pages (Salle, Import/Export, etc.) s'affichent ici -->
+    <div id="app"></div>
+
+    <!-- Bouton de test Supabase -->
+    <!-- Sert UNIQUEMENT à vérifier que la base répond -->
     <button id="testSupabaseBtn">
       Tester la connexion Supabase
     </button>
 
-    <!-- Initialisation Supabase (toujours AVANT tout appel à sb) -->
+    <!-- ========================= -->
+    <!-- INITIALISATION SUPABASE   -->
+    <!-- ========================= -->
+    <!-- Ce script :
+         - crée le client Supabase
+         - le stocke dans la variable sb
+         - ne fait AUCUNE requête -->
     <script>
-      // À personnaliser avec tes vraies clés et schéma
       const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
-      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
 
-      // Initialisation du client Supabase sur le schéma "agoram"
+      /* sb = client Supabase
+         - schéma explicite : agoram
+         - aucune collision de nom
+      */
       const sb = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_ANON_KEY,
@@ -36,20 +60,23 @@
       );
     </script>
 
-    <!-- Script test bouton (toujours APRÈS l'init Supabase) -->
+    <!-- ========================= -->
+    <!-- TEST SUPABASE             -->
+    <!-- ========================= -->
+    <!-- Ce script :
+         - écoute le clic sur le bouton
+         - tente une insertion dans agoram.meta
+         - affiche le résultat dans la console -->
     <script>
       document
         .getElementById("testSupabaseBtn")
         .addEventListener("click", async () => {
-          // Test d'insertion dans la table "meta" du schéma "agoram"
           const { data, error } = await sb
             .from("meta")
             .insert([
-              {
-                label: "test_supabase",
-                value: "ok"
-              }
+              { label: "test_supabase", value: "ok" }
             ]);
+
           if (error) {
             console.error("❌ Erreur Supabase :", error.message);
           } else {
@@ -58,11 +85,33 @@
         });
     </script>
 
-    <!-- Service worker PWA -->
+    <!-- ========================= -->
+    <!-- SERVICE WORKER (PWA)      -->
+    <!-- ========================= -->
+    <!-- Permet le mode installable / offline plus tard -->
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("sw.js");
       }
+    </script>
+
+    <!-- ========================= -->
+    <!-- NAVIGATION INTERNE        -->
+    <!-- ========================= -->
+    <!-- Ce script :
+         - charge la page Import / Export
+         - injecte son HTML dans #app
+         - pose la base de la navigation SPA -->
+    <script type="module">
+      import { renderImportExport } from "./pages/importExport.js";
+
+      const app = document.getElementById("app");
+
+      document
+        .getElementById("goImportExport")
+        .addEventListener("click", () => {
+          app.innerHTML = renderImportExport();
+        });
     </script>
   </body>
 </html>
