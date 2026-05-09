@@ -14,7 +14,31 @@
   <body>
     <h1>AgoraMosaïque</h1>
     <p>Application en cours de création.</p>
+<button id="testSupabaseBtn">
+  Tester la connexion Supabase
+</button>
 
+<script>
+  document
+    .getElementById("testSupabaseBtn")
+    .addEventListener("click", async () => {
+
+      const { data, error } = await sb
+        .from("agoram.meta")
+        .insert([
+          {
+            label: "test_supabase",
+            value: "ok"
+          }
+        ]);
+
+      if (error) {
+        console.error("❌ Erreur Supabase :", error.message);
+      } else {
+        console.log("✅ Supabase OK :", data);
+      }
+    });
+</script>
     <!-- Initialisation Supabase (ATTENTION : pas de variable nommée "supabase") -->
     <script>
       const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
