@@ -5,6 +5,12 @@
     <title>AgoraMosaïque</title>
     <link rel="manifest" href="manifest.json">
   </head>
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+
   <body>
     <h1>AgoraMosaïque</h1>
     <p>Application en cours de création.</p>
