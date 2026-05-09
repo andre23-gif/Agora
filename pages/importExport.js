@@ -1,3 +1,118 @@
+// ===============================
+// DONNÉES MÉTIER PARTAGÉES
+// ===============================
+
+let eleves = [];
+
+// ===============================
+// MOTEUR IMPORT
+// ===============================
+
+function importerCSV(contenuCSV) {
+  const lignes = contenuCSV.trim().split("\n");
+  const entetes = lignes[0].split(",").map(h => h.trim().toLowerCase());
+
+  const champsObligatoires = ["prenom", "nom", "classe", "genre"];
+
+  champsObligatoires.forEach(champ => {
+    if (!entetes.includes(champ)) {
+      throw new Error(`Colonne obligatoire absente : ${champ}`);
+    }
+  });
+
+  lignes.slice(1).forEach(ligne => {
+    const valeurs = ligne.split(",");
+
+    const get = champ =>
+      valeurs[entetes.indexOf(champ)]?.trim() ?? "";
+
+    const prenom = get("prenom");
+    const nom = get("nom");
+    const classe = get("classe");
+    const genre = normaliserGenre(get("genre"));
+
+    if (!prenom || !nom || !classe || !genre) {
+      throw new Error("Ligne invalide : données manquantes");
+    }
+
+    const adaptations = entetes.includes("adaptations")
+      ? get("adaptations")
+          .split(";")
+          .map(a => a.trim())
+          .filter(Boolean)
+      : [];
+
+    const existant = eleves.find(
+      e =>
+        e.prenom === prenom &&
+        e.nom === nom &&
+        e.classe === classe
+    );
+
+    if (existant) {
+      existant.genre = genre;
+      existant.adaptations = adaptations;
+    } else {
+      eleves.push({
+        prenom,
+        nom,
+        classe,
+        genre,
+        adaptations,
+        participation: "passif",
+        suivi: {},
+      });
+    }
+  });
+}
+
+// ===============================
+// MOTEUR EXPORT
+// ===============================
+
+function exporterCSV() {
+  const entetes = [
+    "prenom",
+    "nom",
+    "classe",
+    "genre",
+    "adaptations",
+    "participation",
+  ];
+
+  const lignes = [entetes.join(",")];
+
+  eleves.forEach(e => {
+    lignes.push(
+      [
+        e.prenom,
+        e.nom,
+        e.classe,
+        e.genre,
+        e.adaptations.join(";"),
+        e.participation,
+      ].join(",")
+    );
+  });
+
+  return lignes.join("\n");
+}
+
+// ===============================
+// OUTILS
+// ===============================
+
+function normaliserGenre(valeur) {
+  const v = valeur.toLowerCase();
+  if (v.startsWith("f")) return "F";
+  if (v.startsWith("m")) return "M";
+  return "Autre";
+}
+
+// ===============================
+// UI IMPORT / EXPORT
+// ===============================
+
 export function renderImportExport() {
   return `
     <section>
@@ -5,55 +120,81 @@ export function renderImportExport() {
       <h1>Import / Export des données</h1>
 
       <p>
-        Cette page permet de gérer l’entrée et la sortie des données
-        de l’application.
-      </p>
-
-      <h2>Import des données</h2>
-
-      <p>
-        L’import permet d’ajouter ou de mettre à jour les informations
-        des élèves à partir de fichiers CSV.
+        Cette page permet d’alimenter l’application en données
+        et d’en extraire une copie exploitable.
       </p>
 
       <p>
-        Les données importées concernent notamment l’identité des élèves,
-        leur classe, leur groupe, leurs aides et les éléments de suivi.
+        Les données importées sont immédiatement utilisées
+        par les autres pages de l’application
+        (Salle, Classes, Suivi, Bulletins).
+      </p>
+
+      <h2>Importer des données</h2>
+
+      <p>
+        L’import s’effectue à partir d’un fichier CSV.
+        Chaque ligne du fichier correspond à un élève.
       </p>
 
       <p>
-        Lors de l’import, chaque ligne du fichier est analysée.
-        Les informations sont soit mises à jour,
-        soit ajoutées lorsqu’elles n’existent pas encore.
+        Les élèves sont identifiés par le triplet
+        prénom + nom + classe.
+        Un élève déjà présent est mis à jour,
+        un élève absent est créé.
       </p>
+
+      <input type="file" id="csvInput" accept=".csv">
+
+      <div id="importStatus"></div>
+
+      <h2>Exporter des données</h2>
 
       <p>
-        Les incohérences ou erreurs de format sont signalées
-        avant l’enregistrement des données.
+        L’export produit un fichier CSV contenant
+        l’ensemble des données actuellement chargées
+        dans l’application.
       </p>
 
-      <h2>Export des données</h2>
+      <button id="exportBtn">Exporter les données</button>
 
-      <p>
-        L’export permet de récupérer les données enregistrées
-        dans l’application sous forme de fichiers exploitables.
-      </p>
-
-      <p>
-        Les exports peuvent être réalisés par classe,
-        par période ou pour un élève donné.
-      </p>
-
-      <p>
-        Les fichiers générés peuvent être utilisés
-        pour l’archivage, l’analyse ou le partage des informations.
-      </p>
-
-      <p>
-        Cette page centralise également les opérations
-        liées à la sauvegarde des données d’une année scolaire.
-      </p>
+      <textarea id="exportOutput" rows="10" style="width:100%;"></textarea>
 
     </section>
   `;
+}
+
+export function bindImportExportEvents() {
+  const input = document.getElementById("csvInput");
+  const status = document.getElementById("importStatus");
+  const exportBtn = document.getElementById("exportBtn");
+  const output = document.getElementById("exportOutput");
+
+  input.addEventListener("change", () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        importerCSV(reader.result);
+        status.textContent = "Import réalisé avec succès.";
+      } catch (e) {
+        status.textContent = e.message;
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  exportBtn.addEventListener("click", () => {
+    output.value = exporterCSV();
+  });
+}
+
+// ===============================
+// ACCÈS MÉTIER POUR LES AUTRES PAGES
+// ===============================
+
+export function getEleves() {
+  return eleves;
 }
