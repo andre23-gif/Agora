@@ -13,7 +13,19 @@
   <body>
     <h1>AgoraMosaïque</h1>
     <p>Application en cours de création.</p>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<script>
+  const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
+
+  const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+</script>
+``
     <!-- Enregistrement du service worker -->
     <script>
       if ('serviceWorker' in navigator) {
