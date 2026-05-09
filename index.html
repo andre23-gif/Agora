@@ -14,44 +14,51 @@
   <body>
     <h1>AgoraMosaïque</h1>
     <p>Application en cours de création.</p>
-<button id="testSupabaseBtn">
-  Tester la connexion Supabase
-</button>
 
-<script>
-  document
-    .getElementById("testSupabaseBtn")
-    .addEventListener("click", async () => {
+    <!-- Bouton test pour vérifier la connexion Supabase -->
+    <button id="testSupabaseBtn">
+      Tester la connexion Supabase
+    </button>
 
-      const { data, error } = await sb
-        .from("agoram.meta")
-        .insert([
-          {
-            label: "test_supabase",
-            value: "ok"
-          }
-        ]);
-
-      if (error) {
-        console.error("❌ Erreur Supabase :", error.message);
-      } else {
-        console.log("✅ Supabase OK :", data);
-      }
-    });
-</script>
-    <!-- Initialisation Supabase (ATTENTION : pas de variable nommée "supabase") -->
+    <!-- Initialisation Supabase (toujours AVANT tout appel à sb) -->
     <script>
+      // À personnaliser avec tes vraies clés et schéma
       const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
-      const SUPABASE_ANON_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
 
+      // Initialisation du client Supabase sur le schéma "agoram"
       const sb = window.supabase.createClient(
         SUPABASE_URL,
-        SUPABASE_ANON_KEY
+        SUPABASE_ANON_KEY,
+        {
+          db: { schema: "agoram" }
+        }
       );
     </script>
 
-    <!-- Service worker -->
+    <!-- Script test bouton (toujours APRÈS l'init Supabase) -->
+    <script>
+      document
+        .getElementById("testSupabaseBtn")
+        .addEventListener("click", async () => {
+          // Test d'insertion dans la table "meta" du schéma "agoram"
+          const { data, error } = await sb
+            .from("meta")
+            .insert([
+              {
+                label: "test_supabase",
+                value: "ok"
+              }
+            ]);
+          if (error) {
+            console.error("❌ Erreur Supabase :", error.message);
+          } else {
+            console.log("✅ Supabase OK :", data);
+          }
+        });
+    </script>
+
+    <!-- Service worker PWA -->
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("sw.js");
