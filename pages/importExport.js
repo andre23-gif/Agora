@@ -1,14 +1,41 @@
-// ===============================
-// DONNÉES MÉTIER PARTAGÉES
-// ===============================
+// =======================================================
+// IMPORT / EXPORT — AGORAMOSAÏQUE
+// Élèves + Bulletins HG + Supabase
+// Périodes : T1 / T2 / T3
+// =======================================================
+
+// -------------------------------------------------------
+// ÉTAT CENTRAL (source unique côté frontend)
+// -------------------------------------------------------
 
 let eleves = [];
+let bulletinsHG = []; 
+// structure : { eleveKey, periode, texte }
 
-// ===============================
-// MOTEUR IMPORT
-// ===============================
+// eleveKey = `${prenom}|${nom}|${classe}`
 
-function importerCSV(contenuCSV) {
+
+// -------------------------------------------------------
+// OUTILS GÉNÉRAUX
+// -------------------------------------------------------
+
+function normaliserGenre(valeur) {
+  const v = valeur.toLowerCase();
+  if (v.startsWith("f")) return "F";
+  if (v.startsWith("m")) return "M";
+  return "Autre";
+}
+
+function buildEleveKey(eleve) {
+  return `${eleve.prenom}|${eleve.nom}|${eleve.classe}`;
+}
+
+
+// -------------------------------------------------------
+// IMPORT CSV — ÉLÈVES
+// -------------------------------------------------------
+
+function importerElevesCSV(contenuCSV) {
   const lignes = contenuCSV.trim().split("\n");
   const entetes = lignes[0].split(",").map(h => h.trim().toLowerCase());
 
@@ -53,113 +80,136 @@ function importerCSV(contenuCSV) {
       existant.genre = genre;
       existant.adaptations = adaptations;
     } else {
-      eleves.push({
+      const nouvelEleve = {
         prenom,
         nom,
         classe,
         genre,
         adaptations,
-        participation: "passif",
-        suivi: {},
+      };
+
+      eleves.push(nouvelEleve);
+
+      // bulletin HG par défaut (en mémoire)
+      bulletinsHG.push({
+        eleveKey: buildEleveKey(nouvelEleve),
+        periode: "T1",
+        texte: "Bulletin HG non encore généré."
       });
     }
   });
 }
 
-// ===============================
-// MOTEUR EXPORT
-// ===============================
 
-function exporterCSV() {
-  const entetes = [
-    "prenom",
-    "nom",
-    "classe",
-    "genre",
-    "adaptations",
-    "participation",
-  ];
+// -------------------------------------------------------
+// EXPORT CSV — ÉLÈVES
+// -------------------------------------------------------
 
-  const lignes = [entetes.join(",")];
+function exporterElevesCSV() {
+  let csv = "prenom,nom,classe,genre,adaptations\n";
 
   eleves.forEach(e => {
-    lignes.push(
-      [
-        e.prenom,
-        e.nom,
-        e.classe,
-        e.genre,
-        e.adaptations.join(";"),
-        e.participation,
-      ].join(",")
-    );
+    csv += `"${e.prenom}","${e.nom}","${e.classe}","${e.genre}","${e.adaptations.join(";")}"\n`;
   });
 
-  return lignes.join("\n");
+  return csv;
 }
 
-// ===============================
-// OUTILS
-// ===============================
 
-function normaliserGenre(valeur) {
-  const v = valeur.toLowerCase();
-  if (v.startsWith("f")) return "F";
-  if (v.startsWith("m")) return "M";
-  return "Autre";
+// -------------------------------------------------------
+// BULLETINS HG — MÉMOIRE
+// -------------------------------------------------------
+
+function getBulletinHG(eleveKey, periode) {
+  return bulletinsHG.find(
+    b => b.eleveKey === eleveKey && b.periode === periode
+  );
 }
 
-// ===============================
-// UI IMPORT / EXPORT
-// ===============================
+function copierBulletinHG(eleveKey, periode) {
+  const bulletin = getBulletinHG(eleveKey, periode);
+  if (!bulletin) {
+    alert("Aucun bulletin trouvé.");
+    return;
+  }
+
+  navigator.clipboard.writeText(bulletin.texte);
+  alert("✅ Bulletin HG copié dans le presse‑papiers");
+}
+
+
+// -------------------------------------------------------
+// EXPORT CSV — BULLETINS HG
+// -------------------------------------------------------
+
+function exporterBulletinsHGCSV() {
+  let csv = "prenom,nom,classe,periode,bulletin_hg\n";
+
+  bulletinsHG.forEach(b => {
+    const [prenom, nom, classe] = b.eleveKey.split("|");
+
+    csv += `"${prenom}","${nom}","${classe}","${b.periode}","${b.texte.replace(/"/g, '""')}"\n`;
+  });
+
+  return csv;
+}
+
+
+// -------------------------------------------------------
+// SUPABASE — SAUVEGARDE BULLETIN HG
+// (utilise sb défini dans index.html)
+// -------------------------------------------------------
+
+async function saveBulletinHGToSupabase(eleveKey, periode) {
+  const bulletin = getBulletinHG(eleveKey, periode);
+  if (!bulletin) return;
+
+  const [prenom, nom, classe] = eleveKey.split("|");
+
+  const { error } = await sb
+    .from("bulletins_hg")
+    .upsert({
+      prenom,
+      nom,
+      classe,
+      periode,
+      texte: bulletin.texte
+    });
+
+  if (error) {
+    console.error("Erreur Supabase :", error.message);
+  }
+}
+
+
+// -------------------------------------------------------
+// UI — PAGE IMPORT / EXPORT
+// -------------------------------------------------------
 
 export function renderImportExport() {
   return `
     <section>
+      <h1>Import / Export</h1>
 
-      <h1>Import / Export des données</h1>
-
-      <p>
-        Cette page permet d’alimenter l’application en données
-        et d’en extraire une copie exploitable.
-      </p>
-
-      <p>
-        Les données importées sont immédiatement utilisées
-        par les autres pages de l’application
-        (Salle, Classes, Suivi, Bulletins).
-      </p>
-
-      <h2>Importer des données</h2>
-
-      <p>
-        L’import s’effectue à partir d’un fichier CSV.
-        Chaque ligne du fichier correspond à un élève.
-      </p>
-
-      <p>
-        Les élèves sont identifiés par le triplet
-        prénom + nom + classe.
-        Un élève déjà présent est mis à jour,
-        un élève absent est créé.
-      </p>
-
+      <h2>Importer des élèves (CSV)</h2>
       <input type="file" id="csvInput" accept=".csv">
-
       <div id="importStatus"></div>
 
-      <h2>Exporter des données</h2>
+      <h2>Exporter</h2>
 
-      <p>
-        L’export produit un fichier CSV contenant
-        l’ensemble des données actuellement chargées
-        dans l’application.
-      </p>
+      <button id="exportElevesBtn">
+        📄 Exporter les élèves (CSV)
+      </button>
 
-      <button id="exportBtn">Exporter les données</button>
+      <button id="copyBulletinBtn">
+        📋 Copier le bulletin HG (1er élève, T1)
+      </button>
+
+      <button id="exportBulletinsBtn">
+        📄 Exporter les bulletins HG (CSV)
+      </button>
 
       <textarea id="exportOutput" rows="10" style="width:100%;"></textarea>
-
     </section>
   `;
 }
@@ -167,34 +217,3 @@ export function renderImportExport() {
 export function bindImportExportEvents() {
   const input = document.getElementById("csvInput");
   const status = document.getElementById("importStatus");
-  const exportBtn = document.getElementById("exportBtn");
-  const output = document.getElementById("exportOutput");
-
-  input.addEventListener("change", () => {
-    const file = input.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        importerCSV(reader.result);
-        status.textContent = "Import réalisé avec succès.";
-      } catch (e) {
-        status.textContent = e.message;
-      }
-    };
-    reader.readAsText(file);
-  });
-
-  exportBtn.addEventListener("click", () => {
-    output.value = exporterCSV();
-  });
-}
-
-// ===============================
-// ACCÈS MÉTIER POUR LES AUTRES PAGES
-// ===============================
-
-export function getEleves() {
-  return eleves;
-}
