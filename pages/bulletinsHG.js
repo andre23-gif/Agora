@@ -1,11 +1,22 @@
 // =======================================================
 // PAGE BULLETINS HG — AGORAMOSAÏQUE
-// Version MÉTIER FINALE
-// Génération + édition + validation
+// VERSION MÉTIER COMPLÈTE ET PROPRE
+// Génération + édition + validation + export CSV
 // =======================================================
 
 import { getEleves } from "./importExport.js";
 import { genererBulletinHG } from "../logic/bulletinGeneratorHG.js";
+
+// =======================================================
+// ÉTAT LOCAL (SANS SUPABASE POUR L’INSTANT)
+// =======================================================
+
+// bulletins finalisés en mémoire
+// structure : { eleveKey, periode, texte }
+let bulletinsHG = [];
+
+// année courante (déjà définie ailleurs dans l’app)
+const ANNEE_COURANTE = window.appAnneeCourante || "2024-2025";
 
 // =======================================================
 // OUTILS INTERNES
@@ -15,39 +26,26 @@ function buildEleveKey(e) {
   return `${e.prenom}|${e.nom}|${e.classe}`;
 }
 
-// =======================================================
-// CODES CONSTATS (issus de l’Excel)
-// =======================================================
-
-function buildConstatCode({
-  posture,
-  investissement,
-  acquisition,
-  comprehension
-}) {
-  return `${posture}_${investissement}_${acquisition}_${comprehension}`;
+function getBulletin(eleveKey, periode) {
+  return bulletinsHG.find(
+    b => b.eleveKey === eleveKey && b.periode === periode
+  );
 }
 
 // =======================================================
-// CODES CONSEIL (axes stratégiques)
+// DÉTECTION DE L’AXE DE CONSEIL (STRATÉGIE VALIDÉE)
 // =======================================================
 
-function detecterAxeConseil({
-  posture,
-  investissement,
-  acquisition,
-  methodes
-}) {
-  // Logique stratégique (non mécanique)
-  if (posture === "perturbateur" || posture === "passif") {
+function detecterAxeConseil(profil) {
+  if (profil.posture === "perturbateur" || profil.posture === "passif") {
     return "engagement";
   }
 
-  if (methodes === "faibles") {
+  if (profil.methodes === "faibles") {
     return "methodes";
   }
 
-  if (investissement === "rien" || investissement === "maison") {
+  if (profil.investissement === "rien" || profil.investissement === "maison") {
     return "regularite";
   }
 
@@ -61,15 +59,16 @@ function detecterAxeConseil({
 export function renderBulletinsHG() {
   const eleves = getEleves();
 
-  const optionsEleves = eleves.map(e =>
-    `<option value="${buildEleveKey(e)}">
-      ${e.prenom} ${e.nom} (${e.classe})
-     </option>`
-  ).join("");
+  const optionsEleves = eleves
+    .map(
+      e => `<option value="${buildEleveKey(e)}">
+        ${e.prenom} ${e.nom} (${e.classe})
+      </option>`
+    )
+    .join("");
 
   return `
     <section>
-
       <h1>Bulletins HG</h1>
 
       <label>
@@ -89,17 +88,13 @@ export function renderBulletinsHG() {
         </select>
       </label>
 
-      <!-- ========================= -->
-      <!-- SUGGESTION AUTOMATIQUE     -->
-      <!-- ========================= -->
+      <!-- Suggestion de conseil -->
       <div id="suggestionBloc" style="margin-top:1em; display:none;">
-        <strong>Suggestion de conseil :</strong><br>
-        <em id="suggestionTexte"></em>
+        <strong>Suggestion de conseil :</strong>
+        <div id="suggestionTexte"></div>
       </div>
 
-      <!-- ========================= -->
-      <!-- TEXTE DU BULLETIN          -->
-      <!-- ========================= -->
+      <!-- Bulletin -->
       <textarea
         id="bulletinTexte"
         rows="10"
@@ -111,10 +106,10 @@ export function renderBulletinsHG() {
         <button id="generateBtn">🪄 Générer</button>
         <button id="copyBtn">📋 Copier</button>
         <button id="validateBtn">✅ Valider</button>
+        <button id="exportCsvBtn">📄 Export CSV (Pronote)</button>
       </div>
 
       <div id="status" style="margin-top:0.5em;"></div>
-
     </section>
   `;
 }
@@ -132,7 +127,8 @@ export function bindBulletinsHGEvents() {
   const suggestionBloc = document.getElementById("suggestionBloc");
   const suggestionTexte = document.getElementById("suggestionTexte");
 
-  // Données simulées (seront branchées plus tard sur Supabase)
+  // ⚠️ Profil simulé pour l’instant
+  // (sera branché sur Supabase plus tard)
   let profil = {
     posture: "passif",
     investissement: "maison",
@@ -143,6 +139,7 @@ export function bindBulletinsHGEvents() {
     evaluationsInsuffisantes: false
   };
 
+  // Génération
   document.getElementById("generateBtn").addEventListener("click", () => {
     if (!eleveSelect.value) {
       alert("Choisis un élève.");
@@ -159,11 +156,67 @@ export function bindBulletinsHGEvents() {
     });
 
     textarea.value = texte;
-
     suggestionBloc.style.display = "block";
-    suggestionTexte.textContent =
-      "Conseil proposé : axe « " + axe + " »";
+    suggestionTexte.textContent = `Axe proposé : ${axe}`;
   });
 
+  // Copier
   document.getElementById("copyBtn").addEventListener("click", () => {
     navigator.clipboard.writeText(textarea.value);
+    alert("✅ Bulletin copié");
+  });
+
+  // Valider (mémoire locale)
+  document.getElementById("validateBtn").addEventListener("click", () => {
+    const eleveKey = eleveSelect.value;
+    const periode = periodeSelect.value;
+
+    if (!eleveKey || !periode) {
+      alert("Élève et période requis.");
+      return;
+    }
+
+    let bulletin = getBulletin(eleveKey, periode);
+
+    if (!bulletin) {
+      bulletin = { eleveKey, periode, texte: textarea.value };
+      bulletinsHG.push(bulletin);
+    } else {
+      bulletin.texte = textarea.value;
+    }
+
+    status.textContent = "✅ Bulletin validé";
+  });
+
+  // Export CSV Pronote
+  document.getElementById("exportCsvBtn").addEventListener("click", () => {
+    const periode = periodeSelect.value;
+
+    const lignes = bulletinsHG.filter(
+      b => b.periode === periode && b.texte.trim() !== ""
+    );
+
+    if (lignes.length === 0) {
+      alert("Aucun bulletin validé pour cette période.");
+      return;
+    }
+
+    let csv = "annee;periode;classe;prenom;nom;bulletin_hg\n";
+
+    lignes.forEach(b => {
+      const [prenom, nom, classe] = b.eleveKey.split("|");
+      const texte = `"${b.texte.replace(/"/g, '""')}"`;
+      csv += `${ANNEE_COURANTE};${periode};${classe};${prenom};${nom};${texte}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bulletins_HG_${ANNEE_COURANTE}_${periode}.csv`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  });
+}
