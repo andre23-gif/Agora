@@ -21,18 +21,21 @@ let elevesSalle = [];
    ============================ */
 
 export function initSalle(classe) {
-  // Récupère les élèves importés
   elevesSalle = getEleves()
     .filter(e => e.classe === classe)
     .map((e, index) => ({
       ...e,
+
       place: e.place ?? index + 1,
+
       suivi: e.suivi ?? {
         absence: false,
         retard: false,
         devoir: false,
+        absentControle: false,
         observation: "",
       },
+
       participation: e.participation ?? "passif",
     }));
 }
@@ -63,10 +66,14 @@ function renderTable(table) {
   return `
     <div class="table ${table.couleur}" data-place="${table.id}">
       <strong>${table.numero}</strong>
+
       ${eleve ? `<div>${eleve.prenom}</div>` : ""}
-      ${eleve && eleve.adaptations.length
-        ? `<div class="badge">${eleve.adaptations.join(", ")}</div>`
-        : ""}
+
+      ${
+        eleve && eleve.adaptations.length
+          ? `<div class="badge">${eleve.adaptations.join(", ")}</div>`
+          : ""
+      }
     </div>
   `;
 }
@@ -112,6 +119,11 @@ function ouvrirFicheEleve(eleve) {
       Devoir non fait
     </label>
 
+    <label>
+      <input type="checkbox" ${eleve.suivi.absentControle ? "checked" : ""}>
+      Absent au contrôle
+    </label>
+
     <textarea>${eleve.suivi.observation}</textarea>
   `;
 }
@@ -123,10 +135,11 @@ function ouvrirFicheEleve(eleve) {
 function ouvrirParticipation() {
   document.getElementById("modal").innerHTML = `
     <h2>Participation</h2>
+
     ${elevesSalle.map(e =>
       `<div>
         ${e.prenom}
-        ${["I","F","S","TS"].map(v =>
+        ${["I", "F", "S", "TS"].map(v =>
           `<button data-id="${e.id}" data-val="${v}">${v}</button>`
         ).join("")}
       </div>`
