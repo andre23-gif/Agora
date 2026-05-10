@@ -9,11 +9,10 @@
 // -------------------------------------------------------
 
 let eleves = [];
-let bulletinsHG = []; 
+let bulletinsHG = [];
 // structure : { eleveKey, periode, texte }
 
 // eleveKey = `${prenom}|${nom}|${classe}`
-
 
 // -------------------------------------------------------
 // OUTILS GÉNÉRAUX
@@ -30,6 +29,10 @@ function buildEleveKey(eleve) {
   return `${eleve.prenom}|${eleve.nom}|${eleve.classe}`;
 }
 
+// ✅ CONTRAT PUBLIC POUR LES AUTRES PAGES
+export function getEleves() {
+  return eleves;
+}
 
 // -------------------------------------------------------
 // IMPORT CSV — ÉLÈVES
@@ -100,7 +103,6 @@ function importerElevesCSV(contenuCSV) {
   });
 }
 
-
 // -------------------------------------------------------
 // EXPORT CSV — ÉLÈVES
 // -------------------------------------------------------
@@ -114,7 +116,6 @@ function exporterElevesCSV() {
 
   return csv;
 }
-
 
 // -------------------------------------------------------
 // BULLETINS HG — MÉMOIRE
@@ -137,7 +138,6 @@ function copierBulletinHG(eleveKey, periode) {
   alert("✅ Bulletin HG copié dans le presse‑papiers");
 }
 
-
 // -------------------------------------------------------
 // EXPORT CSV — BULLETINS HG
 // -------------------------------------------------------
@@ -154,13 +154,14 @@ function exporterBulletinsHGCSV() {
   return csv;
 }
 
-
 // -------------------------------------------------------
 // SUPABASE — SAUVEGARDE BULLETIN HG
-// (utilise sb défini dans index.html)
+// (sb est défini globalement dans index.html)
 // -------------------------------------------------------
 
 async function saveBulletinHGToSupabase(eleveKey, periode) {
+  if (typeof sb === "undefined") return;
+
   const bulletin = getBulletinHG(eleveKey, periode);
   if (!bulletin) return;
 
@@ -180,7 +181,6 @@ async function saveBulletinHGToSupabase(eleveKey, periode) {
     console.error("Erreur Supabase :", error.message);
   }
 }
-
 
 // -------------------------------------------------------
 // UI — PAGE IMPORT / EXPORT
@@ -217,4 +217,44 @@ export function renderImportExport() {
 export function bindImportExportEvents() {
   const input = document.getElementById("csvInput");
   const status = document.getElementById("importStatus");
+  const output = document.getElementById("exportOutput");
+
+  // Import CSV élèves
+  input.addEventListener("change", () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        importerElevesCSV(reader.result);
+        status.textContent = "✅ Élèves importés avec succès.";
+      } catch (err) {
+        status.textContent = "❌ Erreur : " + err.message;
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Export élèves
+  document.getElementById("exportElevesBtn")
+    .addEventListener("click", () => {
+      output.value = exporterElevesCSV();
+    });
+
+  // Copier un bulletin HG (exemple simple)
+  document.getElementById("copyBulletinBtn")
+    .addEventListener("click", () => {
+      if (bulletinsHG.length === 0) {
+        alert("Aucun bulletin disponible.");
+        return;
+      }
+      copierBulletinHG(bulletinsHG[0].eleveKey, "T1");
+    });
+
+  // Export bulletins HG
+  document.getElementById("exportBulletinsBtn")
+    .addEventListener("click", () => {
+      output.value = exporterBulletinsHGCSV();
+    });
 }
