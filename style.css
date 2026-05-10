@@ -1,14 +1,13 @@
 /* ===================================================== */
 /* AGORAMOSAÏQUE — STYLE GLOBAL v1.0                      */
-/* Art déco • Bleu roi • Salle immersive                 */
-/* Réécriture complète — fichier unique                  */
+/* Art déco assumé • Bleu profond • Or                   */
+/* Réécriture complète définitive                        */
 /* ===================================================== */
 
 /* ===================== */
 /* TYPOGRAPHIE           */
 /* ===================== */
 
-/* Montserrat Alternates — chargement externe */
 @import url("https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&display=swap");
 
 /* ===================== */
@@ -16,29 +15,33 @@
 /* ===================== */
 
 :root {
-  /* Couleurs */
-  --bleu-roi: #1f3c88;
-  --bleu-nuit: #162a5e;
-  --or: #c9a24d;
+  /* Identité */
+  --bleu-profond: #0f1f3d;      /* bleu nuit laqué */
+  --bleu-profond-alt: #162a52;  /* variante boutons */
+  --or: #c7a24b;
 
-  --fond-papier: #f6f4ef;
+  /* Fond général */
+  --fond-bleu-grise: #e6ebf2;
   --fond-carte: #ffffff;
-  --texte-principal: #2b2b2b;
+
+  /* Texte */
+  --texte-principal: #2a2a2a;
+  --texte-or: #c7a24b;
 
   /* Salle */
-  --parquet-clair: #e6d3b1;
+  --parquet-clair: #e4d1ad;
 
   /* Tables (couleurs métier) */
-  --table-bleu: #5c7fbf;
-  --table-vert: #6fa98c;
-  --table-jaune: #e6c15a;
-  --table-orange: #e39a5f;
-  --table-violet: #8b7bbf;
-  --table-gris: #b0b0b0;
+  --table-bleu: #5b79b6;
+  --table-vert: #6da38b;
+  --table-jaune: #e2c15c;
+  --table-orange: #df985f;
+  --table-violet: #8576b8;
+  --table-gris: #a9a9a9;
 
-  /* Typographie */
+  /* Typo */
   --font-main: "Montserrat Alternates", system-ui, sans-serif;
-  --letter-spacing: 0.04em;
+  --letter-spacing: 0.045em;
 }
 
 /* ===================== */
@@ -55,13 +58,13 @@ body {
   letter-spacing: var(--letter-spacing);
   color: var(--texte-principal);
 
-  /* Fond général papier (grain très discret) */
-  background-color: var(--fond-papier);
+  /* Fond bleu grisé très clair, légèrement nuancé */
+  background-color: var(--fond-bleu-grise);
   background-image:
     linear-gradient(
-      0deg,
-      rgba(0,0,0,0.02),
-      rgba(0,0,0,0.02)
+      135deg,
+      rgba(255,255,255,0.35),
+      rgba(0,0,0,0.03)
     );
 }
 
@@ -70,23 +73,24 @@ body {
 /* ===================== */
 
 header {
-  background-color: var(--bleu-roi);
+  background-color: var(--bleu-profond);
   border-bottom: 3px solid var(--or);
-  padding: 0.8em 1.2em;
+  padding: 0.9em 1.4em;
+
   display: flex;
   align-items: center;
   gap: 1.2em;
 }
 
 header img {
-  height: 40px;
+  height: 42px;
 }
 
 header h1 {
   margin: 0;
-  font-size: 1.4em;
+  font-size: 1.45em;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--texte-or);
   white-space: nowrap;
 }
 
@@ -94,21 +98,26 @@ header h1 {
 .nav-principale {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5em;
+  gap: 0.6em;
   margin-left: auto;
 }
 
 .nav-principale button {
-  background-color: var(--bleu-nuit);
-  color: #ffffff;
+  background-color: var(--bleu-profond-alt);
+  color: var(--texte-or);
   border: 2px solid var(--or);
-  padding: 0.4em 0.9em;
+  padding: 0.45em 1.1em;
+
   font-size: 0.9em;
+  font-weight: 500;
   cursor: pointer;
+
+  /* Cartouche Art déco */
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
 }
 
 .nav-principale button:hover {
-  background-color: var(--bleu-roi);
+  background-color: var(--bleu-profond);
 }
 
 /* ===================== */
@@ -116,7 +125,7 @@ header h1 {
 /* ===================== */
 
 #app {
-  padding: 2em 1em;
+  padding: 2em 1.2em;
 }
 
 /* Cartes de contenu (hors Salle) */
@@ -124,15 +133,15 @@ section {
   max-width: 1000px;
   margin: 0 auto 2em auto;
   padding: 2em;
+
   background-color: var(--fond-carte);
-  border: 2px solid var(--bleu-roi);
+  border: 2px solid var(--bleu-profond);
   box-shadow: 6px 6px 0 var(--or);
 }
 
-/* Titres internes */
 section h1 {
   margin-top: 0;
-  color: var(--bleu-roi);
+  color: var(--bleu-profond);
   font-weight: 600;
 }
 
@@ -151,10 +160,12 @@ select,
 textarea {
   width: 100%;
   margin-top: 0.3em;
-  padding: 0.5em;
+  padding: 0.55em;
+
   font-family: var(--font-main);
   letter-spacing: var(--letter-spacing);
-  border: 2px solid #ccc;
+
+  border: 2px solid #bfc7d4;
   background-color: #ffffff;
 }
 
@@ -168,20 +179,23 @@ textarea {
   top: 10%;
   left: 50%;
   transform: translateX(-50%);
+
   background-color: var(--fond-carte);
-  padding: 1.5em;
-  border: 2px solid var(--bleu-roi);
+  padding: 1.6em;
+
+  border: 2px solid var(--bleu-profond);
   box-shadow: 8px 8px 0 var(--or);
+
   z-index: 1000;
   max-width: 90%;
 }
 
-/* Fond visible derrière (pas d’écran plein) */
+/* Fond visible derrière */
 body.modal-open::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.1);
+  background: rgba(0,0,0,0.12);
   z-index: 999;
 }
 
@@ -190,7 +204,7 @@ body.modal-open::before {
 /* ===================== */
 
 .salle-page {
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 90px);
   background-color: var(--parquet-clair);
   padding: 2em;
 }
@@ -198,8 +212,8 @@ body.modal-open::before {
 /* Bandeau de contexte Salle */
 .salle-contexte {
   display: flex;
-  gap: 1.5em;
-  margin-bottom: 1.5em;
+  gap: 1.6em;
+  margin-bottom: 1.6em;
   font-weight: 500;
 }
 
@@ -214,8 +228,9 @@ body.modal-open::before {
 }
 
 .table {
-  height: 80px;
+  height: 82px;
   padding: 0.5em;
+
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -241,15 +256,10 @@ body.modal-open::before {
 }
 
 /* Adaptations — symboles sobres */
-.table .badge {
-  margin-top: 0.2em;
-  display: flex;
-  gap: 0.2em;
-}
-
 .table .badge::before {
   content: "◆";
   font-size: 0.6em;
+  opacity: 0.8;
 }
 
 /* Couleurs métier */
@@ -267,15 +277,18 @@ body.modal-open::before {
 button {
   font-family: var(--font-main);
   letter-spacing: var(--letter-spacing);
-  background-color: var(--bleu-roi);
-  color: #ffffff;
+
+  background-color: var(--bleu-profond-alt);
+  color: var(--texte-or);
+
   border: 2px solid var(--or);
-  padding: 0.4em 1em;
+  padding: 0.45em 1.1em;
+
   cursor: pointer;
 }
 
 button:hover {
-  background-color: var(--bleu-nuit);
+  background-color: var(--bleu-profond);
 }
 
 /* ===================== */
