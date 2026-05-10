@@ -1,14 +1,13 @@
 // =======================================================
 // PAGE BULLETINS HG — AGORAMOSAÏQUE
-// VERSION MÉTIER COMPLÈTE ET PROPRE
+// Version fonctionnelle SANS import externe
 // Génération + édition + validation + export CSV
 // =======================================================
 
 import { getEleves } from "./importExport.js";
-import { genererBulletinHG } from "../logic/bulletinGeneratorHG.js";
 
 // =======================================================
-// ÉTAT LOCAL (SANS SUPABASE POUR L’INSTANT)
+// ÉTAT LOCAL
 // =======================================================
 
 // bulletins finalisés en mémoire
@@ -33,7 +32,70 @@ function getBulletin(eleveKey, periode) {
 }
 
 // =======================================================
-// DÉTECTION DE L’AXE DE CONSEIL (STRATÉGIE VALIDÉE)
+// GÉNÉRATEUR DE BULLETIN HG (INTÉGRÉ ICI)
+// =======================================================
+
+function genererBulletinHG({
+  niveau,
+  participation,
+  evaluationsInsuffisantes,
+  axeConseil
+}) {
+  // ---- Niveau
+  let texte = "";
+
+  if (niveau === "TB") {
+    texte +=
+      "Le niveau des acquisitions est très satisfaisant au regard des attentes. ";
+  } else if (niveau === "S") {
+    texte +=
+      "Le niveau des acquisitions est satisfaisant au regard des attentes. ";
+  } else if (niveau === "F") {
+    texte +=
+      "Le niveau des acquisitions reste fragile et doit être consolidé. ";
+  } else {
+    texte +=
+      "Le niveau des acquisitions est insuffisant et nécessite un travail plus régulier. ";
+  }
+
+  // ---- Participation / posture
+  if (participation === "moteur") {
+    texte +=
+      "L’élève participe activement et s’implique avec sérieux dans le travail proposé. ";
+  } else if (participation === "passif") {
+    texte +=
+      "L’élève reste trop souvent en retrait et doit s’impliquer davantage. ";
+  } else if (participation === "perturbateur") {
+    texte +=
+      "Le comportement en classe nuit à la qualité du travail et doit être corrigé. ";
+  }
+
+  // ---- Évaluations
+  if (evaluationsInsuffisantes) {
+    texte +=
+      "Les résultats aux évaluations sont insuffisants au regard des attendus. ";
+  }
+
+  // ---- Conseil (axe unique)
+  if (axeConseil === "engagement") {
+    texte +=
+      "Un investissement plus régulier est indispensable pour progresser. ";
+  } else if (axeConseil === "methodes") {
+    texte +=
+      "La maîtrise des méthodes doit être renforcée afin de mieux exploiter les connaissances acquises. ";
+  } else if (axeConseil === "regularite") {
+    texte +=
+      "Un travail plus constant permettrait de consolider les acquis. ";
+  } else if (axeConseil === "reinvestissement") {
+    texte +=
+      "Les connaissances doivent être davantage réinvesties dans les exercices et les analyses. ";
+  }
+
+  return texte.trim();
+}
+
+// =======================================================
+// STRATÉGIE DE CONSEIL (AXE)
 // =======================================================
 
 function detecterAxeConseil(profil) {
@@ -88,13 +150,11 @@ export function renderBulletinsHG() {
         </select>
       </label>
 
-      <!-- Suggestion de conseil -->
       <div id="suggestionBloc" style="margin-top:1em; display:none;">
         <strong>Suggestion de conseil :</strong>
         <div id="suggestionTexte"></div>
       </div>
 
-      <!-- Bulletin -->
       <textarea
         id="bulletinTexte"
         rows="10"
@@ -115,7 +175,7 @@ export function renderBulletinsHG() {
 }
 
 // =======================================================
-// EVENTS + LOGIQUE MÉTIER
+// EVENTS
 // =======================================================
 
 export function bindBulletinsHGEvents() {
@@ -127,14 +187,11 @@ export function bindBulletinsHGEvents() {
   const suggestionBloc = document.getElementById("suggestionBloc");
   const suggestionTexte = document.getElementById("suggestionTexte");
 
-  // ⚠️ Profil simulé pour l’instant
-  // (sera branché sur Supabase plus tard)
+  // Profil simulé (temporaire mais NON bloquant)
   let profil = {
     posture: "passif",
     investissement: "maison",
-    acquisition: "fragile",
     methodes: "faibles",
-    comprehension: "docs",
     niveau: "F",
     evaluationsInsuffisantes: false
   };
@@ -166,7 +223,7 @@ export function bindBulletinsHGEvents() {
     alert("✅ Bulletin copié");
   });
 
-  // Valider (mémoire locale)
+  // Valider
   document.getElementById("validateBtn").addEventListener("click", () => {
     const eleveKey = eleveSelect.value;
     const periode = periodeSelect.value;
@@ -188,7 +245,7 @@ export function bindBulletinsHGEvents() {
     status.textContent = "✅ Bulletin validé";
   });
 
-  // Export CSV Pronote
+  // Export CSV
   document.getElementById("exportCsvBtn").addEventListener("click", () => {
     const periode = periodeSelect.value;
 
