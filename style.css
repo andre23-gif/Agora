@@ -1,0 +1,221 @@
+/* ===================================================== */
+/* AGORAMOSAÏQUE — STYLE GLOBAL v1.0                      */
+/* Art déco • Bleu roi • Liserés or • Pastels             */
+/* ===================================================== */
+
+/* ===================== */
+/* PALETTE               */
+/* ===================== */
+
+:root {
+  --bleu-roi: #1f3c88;
+  --bleu-nuit: #162a5e;
+  --bleu-pastel: #e8ecf7;
+  --ivoire: #f6f4ef;
+  --or: #c9a24d;
+  --gris-texte: #2b2b2b;
+  --gris-bordure: #cfd3e3;
+  --rouge-critique: #8a1f1f;
+}
+
+/* ===================== */
+/* BASE                  */
+/* ===================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Gill Sans", Arial, sans-serif;
+  background-color: var(--ivoire);
+  color: var(--gris-texte);
+  line-height: 1.5;
+}
+
+/* ===================== */
+/* STRUCTURE PAGES       */
+/* ===================== */
+
+section {
+  background-color: #ffffff;
+  margin: 2em auto;
+  padding: 2em;
+  max-width: 1000px;
+  border: 2px solid var(--bleu-roi);
+  box-shadow: 6px 6px 0 var(--or);
+}
+
+/* ===================== */
+/* TITRES                */
+/* ===================== */
+
+h1 {
+  margin-top: 0;
+  color: var(--bleu-roi);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 3px solid var(--or);
+  padding-bottom: 0.4em;
+}
+
+h2, h3 {
+  color: var(--bleu-nuit);
+  margin-top: 1.6em;
+  border-left: 6px solid var(--or);
+  padding-left: 0.6em;
+}
+
+/* ===================== */
+/* FORMULAIRES           */
+/* ===================== */
+
+label {
+  display: block;
+  margin-top: 1.2em;
+  font-weight: 600;
+  color: var(--bleu-nuit);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="file"],
+select,
+textarea {
+  width: 100%;
+  padding: 0.55em;
+  margin-top: 0.4em;
+  border: 2px solid var(--gris-bordure);
+  background-color: var(--bleu-pastel);
+  font-size: 1em;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 140px;
+}
+
+/* ===================== */
+/* BOUTONS — ART DÉCO     */
+/* ===================== */
+
+button {
+  background-color: var(--bleu-roi);
+  color: #ffffff;
+  border: 2px solid var(--or);
+  padding: 0.6em 1.4em;
+  margin-top: 0.6em;
+  margin-right: 0.5em;
+  font-size: 1em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--bleu-nuit);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Boutons secondaires */
+#copyBtn,
+#exportCsvBtn {
+  background-color: #2c5aa0;
+}
+
+/* Boutons critiques */
+#archiveBtn {
+  background-color: var(--rouge-critique);
+  border-color: var(--or);
+}
+
+/* ===================== */
+/* TABLEAUX              */
+/* ===================== */
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 1.4em;
+  background-color: #ffffff;
+  border: 2px solid var(--bleu-roi);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  background-color: var(--bleu-roi);
+  color: #ffffff;
+  padding: 0.7em;
+  text-align: left;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+td {
+  padding: 0.65em;
+  border-bottom: 1px solid var(--gris-bordure);
+}
+
+tr:nth-child(even) td {
+  background-color: var(--bleu-pastel);
+}
+
+/* ===================== */
+/* MODALES               */
+/* ===================== */
+
+.modal,
+#ppModal {
+  background-color: #ffffff;
+  border: 3px solid var(--bleu-roi);
+  box-shadow: 8px 8px 0 var(--or);
+  padding: 1.6em;
+  margin-top: 1.6em;
+}
+
+/* ===================== */
+/* BLOCS D’INFORMATION   */
+/* ===================== */
+
+#suggestionBloc,
+#status,
+#archiveStatus {
+  margin-top: 1em;
+  font-weight: 600;
+  color: var(--bleu-nuit);
+}
+
+/* ===================== */
+/* CODE / ARCHIVES       */
+/* ===================== */
+
+code {
+  background-color: var(--bleu-pastel);
+  border: 1px solid var(--or);
+  padding: 0.25em 0.45em;
+  font-family: monospace;
+}
+
+/* ===================== */
+/* RESPONSIVE            */
+/* ===================== */
+
+@media (max-width: 768px) {
+  section {
+    margin: 1em;
+    padding: 1.2em;
+  }
+
+  button {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+``
