@@ -1,10 +1,11 @@
 // =======================================================
 // PAGE BULLETINS HG — AGORAMOSAÏQUE
-// Fichier MÉTIER COMPLET
-// Sélection élève + période + suggestion + validation
+// Version MÉTIER FINALE
+// Génération + édition + validation
 // =======================================================
 
-import { getEleves, getBulletinsHG } from "./importExport.js";
+import { getEleves } from "./importExport.js";
+import { genererBulletinHG } from "../logic/bulletinGeneratorHG.js";
 
 // =======================================================
 // OUTILS INTERNES
@@ -14,26 +15,43 @@ function buildEleveKey(e) {
   return `${e.prenom}|${e.nom}|${e.classe}`;
 }
 
-function findBulletin(eleveKey, periode) {
-  return getBulletinsHG().find(
-    b => b.eleveKey === eleveKey && b.periode === periode
-  );
+// =======================================================
+// CODES CONSTATS (issus de l’Excel)
+// =======================================================
+
+function buildConstatCode({
+  posture,
+  investissement,
+  acquisition,
+  comprehension
+}) {
+  return `${posture}_${investissement}_${acquisition}_${comprehension}`;
 }
 
 // =======================================================
-// SUGGESTION AUTOMATIQUE
+// CODES CONSEIL (axes stratégiques)
 // =======================================================
-// Règle :
-// - jamais d’absences
-// - uniquement "évaluations insuffisantes"
-// - suggestion visible, validation manuelle
 
-function detecterEvaluationsInsuffisantes(eleveKey, periode) {
-  const bulletin = findBulletin(eleveKey, periode);
-  if (!bulletin) return false;
+function detecterAxeConseil({
+  posture,
+  investissement,
+  acquisition,
+  methodes
+}) {
+  // Logique stratégique (non mécanique)
+  if (posture === "perturbateur" || posture === "passif") {
+    return "engagement";
+  }
 
-  // règle simple et sûre pour l’instant
-  return bulletin.texte.includes("non encore généré");
+  if (methodes === "faibles") {
+    return "methodes";
+  }
+
+  if (investissement === "rien" || investissement === "maison") {
+    return "regularite";
+  }
+
+  return "reinvestissement";
 }
 
 // =======================================================
@@ -71,28 +89,31 @@ export function renderBulletinsHG() {
         </select>
       </label>
 
-      <!-- SUGGESTION -->
+      <!-- ========================= -->
+      <!-- SUGGESTION AUTOMATIQUE     -->
+      <!-- ========================= -->
       <div id="suggestionBloc" style="margin-top:1em; display:none;">
-        <strong>⚠️ Suggestion automatique :</strong><br>
-        <label>
-          <input type="checkbox" id="evalInsuffisantesChk">
-          Nombre d’évaluations insuffisant pour apprécier pleinement les acquis
-        </label>
+        <strong>Suggestion de conseil :</strong><br>
+        <em id="suggestionTexte"></em>
       </div>
 
+      <!-- ========================= -->
+      <!-- TEXTE DU BULLETIN          -->
+      <!-- ========================= -->
       <textarea
         id="bulletinTexte"
         rows="10"
         style="width:100%; margin-top:1em;"
-        placeholder="Texte du bulletin HG…"
+        placeholder="Bulletin HG…"
       ></textarea>
 
       <div style="margin-top:1em;">
-        <button id="copyBulletinBtn">📋 Copier</button>
-        <button id="validateBulletinBtn">✅ Valider</button>
+        <button id="generateBtn">🪄 Générer</button>
+        <button id="copyBtn">📋 Copier</button>
+        <button id="validateBtn">✅ Valider</button>
       </div>
 
-      <div id="bulletinStatus" style="margin-top:0.5em;"></div>
+      <div id="status" style="margin-top:0.5em;"></div>
 
     </section>
   `;
@@ -106,90 +127,43 @@ export function bindBulletinsHGEvents() {
   const eleveSelect = document.getElementById("bulletinEleve");
   const periodeSelect = document.getElementById("bulletinPeriode");
   const textarea = document.getElementById("bulletinTexte");
-  const status = document.getElementById("bulletinStatus");
+  const status = document.getElementById("status");
 
   const suggestionBloc = document.getElementById("suggestionBloc");
-  const evalChk = document.getElementById("evalInsuffisantesChk");
+  const suggestionTexte = document.getElementById("suggestionTexte");
 
-  function chargerBulletin() {
-    const eleveKey = eleveSelect.value;
-    const periode = periodeSelect.value;
+  // Données simulées (seront branchées plus tard sur Supabase)
+  let profil = {
+    posture: "passif",
+    investissement: "maison",
+    acquisition: "fragile",
+    methodes: "faibles",
+    comprehension: "docs",
+    niveau: "F",
+    evaluationsInsuffisantes: false
+  };
 
-    textarea.value = "";
-    suggestionBloc.style.display = "none";
-    evalChk.checked = false;
-
-    if (!eleveKey) return;
-
-    const bulletin = findBulletin(eleveKey, periode);
-    if (bulletin) {
-      textarea.value = bulletin.texte;
+  document.getElementById("generateBtn").addEventListener("click", () => {
+    if (!eleveSelect.value) {
+      alert("Choisis un élève.");
+      return;
     }
 
-    if (detecterEvaluationsInsuffisantes(eleveKey, periode)) {
-      suggestionBloc.style.display = "block";
-    }
-  }
+    const axe = detecterAxeConseil(profil);
 
-  eleveSelect.addEventListener("change", chargerBulletin);
-  periodeSelect.addEventListener("change", chargerBulletin);
-
-  // COPIE
-  document
-    .getElementById("copyBulletinBtn")
-    .addEventListener("click", () => {
-      navigator.clipboard.writeText(textarea.value);
-      alert("✅ Bulletin copié");
+    const texte = genererBulletinHG({
+      niveau: profil.niveau,
+      participation: profil.posture,
+      evaluationsInsuffisantes: profil.evaluationsInsuffisantes,
+      axeConseil: axe
     });
 
-  // VALIDATION
-  document
-    .getElementById("validateBulletinBtn")
-    .addEventListener("click", async () => {
-      const eleveKey = eleveSelect.value;
-      const periode = periodeSelect.value;
+    textarea.value = texte;
 
-      if (!eleveKey) {
-        alert("Choisis un élève.");
-        return;
-      }
+    suggestionBloc.style.display = "block";
+    suggestionTexte.textContent =
+      "Conseil proposé : axe « " + axe + " »";
+  });
 
-      let texteFinal = textarea.value;
-
-      if (evalChk.checked) {
-        const phrase =
-          "Le nombre d’évaluations est insuffisant pour apprécier pleinement les acquis. ";
-        if (!texteFinal.startsWith(phrase)) {
-          texteFinal = phrase + texteFinal;
-        }
-      }
-
-      let bulletin = findBulletin(eleveKey, periode);
-
-      if (!bulletin) {
-        bulletin = { eleveKey, periode, texte: texteFinal };
-        getBulletinsHG().push(bulletin);
-      } else {
-        bulletin.texte = texteFinal;
-      }
-
-      const [prenom, nom, classe] = eleveKey.split("|");
-
-      const { error } = await sb
-        .from("bulletins_hg")
-        .upsert({
-          prenom,
-          nom,
-          classe,
-          periode,
-          texte: bulletin.texte
-        });
-
-      if (error) {
-        status.textContent = "❌ Erreur Supabase";
-        console.error(error.message);
-      } else {
-        status.textContent = "✅ Bulletin validé";
-      }
-    });
-}
+  document.getElementById("copyBtn").addEventListener("click", () => {
+    navigator.clipboard.writeText(textarea.value);
