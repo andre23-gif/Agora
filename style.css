@@ -1,21 +1,44 @@
 /* ===================================================== */
 /* AGORAMOSAÏQUE — STYLE GLOBAL v1.0                      */
-/* Art déco • Bleu roi • Liserés or • Pastels             */
+/* Art déco • Bleu roi • Salle immersive                 */
+/* Réécriture complète — fichier unique                  */
 /* ===================================================== */
 
 /* ===================== */
-/* PALETTE               */
+/* TYPOGRAPHIE           */
+/* ===================== */
+
+/* Montserrat Alternates — chargement externe */
+@import url("https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&display=swap");
+
+/* ===================== */
+/* VARIABLES             */
 /* ===================== */
 
 :root {
+  /* Couleurs */
   --bleu-roi: #1f3c88;
   --bleu-nuit: #162a5e;
-  --bleu-pastel: #e8ecf7;
-  --ivoire: #f6f4ef;
   --or: #c9a24d;
-  --gris-texte: #2b2b2b;
-  --gris-bordure: #cfd3e3;
-  --rouge-critique: #8a1f1f;
+
+  --fond-papier: #f6f4ef;
+  --fond-carte: #ffffff;
+  --texte-principal: #2b2b2b;
+
+  /* Salle */
+  --parquet-clair: #e6d3b1;
+
+  /* Tables (couleurs métier) */
+  --table-bleu: #5c7fbf;
+  --table-vert: #6fa98c;
+  --table-jaune: #e6c15a;
+  --table-orange: #e39a5f;
+  --table-violet: #8b7bbf;
+  --table-gris: #b0b0b0;
+
+  /* Typographie */
+  --font-main: "Montserrat Alternates", system-ui, sans-serif;
+  --letter-spacing: 0.04em;
 }
 
 /* ===================== */
@@ -28,43 +51,89 @@
 
 body {
   margin: 0;
-  font-family: "Segoe UI", "Gill Sans", Arial, sans-serif;
-  background-color: var(--ivoire);
-  color: var(--gris-texte);
-  line-height: 1.5;
+  font-family: var(--font-main);
+  letter-spacing: var(--letter-spacing);
+  color: var(--texte-principal);
+
+  /* Fond général papier (grain très discret) */
+  background-color: var(--fond-papier);
+  background-image:
+    linear-gradient(
+      0deg,
+      rgba(0,0,0,0.02),
+      rgba(0,0,0,0.02)
+    );
+}
+
+/* ===================== */
+/* BANDEAU PERMANENT     */
+/* ===================== */
+
+header {
+  background-color: var(--bleu-roi);
+  border-bottom: 3px solid var(--or);
+  padding: 0.8em 1.2em;
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+}
+
+header img {
+  height: 40px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.4em;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+/* Navigation principale */
+.nav-principale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-left: auto;
+}
+
+.nav-principale button {
+  background-color: var(--bleu-nuit);
+  color: #ffffff;
+  border: 2px solid var(--or);
+  padding: 0.4em 0.9em;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.nav-principale button:hover {
+  background-color: var(--bleu-roi);
 }
 
 /* ===================== */
 /* STRUCTURE PAGES       */
 /* ===================== */
 
+#app {
+  padding: 2em 1em;
+}
+
+/* Cartes de contenu (hors Salle) */
 section {
-  background-color: #ffffff;
-  margin: 2em auto;
-  padding: 2em;
   max-width: 1000px;
+  margin: 0 auto 2em auto;
+  padding: 2em;
+  background-color: var(--fond-carte);
   border: 2px solid var(--bleu-roi);
   box-shadow: 6px 6px 0 var(--or);
 }
 
-/* ===================== */
-/* TITRES                */
-/* ===================== */
-
-h1 {
+/* Titres internes */
+section h1 {
   margin-top: 0;
   color: var(--bleu-roi);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  border-bottom: 3px solid var(--or);
-  padding-bottom: 0.4em;
-}
-
-h2, h3 {
-  color: var(--bleu-nuit);
-  margin-top: 1.6em;
-  border-left: 6px solid var(--or);
-  padding-left: 0.6em;
+  font-weight: 600;
 }
 
 /* ===================== */
@@ -73,43 +142,135 @@ h2, h3 {
 
 label {
   display: block;
-  margin-top: 1.2em;
-  font-weight: 600;
-  color: var(--bleu-nuit);
+  margin-top: 1em;
+  font-weight: 500;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="file"],
+input,
 select,
 textarea {
   width: 100%;
-  padding: 0.55em;
-  margin-top: 0.4em;
-  border: 2px solid var(--gris-bordure);
-  background-color: var(--bleu-pastel);
-  font-size: 1em;
-}
-
-textarea {
-  resize: vertical;
-  min-height: 140px;
+  margin-top: 0.3em;
+  padding: 0.5em;
+  font-family: var(--font-main);
+  letter-spacing: var(--letter-spacing);
+  border: 2px solid #ccc;
+  background-color: #ffffff;
 }
 
 /* ===================== */
-/* BOUTONS — ART DÉCO     */
+/* MODALES (TOUTES)      */
+/* ===================== */
+
+#modal,
+.modal {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--fond-carte);
+  padding: 1.5em;
+  border: 2px solid var(--bleu-roi);
+  box-shadow: 8px 8px 0 var(--or);
+  z-index: 1000;
+  max-width: 90%;
+}
+
+/* Fond visible derrière (pas d’écran plein) */
+body.modal-open::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.1);
+  z-index: 999;
+}
+
+/* ===================== */
+/* SALLE — EXCEPTION     */
+/* ===================== */
+
+.salle-page {
+  min-height: calc(100vh - 80px);
+  background-color: var(--parquet-clair);
+  padding: 2em;
+}
+
+/* Bandeau de contexte Salle */
+.salle-contexte {
+  display: flex;
+  gap: 1.5em;
+  margin-bottom: 1.5em;
+  font-weight: 500;
+}
+
+/* ===================== */
+/* TABLES DE LA SALLE    */
+/* ===================== */
+
+.salle {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 1.2em;
+}
+
+.table {
+  height: 80px;
+  padding: 0.5em;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  /* Objet plein */
+  box-shadow: 3px 3px 6px rgba(0,0,0,0.25);
+  cursor: pointer;
+}
+
+/* Numéro intégré */
+.table strong {
+  font-size: 0.8em;
+  opacity: 0.85;
+}
+
+/* Prénom prioritaire */
+.table div {
+  font-size: 1em;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Adaptations — symboles sobres */
+.table .badge {
+  margin-top: 0.2em;
+  display: flex;
+  gap: 0.2em;
+}
+
+.table .badge::before {
+  content: "◆";
+  font-size: 0.6em;
+}
+
+/* Couleurs métier */
+.table.bleu   { background-color: var(--table-bleu); }
+.table.vert   { background-color: var(--table-vert); }
+.table.jaune  { background-color: var(--table-jaune); }
+.table.orange { background-color: var(--table-orange); }
+.table.violet { background-color: var(--table-violet); }
+.table.gris   { background-color: var(--table-gris); }
+
+/* ===================== */
+/* BOUTONS GÉNÉRAUX      */
 /* ===================== */
 
 button {
+  font-family: var(--font-main);
+  letter-spacing: var(--letter-spacing);
   background-color: var(--bleu-roi);
   color: #ffffff;
   border: 2px solid var(--or);
-  padding: 0.6em 1.4em;
-  margin-top: 0.6em;
-  margin-right: 0.5em;
-  font-size: 1em;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  padding: 0.4em 1em;
   cursor: pointer;
 }
 
@@ -117,105 +278,20 @@ button:hover {
   background-color: var(--bleu-nuit);
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Boutons secondaires */
-#copyBtn,
-#exportCsvBtn {
-  background-color: #2c5aa0;
-}
-
-/* Boutons critiques */
-#archiveBtn {
-  background-color: var(--rouge-critique);
-  border-color: var(--or);
-}
-
-/* ===================== */
-/* TABLEAUX              */
-/* ===================== */
-
-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin-top: 1.4em;
-  background-color: #ffffff;
-  border: 2px solid var(--bleu-roi);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-th {
-  background-color: var(--bleu-roi);
-  color: #ffffff;
-  padding: 0.7em;
-  text-align: left;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
-
-td {
-  padding: 0.65em;
-  border-bottom: 1px solid var(--gris-bordure);
-}
-
-tr:nth-child(even) td {
-  background-color: var(--bleu-pastel);
-}
-
-/* ===================== */
-/* MODALES               */
-/* ===================== */
-
-.modal,
-#ppModal {
-  background-color: #ffffff;
-  border: 3px solid var(--bleu-roi);
-  box-shadow: 8px 8px 0 var(--or);
-  padding: 1.6em;
-  margin-top: 1.6em;
-}
-
-/* ===================== */
-/* BLOCS D’INFORMATION   */
-/* ===================== */
-
-#suggestionBloc,
-#status,
-#archiveStatus {
-  margin-top: 1em;
-  font-weight: 600;
-  color: var(--bleu-nuit);
-}
-
-/* ===================== */
-/* CODE / ARCHIVES       */
-/* ===================== */
-
-code {
-  background-color: var(--bleu-pastel);
-  border: 1px solid var(--or);
-  padding: 0.25em 0.45em;
-  font-family: monospace;
-}
-
 /* ===================== */
 /* RESPONSIVE            */
 /* ===================== */
 
 @media (max-width: 768px) {
-  section {
-    margin: 1em;
-    padding: 1.2em;
+  header {
+    flex-wrap: wrap;
   }
 
-  button {
-    width: 100%;
-    margin-right: 0;
+  .nav-principale {
+    margin-left: 0;
+  }
+
+  .salle {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   }
 }
-``
