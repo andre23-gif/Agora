@@ -1,13 +1,14 @@
 // =======================================================
 // PAGE BULLETINS HG — AGORAMOSAÏQUE
+// Fichier MÉTIER COMPLET
 // Sélection élève + période + suggestion + validation
 // =======================================================
 
 import { getEleves, getBulletinsHG } from "./importExport.js";
 
-// -------------------------------------------------------
-// OUTILS
-// -------------------------------------------------------
+// =======================================================
+// OUTILS INTERNES
+// =======================================================
 
 function buildEleveKey(e) {
   return `${e.prenom}|${e.nom}|${e.classe}`;
@@ -19,23 +20,25 @@ function findBulletin(eleveKey, periode) {
   );
 }
 
-// -------------------------------------------------------
+// =======================================================
 // SUGGESTION AUTOMATIQUE
-// (logique simple, améliorable plus tard)
-// -------------------------------------------------------
+// =======================================================
+// Règle :
+// - jamais d’absences
+// - uniquement "évaluations insuffisantes"
+// - suggestion visible, validation manuelle
 
 function detecterEvaluationsInsuffisantes(eleveKey, periode) {
-  // ⚠️ Pour l’instant :
-  // on suggère si le bulletin est encore vide ou générique
   const bulletin = findBulletin(eleveKey, periode);
   if (!bulletin) return false;
 
+  // règle simple et sûre pour l’instant
   return bulletin.texte.includes("non encore généré");
 }
 
-// -------------------------------------------------------
-// UI — RENDER
-// -------------------------------------------------------
+// =======================================================
+// RENDER UI
+// =======================================================
 
 export function renderBulletinsHG() {
   const eleves = getEleves();
@@ -68,7 +71,7 @@ export function renderBulletinsHG() {
         </select>
       </label>
 
-      <!-- Suggestion automatique -->
+      <!-- SUGGESTION -->
       <div id="suggestionBloc" style="margin-top:1em; display:none;">
         <strong>⚠️ Suggestion automatique :</strong><br>
         <label>
@@ -85,13 +88,8 @@ export function renderBulletinsHG() {
       ></textarea>
 
       <div style="margin-top:1em;">
-        <button id="copyBulletinBtn">
-          📋 Copier le bulletin
-        </button>
-
-        <button id="validateBulletinBtn">
-          ✅ Valider le bulletin
-        </button>
+        <button id="copyBulletinBtn">📋 Copier</button>
+        <button id="validateBulletinBtn">✅ Valider</button>
       </div>
 
       <div id="bulletinStatus" style="margin-top:0.5em;"></div>
@@ -100,9 +98,9 @@ export function renderBulletinsHG() {
   `;
 }
 
-// -------------------------------------------------------
-// UI — EVENTS
-// -------------------------------------------------------
+// =======================================================
+// EVENTS + LOGIQUE MÉTIER
+// =======================================================
 
 export function bindBulletinsHGEvents() {
   const eleveSelect = document.getElementById("bulletinEleve");
@@ -128,7 +126,6 @@ export function bindBulletinsHGEvents() {
       textarea.value = bulletin.texte;
     }
 
-    // Détection suggestion
     if (detecterEvaluationsInsuffisantes(eleveKey, periode)) {
       suggestionBloc.style.display = "block";
     }
@@ -137,15 +134,15 @@ export function bindBulletinsHGEvents() {
   eleveSelect.addEventListener("change", chargerBulletin);
   periodeSelect.addEventListener("change", chargerBulletin);
 
-  // Copier bulletin
+  // COPIE
   document
     .getElementById("copyBulletinBtn")
     .addEventListener("click", () => {
       navigator.clipboard.writeText(textarea.value);
-      alert("✅ Bulletin copié dans le presse‑papiers");
+      alert("✅ Bulletin copié");
     });
 
-  // Valider bulletin
+  // VALIDATION
   document
     .getElementById("validateBulletinBtn")
     .addEventListener("click", async () => {
@@ -159,12 +156,10 @@ export function bindBulletinsHGEvents() {
 
       let texteFinal = textarea.value;
 
-      // Injection manuelle de la suggestion si cochée
       if (evalChk.checked) {
         const phrase =
           "Le nombre d’évaluations est insuffisant pour apprécier pleinement les acquis. ";
-
-        if (!texteFinal.includes(phrase)) {
+        if (!texteFinal.startsWith(phrase)) {
           texteFinal = phrase + texteFinal;
         }
       }
@@ -172,17 +167,12 @@ export function bindBulletinsHGEvents() {
       let bulletin = findBulletin(eleveKey, periode);
 
       if (!bulletin) {
-        bulletin = {
-          eleveKey,
-          periode,
-          texte: texteFinal
-        };
+        bulletin = { eleveKey, periode, texte: texteFinal };
         getBulletinsHG().push(bulletin);
       } else {
         bulletin.texte = texteFinal;
       }
 
-      // Sauvegarde Supabase
       const [prenom, nom, classe] = eleveKey.split("|");
 
       const { error } = await sb
@@ -196,11 +186,10 @@ export function bindBulletinsHGEvents() {
         });
 
       if (error) {
-        status.textContent = "❌ Erreur lors de l’enregistrement";
+        status.textContent = "❌ Erreur Supabase";
         console.error(error.message);
       } else {
-        status.textContent = "✅ Bulletin validé et enregistré";
+        status.textContent = "✅ Bulletin validé";
       }
     });
 }
-``
