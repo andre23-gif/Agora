@@ -77,7 +77,7 @@
 
     <script type="module">
       import { renderSalle, bindSalleEvents } from "./pages/salle.js";
-      import { renderClassesHG, bindClassesHGEvents } from "./pages/classesHG.js";
+      import { renderClassesHG } from "./pages/classesHG.js";
       import { renderBulletinsHG, bindBulletinsHGEvents } from "./pages/bulletinsHG.js";
       import { renderPP, bindPPEvents } from "./pages/pp.js";
       import { renderEmploiDuTemps } from "./pages/emploiDuTemps.js";
@@ -95,8 +95,8 @@
       document.getElementById("navSalle").onclick = () =>
         afficher(renderSalle, bindSalleEvents);
 
-      document.getElementById("navClassesHG").onclick = () =>
-        afficher(renderClassesHG, bindClassesHGEvents);
+document.getElementById("navClassesHG").onclick = () =>
+  afficher(renderClassesHG);
 
       document.getElementById("navBulletinsHG").onclick = () =>
         afficher(renderBulletinsHG, bindBulletinsHGEvents);
