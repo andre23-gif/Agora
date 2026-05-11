@@ -2,15 +2,15 @@
 <html lang="fr">
 
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
 
   <title>AgoraMosaïque</title>
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json" />
 
   <!-- STYLE -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 
   <!-- Version app -->
   <script>
@@ -29,11 +29,19 @@
 
   <header class="ag-header">
 
+    <!-- Volutes (support graphique) -->
+    <svg class="ag-volutes" viewBox="0 0 1000 200" preserveAspectRatio="none">
+      <path d="M0,100 C200,40 400,160 600,80 C800,20 900,160 1000,100" />
+      <path d="M0,120 C300,180 500,20 800,120 C900,160 1000,80 1000,120" />
+    </svg>
+
+    <!-- Marque -->
     <div class="ag-brand">
-      <img src="icon-192.png" alt="logo">
+      <img src="icon-192.png" alt="logo AgoraMosaïque">
       <h1 class="ag-title">AgoraMosaïque</h1>
     </div>
 
+    <!-- Navigation -->
     <nav class="ag-tabs">
       <button id="navSalle">Salle</button>
       <button id="navClassesHG">Classes HG</button>
@@ -53,13 +61,12 @@
   <div id="app"></div>
 
   <!-- ========================= -->
-  <!-- SUPABASE CONFIG           -->
+  <!-- CONFIG GLOBALE            -->
   <!-- ========================= -->
 
   <script>
     const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
-    const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
+    const SUPABASE_ANON_KEY = "TA_CLE_COMPLETE_ICI";
 
     window.sb = window.supabase.createClient(
       SUPABASE_URL,
@@ -116,7 +123,6 @@
       if (bindFn) bindFn();
     }
 
-    // Navigation
     document.getElementById("navSalle").onclick = () =>
       afficher(renderSalle, bindSalleEvents);
 
@@ -138,11 +144,10 @@
     document.getElementById("navArchives").onclick = () =>
       afficher(renderArchives, bindArchivesEvents);
 
-    // page initiale
+    // Page initiale
     afficher(renderSalle, bindSalleEvents);
 
   </script>
 
 </body>
 </html>
-``
