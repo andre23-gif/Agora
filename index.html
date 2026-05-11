@@ -30,7 +30,7 @@
   <header class="ag-header">
 
     <div class="ag-brand">
-      <img src="icon-192.png" alt="logo">
+      <img src="icon-192.png" alt="logo AgoraMosaïque" />
       <h1 class="ag-title">AgoraMosaïque</h1>
     </div>
 
@@ -47,13 +47,13 @@
   </header>
 
   <!-- ========================= -->
-  <!-- CONTENU DYNAMIQUE         -->
+  <!-- CONTENU SPA               -->
   <!-- ========================= -->
 
   <div id="app"></div>
 
   <!-- ========================= -->
-  <!-- SUPABASE INIT             -->
+  <!-- CONFIG GLOBALE            -->
   <!-- ========================= -->
 
   <script>
@@ -81,7 +81,7 @@
   </script>
 
   <!-- ========================= -->
-  <!-- ROUTEUR SPA               -->
+  <!-- ROUTAGE SPA               -->
   <!-- ========================= -->
 
   <script type="module">
@@ -151,7 +151,7 @@
     document.getElementById("navArchives").onclick = () =>
       afficher(renderArchives, bindArchivesEvents);
 
-    // page par défaut
+    // Page par défaut
     afficher(renderSalle, bindSalleEvents);
 
   </script>
