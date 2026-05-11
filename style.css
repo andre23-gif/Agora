@@ -1,7 +1,7 @@
 /* ===================================================== */
-/* AGORAMOSAÏQUE — STYLE GLOBAL v1.0                      */
-/* Art déco assumé • Bleu profond • Or                   */
-/* Réécriture complète définitive                        */
+/* AGORAMOSAÏQUE — STYLE GLOBAL v2.0                      */
+/* Foundation / Art déco moderne                         */
+/* Bandeau animé + fond vivant                           */
 /* ===================================================== */
 
 /* ===================== */
@@ -15,33 +15,29 @@
 /* ===================== */
 
 :root {
-  /* Identité */
-  --bleu-profond: #0f1f3d;      /* bleu nuit laqué */
-  --bleu-profond-alt: #162a52;  /* variante boutons */
-  --or: #c7a24b;
 
-  /* Fond général */
-  --fond-bleu-grise: #e6ebf2;
-  --fond-carte: #ffffff;
+  /* Fond */
+  --bg-deep: #0b1228;
+  --bg-deep-2: #111c3a;
+
+  /* Accents */
+  --accent-amber: #ffb347;
+  --accent-copper: #d87c3a;
 
   /* Texte */
-  --texte-principal: #2a2a2a;
-  --texte-or: #c7a24b;
+  --text-main: #e8ecf2;
+  --text-dim: #9aa3b2;
 
-  /* Salle */
-  --parquet-clair: #e4d1ad;
+  /* Cartes */
+  --panel-bg: rgba(255,255,255,0.05);
+  --panel-border: rgba(255,180,120,0.3);
 
-  /* Tables (couleurs métier) */
-  --table-bleu: #5b79b6;
-  --table-vert: #6da38b;
-  --table-jaune: #e2c15c;
-  --table-orange: #df985f;
-  --table-violet: #8576b8;
-  --table-gris: #a9a9a9;
+  /* Glow */
+  --glow-soft: 0 0 8px rgba(255,180,120,0.3);
 
   /* Typo */
   --font-main: "Montserrat Alternates", system-ui, sans-serif;
-  --letter-spacing: 0.045em;
+  --letter-spacing: 0.05em;
 }
 
 /* ===================== */
@@ -56,68 +52,105 @@ body {
   margin: 0;
   font-family: var(--font-main);
   letter-spacing: var(--letter-spacing);
-  color: var(--texte-principal);
+  color: var(--text-main);
 
-  /* Fond bleu grisé très clair, légèrement nuancé */
-  background-color: var(--fond-bleu-grise);
-  background-image:
-    linear-gradient(
-      135deg,
-      rgba(255,255,255,0.35),
-      rgba(0,0,0,0.03)
-    );
+  background: linear-gradient(120deg, #0b1228, #162447, #0b1228);
+  background-size: 300% 300%;
+  animation: gradientFlow 25s ease infinite;
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* ===================== */
-/* BANDEAU PERMANENT     */
+/* BANDEAU GLOBAL        */
 /* ===================== */
 
 header {
-  background-color: var(--bleu-profond);
-  border-bottom: 3px solid var(--or);
-  padding: 0.9em 1.4em;
+  height: 65px;
 
   display: flex;
   align-items: center;
-  gap: 1.2em;
+  gap: 1.5em;
+
+  padding: 0 1.5em;
+
+  background: linear-gradient(90deg, #050a18, #0b1228);
+  border-bottom: 1px solid rgba(255,170,100,0.4);
+
+  position: relative;
+  overflow: hidden;
 }
 
-header img {
-  height: 42px;
+/* Animation spires */
+header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background:
+    radial-gradient(circle at 20% 40%, rgba(255,180,120,0.15), transparent 60%),
+    radial-gradient(circle at 70% 70%, rgba(255,150,80,0.12), transparent 60%);
+
+  animation: spireDrift 15s linear infinite;
 }
+
+@keyframes spireDrift {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-30px); }
+  100% { transform: translateX(0); }
+}
+
+/* Logo */
+
+header img {
+  height: 40px;
+  z-index: 1;
+}
+
+/* Titre */
 
 header h1 {
   margin: 0;
-  font-size: 1.45em;
-  font-weight: 600;
-  color: var(--texte-or);
-  white-space: nowrap;
+  font-size: 1.3em;
+  font-weight: 500;
+  color: var(--accent-amber);
+  z-index: 1;
+
+  letter-spacing: 0.1em;
 }
 
-/* Navigation principale */
+/* ===================== */
+/* NAVIGATION            */
+/* ===================== */
+
 .nav-principale {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6em;
   margin-left: auto;
+  display: flex;
+  gap: 0.6em;
+  z-index: 1;
 }
 
 .nav-principale button {
-  background-color: var(--bleu-profond-alt);
-  color: var(--texte-or);
-  border: 2px solid var(--or);
-  padding: 0.45em 1.1em;
+  background: transparent;
+  color: var(--text-dim);
 
-  font-size: 0.9em;
-  font-weight: 500;
+  border: 1px solid transparent;
+  padding: 0.35em 0.9em;
+
+  font-size: 0.85em;
   cursor: pointer;
 
-  /* Cartouche Art déco */
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+  transition: all 0.2s ease;
 }
 
 .nav-principale button:hover {
-  background-color: var(--bleu-profond);
+  color: var(--accent-amber);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--glow-soft);
 }
 
 /* ===================== */
@@ -125,170 +158,114 @@ header h1 {
 /* ===================== */
 
 #app {
-  padding: 2em 1.2em;
+  padding: 1.5em;
 }
 
-/* Cartes de contenu (hors Salle) */
-section {
-  max-width: 1000px;
-  margin: 0 auto 2em auto;
-  padding: 2em;
+/* PANNEAUX */
 
-  background-color: var(--fond-carte);
-  border: 2px solid var(--bleu-profond);
-  box-shadow: 6px 6px 0 var(--or);
+section {
+  max-width: 1100px;
+  margin: 0 auto 2em auto;
+  padding: 1.5em;
+
+  background: var(--panel-bg);
+  backdrop-filter: blur(5px);
+
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--glow-soft);
 }
 
 section h1 {
   margin-top: 0;
-  color: var(--bleu-profond);
-  font-weight: 600;
+  color: var(--accent-amber);
 }
 
 /* ===================== */
 /* FORMULAIRES           */
 /* ===================== */
 
-label {
-  display: block;
-  margin-top: 1em;
-  font-weight: 500;
-}
-
-input,
-select,
-textarea {
+input, select, textarea {
   width: 100%;
+  padding: 0.5em;
   margin-top: 0.3em;
-  padding: 0.55em;
 
-  font-family: var(--font-main);
-  letter-spacing: var(--letter-spacing);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--panel-border);
 
-  border: 2px solid #bfc7d4;
-  background-color: #ffffff;
+  color: var(--text-main);
 }
 
 /* ===================== */
-/* MODALES (TOUTES)      */
+/* MODALES               */
 /* ===================== */
 
-#modal,
-.modal {
+#modal, .modal {
   position: fixed;
-  top: 10%;
+  top: 15%;
   left: 50%;
   transform: translateX(-50%);
 
-  background-color: var(--fond-carte);
-  padding: 1.6em;
+  background: var(--panel-bg);
+  backdrop-filter: blur(5px);
 
-  border: 2px solid var(--bleu-profond);
-  box-shadow: 8px 8px 0 var(--or);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--glow-soft);
 
+  padding: 1.5em;
   z-index: 1000;
-  max-width: 90%;
-}
-
-/* Fond visible derrière */
-body.modal-open::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.12);
-  z-index: 999;
 }
 
 /* ===================== */
-/* SALLE — EXCEPTION     */
+/* SALLE (NETTOYAGE)     */
 /* ===================== */
 
 .salle-page {
-  min-height: calc(100vh - 90px);
-  background-color: var(--parquet-clair);
-  padding: 2em;
+  padding: 1em;
 }
-
-/* Bandeau de contexte Salle */
-.salle-contexte {
-  display: flex;
-  gap: 1.6em;
-  margin-bottom: 1.6em;
-  font-weight: 500;
-}
-
-/* ===================== */
-/* TABLES DE LA SALLE    */
-/* ===================== */
 
 .salle {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 1.2em;
+  gap: 1em;
 }
 
 .table {
-  height: 82px;
-  padding: 0.5em;
+  height: 80px;
 
-  color: #ffffff;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 
-  /* Objet plein */
-  box-shadow: 3px 3px 6px rgba(0,0,0,0.25);
+  text-align: center;
+
+  border: 1px solid var(--panel-border);
+  background: rgba(255,255,255,0.05);
+
   cursor: pointer;
 }
 
-/* Numéro intégré */
-.table strong {
-  font-size: 0.8em;
-  opacity: 0.85;
+.table:hover {
+  box-shadow: var(--glow-soft);
 }
-
-/* Prénom prioritaire */
-.table div {
-  font-size: 1em;
-  font-weight: 500;
-  text-align: center;
-}
-
-/* Adaptations — symboles sobres */
-.table .badge::before {
-  content: "◆";
-  font-size: 0.6em;
-  opacity: 0.8;
-}
-
-/* Couleurs métier */
-.table.bleu   { background-color: var(--table-bleu); }
-.table.vert   { background-color: var(--table-vert); }
-.table.jaune  { background-color: var(--table-jaune); }
-.table.orange { background-color: var(--table-orange); }
-.table.violet { background-color: var(--table-violet); }
-.table.gris   { background-color: var(--table-gris); }
 
 /* ===================== */
-/* BOUTONS GÉNÉRAUX      */
+/* BOUTONS               */
 /* ===================== */
 
 button {
-  font-family: var(--font-main);
-  letter-spacing: var(--letter-spacing);
+  background: transparent;
+  color: var(--text-dim);
 
-  background-color: var(--bleu-profond-alt);
-  color: var(--texte-or);
-
-  border: 2px solid var(--or);
-  padding: 0.45em 1.1em;
+  border: 1px solid transparent;
+  padding: 0.4em 1em;
 
   cursor: pointer;
 }
 
 button:hover {
-  background-color: var(--bleu-profond);
+  color: var(--accent-amber);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--glow-soft);
 }
 
 /* ===================== */
@@ -301,10 +278,7 @@ button:hover {
   }
 
   .nav-principale {
-    margin-left: 0;
-  }
-
-  .salle {
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    width: 100%;
+    justify-content: center;
   }
 }
