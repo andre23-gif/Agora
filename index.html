@@ -13,6 +13,12 @@
     <!-- Style global (Art déco v1.0) -->
     <link rel="stylesheet" href="style.css" />
 
+    
+<script>
+  window.APP_VERSION = "v1.0.1";
+</script>
+
+    
     <!-- Supabase (chargé une seule fois, utilisé plus tard) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
@@ -80,7 +86,8 @@
       import { renderClassesHG } from "./pages/classesHG.js";
       import { renderBulletinsHG, bindBulletinsHGEvents } from "./pages/bulletinsHG.js";
       import { renderPP, bindPPEvents } from "./pages/pp.js";
-      import { renderEmploiDuTemps } from "./pages/emploiDuTemps.js";
+      const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
+  await import("./pages/emploiDuTemps.js?v=" + window.APP_VERSION);
       import { renderImportExport, bindImportExportEvents } from "./pages/importExport.js";
       import { renderArchives, bindArchivesEvents } from "./pages/archives.js";
 
@@ -105,7 +112,7 @@ document.getElementById("navClassesHG").onclick = () =>
         afficher(renderPP, bindPPEvents);
 
       document.getElementById("navEDT").onclick = () =>
-        afficher(renderEmploiDuTemps);
+        afficher(renderEmploiDuTemps, bindEmploiDuTempsEvents);
 
       document.getElementById("navImportExport").onclick = () =>
         afficher(renderImportExport, bindImportExportEvents);
