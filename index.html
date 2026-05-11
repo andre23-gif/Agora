@@ -7,10 +7,10 @@
   <title>AgoraMosaïque</title>
 
   <!-- PWA -->
-  manifest.json
+  <link rel="manifest" href="manifest.json" />
 
   <!-- STYLE -->
-  style.css
+  <link rel="stylesheet" href="style.css" />
 
   <!-- Version app -->
   <script>
@@ -18,7 +18,7 @@
   </script>
 
   <!-- Supabase -->
-  https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -30,7 +30,7 @@
   <header class="ag-header">
 
     <div class="ag-brand">
-      icon-192.png
+      <img src="icon-192.png" alt="logo">
       <h1 class="ag-title">AgoraMosaïque</h1>
     </div>
 
@@ -59,7 +59,7 @@
   <script>
     const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
     const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
 
     window.sb = window.supabase.createClient(
       SUPABASE_URL,
@@ -88,7 +88,6 @@
 
     const V = window.APP_VERSION;
 
-    // Imports
     const {
       renderSalle,
       bindSalleEvents
@@ -152,7 +151,7 @@
     document.getElementById("navArchives").onclick = () =>
       afficher(renderArchives, bindArchivesEvents);
 
-    // Page par défaut
+    // page par défaut
     afficher(renderSalle, bindSalleEvents);
 
   </script>
