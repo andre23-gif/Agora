@@ -5,64 +5,26 @@
   <meta charset="UTF-8">
   <title>AgoraMosaïque</title>
 
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
-
-  <!-- STYLE GLOBAL -->
   <link rel="stylesheet" href="style.css">
 
-  <!-- Version app -->
   <script>
     window.APP_VERSION = "v1.0.1";
   </script>
 
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 </head>
 
 <body>
 
-  <!-- ========================= -->
-  <!-- BANDEAU GLOBAL            -->
-  <!-- ========================= -->
-
+  <!-- BANDEAU SIMPLE -->
   <header class="ag-header">
 
-    <!-- Support SVG pour volutes -->
-    <svg class="ag-volutes" viewBox="0 0 1000 200" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="voluteColor">
-          <stop offset="0%" stop-color="#ffb35c"/>
-          <stop offset="50%" stop-color="#d77a36"/>
-          <stop offset="100%" stop-color="#ffb35c"/>
-        </linearGradient>
-      </defs>
-
-      <!-- Volute principale diagonale -->
-      <path
-        d="M0,120 C250,20 750,180 1000,80"
-        stroke="url(#voluteColor)"
-        stroke-width="3"
-        fill="none"
-      />
-
-      <!-- Volute secondaire -->
-      <path
-        d="M0,80 C300,180 700,20 1000,120"
-        stroke="url(#voluteColor)"
-        stroke-width="2"
-        fill="none"
-      />
-    </svg>
-
-    <!-- Marque -->
     <div class="ag-brand">
-      <img src="icon-192.png" alt="Logo AgoraMosaïque">
-      <h1 class="ag-title">AgoraMosaïque</h1>
+      <img src="icon-192.png" alt="">
+      <h1>AgoraMosaïque</h1>
     </div>
 
-    <!-- Navigation -->
     <nav class="ag-tabs">
       <button id="navSalle">Salle</button>
       <button id="navClassesHG">Classes HG</button>
@@ -75,19 +37,13 @@
 
   </header>
 
-  <!-- ========================= -->
-  <!-- CONTENU SPA               -->
-  <!-- ========================= -->
-
+  <!-- CONTENU -->
   <div id="app"></div>
 
-  <!-- ========================= -->
-  <!-- CONFIG GLOBALE            -->
-  <!-- ========================= -->
-
+  <!-- CONFIG -->
   <script>
     const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
-    const SUPABASE_ANON_KEY = "TA_CLE_COMPLETE_ICI";
+    const SUPABASE_ANON_KEY = "TA_CLE";
 
     window.sb = window.supabase.createClient(
       SUPABASE_URL,
@@ -98,20 +54,7 @@
     window.appAnneeCourante = "2024-2025";
   </script>
 
-  <!-- ========================= -->
-  <!-- SERVICE WORKER            -->
-  <!-- ========================= -->
-
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js");
-    }
-  </script>
-
-  <!-- ========================= -->
-  <!-- ROUTAGE SPA               -->
-  <!-- ========================= -->
-
+  <!-- ROUTAGE -->
   <script type="module">
 
     const V = window.APP_VERSION;
@@ -165,10 +108,10 @@
     document.getElementById("navArchives").onclick = () =>
       afficher(renderArchives, bindArchivesEvents);
 
-    // page par défaut
     afficher(renderSalle, bindSalleEvents);
 
   </script>
 
 </body>
 </html>
+``
