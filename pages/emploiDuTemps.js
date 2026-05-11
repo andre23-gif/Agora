@@ -125,60 +125,51 @@ export function renderEmploiDuTemps() {
       </div>
 
       <!-- LAYOUT -->
-      <div style="display:flex; gap:10px">
+<div class="edt-body">
 
-        <!-- GAUCHE -->
-        <div style="width:220px; overflow:auto; border:1px solid #ccc; padding:5px">
-          ${semaines.map(s=>{
-            const iso=toISO(s.lundi);
-            return `
-              <label>
-                <input type="checkbox" data-iso="${iso}">
-                S${s.numero} ${formatFR(s.lundi)}
-              </label><br>
-            `;
-          }).join("")}
-        </div>
+  <div class="edt-leftpanel">
+    <div class="edt-weeklist">
+      ${semaines.map(s=>{
+        const iso=toISO(s.lundi);
+        return `
+          <label class="edt-weekrow">
+            <input type="checkbox" data-iso="${iso}">
+            <span>S${s.numero} ${formatFR(s.lundi)}</span>
+          </label>
+        `;
+      }).join("")}
+    </div>
+  </div>
 
-        <!-- DROITE -->
-        <div style="flex:1; border:1px solid #ccc; overflow:auto">
-          <table border="1" style="width:100%; text-align:center">
+  <div class="edt-rightpanel">
+    <div class="edt-gridwrap">
+      <table class="edt-grid" border="1" style="width:100%; text-align:center">
+        <tr>
+          <th></th>
+          ${JOURS.map(j=>`<th>${capitalize(j)}</th>`).join("")}
+        </tr>
 
-            <tr>
-              <th></th>
-              ${JOURS.map(j=>`<th>${capitalize(j)}</th>`).join("")}
-            </tr>
+        ${CRENEAUX.map(cr=>`
+          <tr>
+            <th>${cr.code}<br><small>${cr.debut}-${cr.fin}</small></th>
 
-            ${CRENEAUX.map(cr=>`
-              <tr>
-                <th>${cr.code}<br>${cr.debut}-${cr.fin}</th>
+            ${JOURS.map(j=>{
+              if(cr.code==="PM") return `<td class="edt-off">—</td>`;
 
-                ${JOURS.map(j=>{
-                  if(cr.code==="PM") return `<td>—</td>`;
+              const e = edtModele.find(l=>l.jour===j && l.creneau===cr.code);
+              const txt = e ? (e.groupe?`${e.classe} ${e.groupe}`:e.classe) : "&nbsp;";
 
-                  const e = edtModele.find(l=>l.jour===j && l.creneau===cr.code);
-                  const txt = e ? (e.groupe?`${e.classe} ${e.groupe}`:e.classe) : "&nbsp;";
+              return `<td class="edt-cell" data-j="${j}" data-c="${cr.code}">${txt}</td>`;
+            }).join("")}
 
-                  return `
-                    <td data-j="${j}" data-c="${cr.code}">
-                      ${txt}
-                    </td>
-                  `;
-                }).join("")}
+          </tr>
+        `).join("")}
 
-              </tr>
-            `).join("")}
+      </table>
+    </div>
+  </div>
 
-          </table>
-        </div>
-
-      </div>
-
-      <div id="modal"></div>
-
-    </section>
-  `;
-}
+</div>
 
 function choix(k,vals,act){
   return vals.map(v=>`
