@@ -171,14 +171,21 @@ export function renderEmploiDuTemps() {
 
 </div>
 
-function choix(k,vals,act){
-  return vals.map(v=>`
-    <button data-k="${k}" data-v="${v}" ${v===act?"style='background:#ccc'":""}>
+</div>
+
+      <div id="modal"></div>
+
+    </section>
+  `;
+}
+
+function choix(k, vals, act) {
+  return vals.map(v => `
+    <button data-k="${k}" data-v="${v}" ${v === act ? "style='background:#ccc'" : ""}>
       ${v}
     </button>
   `).join("");
 }
-
 /* ======================================================
    EVENTS
    ====================================================== */
