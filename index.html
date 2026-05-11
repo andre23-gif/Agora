@@ -2,15 +2,15 @@
 <html lang="fr">
 
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
 
   <title>AgoraMosaïque</title>
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json">
 
   <!-- STYLE -->
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 
   <!-- Version app -->
   <script>
@@ -30,7 +30,7 @@
   <header class="ag-header">
 
     <div class="ag-brand">
-      <img src="icon-192.png" alt="logo AgoraMosaïque" />
+      <img src="icon-192.png" alt="logo">
       <h1 class="ag-title">AgoraMosaïque</h1>
     </div>
 
@@ -53,7 +53,7 @@
   <div id="app"></div>
 
   <!-- ========================= -->
-  <!-- CONFIG GLOBALE            -->
+  <!-- SUPABASE CONFIG           -->
   <!-- ========================= -->
 
   <script>
@@ -88,39 +88,26 @@
 
     const V = window.APP_VERSION;
 
-    const {
-      renderSalle,
-      bindSalleEvents
-    } = await import(`./pages/salle.js?v=${V}`);
+    const { renderSalle, bindSalleEvents } =
+      await import(`./pages/salle.js?v=${V}`);
 
-    const {
-      renderClassesHG
-    } = await import(`./pages/classesHG.js?v=${V}`);
+    const { renderClassesHG } =
+      await import(`./pages/classesHG.js?v=${V}`);
 
-    const {
-      renderBulletinsHG,
-      bindBulletinsHGEvents
-    } = await import(`./pages/bulletinsHG.js?v=${V}`);
+    const { renderBulletinsHG, bindBulletinsHGEvents } =
+      await import(`./pages/bulletinsHG.js?v=${V}`);
 
-    const {
-      renderPP,
-      bindPPEvents
-    } = await import(`./pages/pp.js?v=${V}`);
+    const { renderPP, bindPPEvents } =
+      await import(`./pages/pp.js?v=${V}`);
 
-    const {
-      renderEmploiDuTemps,
-      bindEmploiDuTempsEvents
-    } = await import(`./pages/emploiDuTemps.js?v=${V}`);
+    const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
+      await import(`./pages/emploiDuTemps.js?v=${V}`);
 
-    const {
-      renderImportExport,
-      bindImportExportEvents
-    } = await import(`./pages/importExport.js?v=${V}`);
+    const { renderImportExport, bindImportExportEvents } =
+      await import(`./pages/importExport.js?v=${V}`);
 
-    const {
-      renderArchives,
-      bindArchivesEvents
-    } = await import(`./pages/archives.js?v=${V}`);
+    const { renderArchives, bindArchivesEvents } =
+      await import(`./pages/archives.js?v=${V}`);
 
     const app = document.getElementById("app");
 
@@ -151,10 +138,11 @@
     document.getElementById("navArchives").onclick = () =>
       afficher(renderArchives, bindArchivesEvents);
 
-    // Page par défaut
+    // page initiale
     afficher(renderSalle, bindSalleEvents);
 
   </script>
 
 </body>
 </html>
+``
