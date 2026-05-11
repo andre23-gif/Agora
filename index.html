@@ -1,55 +1,40 @@
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <header class="ag-header">
-  <div class="ag-brand">
-    <img src="icon-192.png" alt="g-title">AgoraMosaïque</h1>
-  </div>
 
-  <nav class="ag-tabs">
-    <button id="navSalle">Salle</button>
-    <button id="navClassesHG">Classes HG</button>
-    <button id="navBulletinsHG">Bulletins HG</button>
-    <button id="navPP">PP</button>
-    <button id="navEDT">EDT</button>
-    <button id="navImportExport">Import / Export</button>
-    <button id="navArchives">Archives</button>
-  </nav>
-</header>
-    <!-- Encodage -->
-    <meta charset="UTF-8" />
+<head>
+  <meta charset="UTF-8" />
 
-    <!-- Titre -->
-    <title>AgoraMosaïque</title>
+  <title>AgoraMosaïque</title>
 
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.json" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
 
-    <!-- Style global (Art déco v1.0) -->
-    <link rel="stylesheet" href="style.css" />
+  <!-- STYLE -->
+  <link rel="stylesheet" href="style.css" />
 
-    
-<script>
-  window.APP_VERSION = "v1.0.1";
-</script>
+  <!-- Version app -->
+  <script>
+    window.APP_VERSION = "v1.0.1";
+  </script>
 
-    
-    <!-- Supabase (chargé une seule fois, utilisé plus tard) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  </head>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
 
-  <body>
-    <!-- ========================= -->
-    <!-- EN-TÊTE                   -->
-    <!-- ========================= -->
+<body>
 
-    <h1>AgoraMosaïque</h1>
+  <!-- ========================= -->
+  <!-- BANDEAU GLOBAL            -->
+  <!-- ========================= -->
 
-    <!-- ========================= -->
-    <!-- NAVIGATION PRINCIPALE     -->
-    <!-- ========================= -->
+  <header class="ag-header">
 
-    <nav>
+    <div class="ag-brand">
+      <img src="icon-192.png" alt="logo">
+      <h1 class="ag-title">AgoraMosaïque</h1>
+    </div>
+
+    <nav class="ag-tabs">
       <button id="navSalle">Salle</button>
       <button id="navClassesHG">Classes HG</button>
       <button id="navBulletinsHG">Bulletins HG</button>
@@ -59,84 +44,118 @@
       <button id="navArchives">Archives</button>
     </nav>
 
-    <!-- ========================= -->
-    <!-- CONTENEUR SPA             -->
-    <!-- ========================= -->
+  </header>
 
-    <div id="app"></div>
+  <!-- ========================= -->
+  <!-- CONTENU DYNAMIQUE         -->
+  <!-- ========================= -->
 
-    <!-- ========================= -->
-    <!-- SUPABASE (INITIALISATION) -->
-    <!-- ========================= -->
+  <div id="app"></div>
 
-    <script>
-      const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
-      const SUPABASE_ANON_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
+  <!-- ========================= -->
+  <!-- SUPABASE INIT             -->
+  <!-- ========================= -->
 
-      window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        db: { schema: "agoram" }
-      });
+  <script>
+    const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
 
-      /* Année scolaire courante (modifiable plus tard) */
-      window.appAnneeCourante = "2024-2025";
-    </script>
+    window.sb = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
+      { db: { schema: "agoram" } }
+    );
 
-    <!-- ========================= -->
-    <!-- SERVICE WORKER (PWA)      -->
-    <!-- ========================= -->
+    window.appAnneeCourante = "2024-2025";
+  </script>
 
-    <script>
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("sw.js");
-      }
-    </script>
+  <!-- ========================= -->
+  <!-- SERVICE WORKER            -->
+  <!-- ========================= -->
 
-    <!-- ========================= -->
-    <!-- NAVIGATION SPA            -->
-    <!-- ========================= -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js");
+    }
+  </script>
 
-    <script type="module">
-      import { renderSalle, bindSalleEvents } from "./pages/salle.js";
-      import { renderClassesHG } from "./pages/classesHG.js";
-      import { renderBulletinsHG, bindBulletinsHGEvents } from "./pages/bulletinsHG.js";
-      import { renderPP, bindPPEvents } from "./pages/pp.js";
-      const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
-  await import("./pages/emploiDuTemps.js?v=" + window.APP_VERSION);
-      import { renderImportExport, bindImportExportEvents } from "./pages/importExport.js";
-      import { renderArchives, bindArchivesEvents } from "./pages/archives.js";
+  <!-- ========================= -->
+  <!-- ROUTEUR SPA               -->
+  <!-- ========================= -->
 
-      const app = document.getElementById("app");
+  <script type="module">
 
-      function afficher(renderFn, bindFn) {
-        app.innerHTML = renderFn();
-        if (bindFn) bindFn();
-      }
+    const V = window.APP_VERSION;
 
-      // Navigation
-      document.getElementById("navSalle").onclick = () =>
-        afficher(renderSalle, bindSalleEvents);
+    // Imports
+    const {
+      renderSalle,
+      bindSalleEvents
+    } = await import(`./pages/salle.js?v=${V}`);
 
-document.getElementById("navClassesHG").onclick = () =>
-  afficher(renderClassesHG);
+    const {
+      renderClassesHG
+    } = await import(`./pages/classesHG.js?v=${V}`);
 
-      document.getElementById("navBulletinsHG").onclick = () =>
-        afficher(renderBulletinsHG, bindBulletinsHGEvents);
+    const {
+      renderBulletinsHG,
+      bindBulletinsHGEvents
+    } = await import(`./pages/bulletinsHG.js?v=${V}`);
 
-      document.getElementById("navPP").onclick = () =>
-        afficher(renderPP, bindPPEvents);
+    const {
+      renderPP,
+      bindPPEvents
+    } = await import(`./pages/pp.js?v=${V}`);
 
-      document.getElementById("navEDT").onclick = () =>
-        afficher(renderEmploiDuTemps, bindEmploiDuTempsEvents);
+    const {
+      renderEmploiDuTemps,
+      bindEmploiDuTempsEvents
+    } = await import(`./pages/emploiDuTemps.js?v=${V}`);
 
-      document.getElementById("navImportExport").onclick = () =>
-        afficher(renderImportExport, bindImportExportEvents);
+    const {
+      renderImportExport,
+      bindImportExportEvents
+    } = await import(`./pages/importExport.js?v=${V}`);
 
-      document.getElementById("navArchives").onclick = () =>
-        afficher(renderArchives, bindArchivesEvents);
+    const {
+      renderArchives,
+      bindArchivesEvents
+    } = await import(`./pages/archives.js?v=${V}`);
 
-      // Page par défaut (v1.0)
+    const app = document.getElementById("app");
+
+    function afficher(renderFn, bindFn) {
+      app.innerHTML = renderFn();
+      if (bindFn) bindFn();
+    }
+
+    // Navigation
+    document.getElementById("navSalle").onclick = () =>
       afficher(renderSalle, bindSalleEvents);
-    </script>
-  </body>
+
+    document.getElementById("navClassesHG").onclick = () =>
+      afficher(renderClassesHG);
+
+    document.getElementById("navBulletinsHG").onclick = () =>
+      afficher(renderBulletinsHG, bindBulletinsHGEvents);
+
+    document.getElementById("navPP").onclick = () =>
+      afficher(renderPP, bindPPEvents);
+
+    document.getElementById("navEDT").onclick = () =>
+      afficher(renderEmploiDuTemps, bindEmploiDuTempsEvents);
+
+    document.getElementById("navImportExport").onclick = () =>
+      afficher(renderImportExport, bindImportExportEvents);
+
+    document.getElementById("navArchives").onclick = () =>
+      afficher(renderArchives, bindArchivesEvents);
+
+    // Page par défaut
+    afficher(renderSalle, bindSalleEvents);
+
+  </script>
+
+</body>
 </html>
