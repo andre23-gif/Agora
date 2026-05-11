@@ -2,15 +2,14 @@
 <html lang="fr">
 
 <head>
-  <meta charset="UTF-8" />
-
+  <meta charset="UTF-8">
   <title>AgoraMosaïque</title>
 
   <!-- PWA -->
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json">
 
-  <!-- STYLE -->
-  <link rel="stylesheet" href="style.css" />
+  <!-- STYLE GLOBAL -->
+  <link rel="stylesheet" href="style.css">
 
   <!-- Version app -->
   <script>
@@ -19,6 +18,7 @@
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 </head>
 
 <body>
@@ -29,15 +29,36 @@
 
   <header class="ag-header">
 
-    <!-- Volutes (support graphique) -->
+    <!-- Support SVG pour volutes -->
     <svg class="ag-volutes" viewBox="0 0 1000 200" preserveAspectRatio="none">
-      <path d="M0,100 C200,40 400,160 600,80 C800,20 900,160 1000,100" />
-      <path d="M0,120 C300,180 500,20 800,120 C900,160 1000,80 1000,120" />
+      <defs>
+        <linearGradient id="voluteColor">
+          <stop offset="0%" stop-color="#ffb35c"/>
+          <stop offset="50%" stop-color="#d77a36"/>
+          <stop offset="100%" stop-color="#ffb35c"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Volute principale diagonale -->
+      <path
+        d="M0,120 C250,20 750,180 1000,80"
+        stroke="url(#voluteColor)"
+        stroke-width="3"
+        fill="none"
+      />
+
+      <!-- Volute secondaire -->
+      <path
+        d="M0,80 C300,180 700,20 1000,120"
+        stroke="url(#voluteColor)"
+        stroke-width="2"
+        fill="none"
+      />
     </svg>
 
     <!-- Marque -->
     <div class="ag-brand">
-      <img src="icon-192.png" alt="logo AgoraMosaïque">
+      <img src="icon-192.png" alt="Logo AgoraMosaïque">
       <h1 class="ag-title">AgoraMosaïque</h1>
     </div>
 
@@ -144,7 +165,7 @@
     document.getElementById("navArchives").onclick = () =>
       afficher(renderArchives, bindArchivesEvents);
 
-    // Page initiale
+    // page par défaut
     afficher(renderSalle, bindSalleEvents);
 
   </script>
