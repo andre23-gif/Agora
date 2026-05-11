@@ -1,8 +1,8 @@
 import { getClassesAvecGroupes } from "./importExport.js";
 
-/* ============================
-   CRÉNEAUX OFFICIELS
-   ============================ */
+/* ======================================================
+   CONSTANTES MÉTIER
+   ====================================================== */
 
 export const CRENEAUX = [
   { code: "M1", debut: "08:30", fin: "09:25" },
@@ -18,41 +18,125 @@ export const CRENEAUX = [
 
 const JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"];
 
-/* ============================
-   ÉTAT EDT
-   ============================ */
+/* ======================================================
+   ÉTATS
+   ====================================================== */
 
-let edt = [];
+// EDT modèle en cours d’édition (grille centrale)
+let edtModele = [];
 
-/* ============================
-   SEMAINE ACTUELLE (temporaire)
-   ============================ */
+// EDT appliqué aux semaines
+let edtParSemaine = {}; 
+// clé = lundi ISO (YYYY-MM-DD) → tableau d’entrées EDT
 
-function getCurrentWeekType() {
-  return "A"; // sera branché plus tard sur ton module semaines
+// Semaines générées automatiquement
+let semaines = [];
+
+// Semaines cochées (colonne gauche)
+let semainesCibles = new Set();
+
+// Contexte du bandeau
+let contexte = {
+  semaineRefIndex: 0,
+  type: "A",        // A / B / V
+  trimestre: "T1", // T1 / T2 / T3
+  semestre: "S1",  // S1 / S2
+};
+
+/* ======================================================
+   OUTILS DATES
+   ====================================================== */
+
+function mondayOfWeek(d) {
+  const date = new Date(d);
+  const day = date.getDay() || 7;
+  if (day !== 1) date.setDate(date.getDate() - day + 1);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
 
-/* ============================
+function toISO(d) {
+  return d.toISOString().slice(0, 10);
+}
+
+function formatFR(d) {
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+
+/* ======================================================
+   GÉNÉRATION DES SEMAINES
+   ====================================================== */
+
+function genererSemaines() {
+  const debutAnnee = new Date(`${window.appAnneeCourante.split("-")[0]}-09-01`);
+  let lundi = mondayOfWeek(debutAnnee);
+  const fin = new Date(lundi);
+  fin.setDate(fin.getDate() + 7 * 52);
+
+  const out = [];
+  let numero = 1;
+
+  while (lundi <= fin) {
+    out.push({
+      numero,
+      lundi: new Date(lundi),
+    });
+    lundi.setDate(lundi.getDate() + 7);
+    numero++;
+  }
+
+  return out;
+}
+
+/* ======================================================
    RENDU PRINCIPAL
-   ============================ */
+   ====================================================== */
 
 export function renderEmploiDuTemps() {
+  if (semaines.length === 0) semaines = genererSemaines();
+
+  const semRef = semaines[contexte.semaineRefIndex];
+
   return `
     <section>
 
-      <h1>Emploi du temps</h1>
+      <!-- BANDEAU -->
+      <div class="edt-bandeau">
+        <button id="prevWeek">◀</button>
 
-      <div class="gridwrap">
-        <table class="edt-table">
+        <strong>
+          S${semRef.numero} — lundi ${formatFR(semRef.lundi)}
+        </strong>
 
-          <tr>
-            <th></th>
-            ${JOURS.map(j => `<th>${capitalize(j)}</th>`).join("")}
-          </tr>
+        <button id="nextWeek">▶</button>
 
-          ${CRENEAUX.map(renderRow).join("")}
+        <span class="spacer"></span>
 
-        </table>
+        ${renderChoix("type", ["A","B","V"], contexte.type)}
+        ${renderChoix("trimestre", ["T1","T2","T3"], contexte.trimestre)}
+        ${renderChoix("semestre", ["S1","S2"], contexte.semestre)}
+
+        <button id="validerEDT">Valider</button>
+      </div>
+
+      <div class="edt-layout">
+
+        <!-- COLONNE SEMAINES -->
+        <aside class="edt-semaines">
+          ${semaines.map(renderSemaine).join("")}
+        </aside>
+
+        <!-- GRILLE -->
+        <div class="edt-grille">
+          <table>
+            <tr>
+              <th></th>
+              ${JOURS.map(j => `<th>${j}</th>`).join("")}
+            </tr>
+            ${CRENEAUX.map(renderLigne).join("")}
+          </table>
+        </div>
+
       </div>
 
       <div id="modal"></div>
@@ -61,163 +145,177 @@ export function renderEmploiDuTemps() {
   `;
 }
 
-/* ============================
-   LIGNE
-   ============================ */
+/* ======================================================
+   RENDU BANDEAU
+   ====================================================== */
 
-function renderRow(cr) {
+function renderChoix(cle, valeurs, actif) {
+  return `
+    <span class="choix">
+      ${valeurs.map(v =>
+        `<button data-cle="${cle}" data-val="${v}" class="${v===actif?"on":""}">${v}</button>`
+      ).join("")}
+    </span>
+  `;
+}
+
+/* ======================================================
+   COLONNE SEMAINES
+   ====================================================== */
+
+function renderSemaine(s, idx) {
+  const iso = toISO(s.lundi);
+  return `
+    <label class="semaine">
+      <input type="checkbox" data-iso="${iso}">
+      S${s.numero} — ${formatFR(s.lundi)}
+    </label>
+  `;
+}
+
+/* ======================================================
+   GRILLE
+   ====================================================== */
+
+function renderLigne(cr) {
   return `
     <tr>
-
-      <th>
-        ${cr.code}<br>
-        <small>${cr.debut} - ${cr.fin}</small>
-      </th>
-
+      <th>${cr.code}<br><small>${cr.debut}-${cr.fin}</small></th>
       ${JOURS.map(j => renderCell(j, cr.code)).join("")}
-
     </tr>
   `;
 }
 
-/* ============================
-   CELLULE
-   ============================ */
+function renderCell(jour, creneau) {
+  if (creneau === "PM") return `<td class="off">—</td>`;
 
-function renderCell(jour, creneauCode) {
-
-  if (creneauCode === "PM") {
-    return `<td class="cell off">—</td>`;
-  }
-
-  const ligne = edt.find(l =>
-    l.jour === jour &&
-    l.creneau === creneauCode &&
-    l.semaine === getCurrentWeekType()
+  const ligne = edtModele.find(
+    l => l.jour === jour && l.creneau === creneau
   );
 
-  const label = ligne
+  const txt = ligne
     ? (ligne.groupe ? `${ligne.classe} ${ligne.groupe}` : ligne.classe)
     : "";
 
   return `
-    <td class="cell"
-        data-jour="${jour}"
-        data-creneau="${creneauCode}">
-      ${label}
+    <td class="cell" data-jour="${jour}" data-creneau="${creneau}">
+      ${txt}
     </td>
   `;
 }
 
-/* ============================
+/* ======================================================
    EVENTS
-   ============================ */
+   ====================================================== */
 
 export function bindEmploiDuTempsEvents() {
 
-  document.querySelectorAll(".cell").forEach(cell => {
-    cell.addEventListener("click", () => {
+  document.getElementById("prevWeek").onclick = () => {
+    contexte.semaineRefIndex = Math.max(0, contexte.semaineRefIndex - 1);
+    rerender();
+  };
 
-      const jour = cell.dataset.jour;
-      const creneau = cell.dataset.creneau;
+  document.getElementById("nextWeek").onclick = () => {
+    contexte.semaineRefIndex = Math.min(semaines.length - 1, contexte.semaineRefIndex + 1);
+    rerender();
+  };
 
-      if (!jour || !creneau) return;
-
-      ouvrirModal(jour, creneau);
-    });
+  document.querySelectorAll(".choix button").forEach(btn => {
+    btn.onclick = () => {
+      contexte[btn.dataset.cle] = btn.dataset.val;
+      rerender();
+    };
   });
 
+  document.querySelectorAll(".cell").forEach(cell => {
+    cell.onclick = () => ouvrirModal(cell.dataset.jour, cell.dataset.creneau);
+  });
+
+  document.querySelectorAll(".semaine input").forEach(cb => {
+    cb.onchange = () => {
+      cb.checked
+        ? semainesCibles.add(cb.dataset.iso)
+        : semainesCibles.delete(cb.dataset.iso);
+    };
+  });
+
+  document.getElementById("validerEDT").onclick = appliquerEDT;
 }
 
-/* ============================
+/* ======================================================
    MODALE
-   ============================ */
+   ====================================================== */
 
 function ouvrirModal(jour, creneau) {
-
   const classes = getClassesAvecGroupes();
 
   document.getElementById("modal").innerHTML = `
     <div class="modal">
-
-      <h2>${capitalize(jour)} — ${creneau}</h2>
-
+      <h2>${jour} — ${creneau}</h2>
       <select id="choixClasse">
         ${classes.map(c =>
-          `<option value="${c.classe}|${c.groupe ?? ""}">
-            ${c.label}
-          </option>`
+          `<option value="${c.classe}|${c.groupe ?? ""}">${c.label}</option>`
         ).join("")}
       </select>
-
-      <div style="margin-top:1em;">
-        <button id="save">Enregistrer</button>
-        <button id="close">Fermer</button>
-      </div>
-
+      <button id="save">OK</button>
+      <button id="cancel">Annuler</button>
     </div>
   `;
 
   document.getElementById("save").onclick = () => {
+    const [classe, groupe] = document.getElementById("choixClasse").value.split("|");
 
-    const val = document.getElementById("choixClasse").value;
-    const [classe, groupe] = val.split("|");
-
-    const index = edt.findIndex(l =>
-      l.jour === jour &&
-      l.creneau === creneau &&
-      l.semaine === getCurrentWeekType()
+    const idx = edtModele.findIndex(
+      l => l.jour === jour && l.creneau === creneau
     );
 
-    const nouvelle = {
-      jour,
-      creneau,
-      classe,
-      groupe: groupe || null,
-      semaine: getCurrentWeekType()
-    };
+    const ligne = { jour, creneau, classe, groupe: groupe || null };
 
-    if (index === -1) {
-      edt.push(nouvelle);
-    } else {
-      edt[index] = nouvelle;
-    }
+    if (idx === -1) edtModele.push(ligne);
+    else edtModele[idx] = ligne;
 
-    refresh();
+    fermerModal();
+    rerender();
   };
 
-  document.getElementById("close").onclick = closeModal;
+  document.getElementById("cancel").onclick = fermerModal;
 }
 
-function closeModal() {
+function fermerModal() {
   document.getElementById("modal").innerHTML = "";
 }
 
-/* ============================
-   REFRESH PROPRE
-   ============================ */
+/* ======================================================
+   APPLICATION
+   ====================================================== */
 
-function refresh() {
+function appliquerEDT() {
+  semainesCibles.forEach(iso => {
+    edtParSemaine[iso] = edtModele.map(l => ({
+      ...l,
+      type: contexte.type,
+      trimestre: contexte.trimestre,
+      semestre: contexte.semestre,
+    }));
+  });
+
+  semainesCibles.clear();
+  rerender();
+}
+
+/* ======================================================
+   RERENDER
+   ====================================================== */
+
+function rerender() {
   document.getElementById("app").innerHTML = renderEmploiDuTemps();
   bindEmploiDuTempsEvents();
 }
 
-/* ============================
-   UTILITAIRE
-   ============================ */
-
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-/* ============================
-   ACCÈS MÉTIER
-   ============================ */
+/* ======================================================
+   ACCÈS MÉTIER POUR SALLE
+   ====================================================== */
 
 export function getEDT() {
-  return edt;
-}
-
-export function setEDT(nouveau) {
-  edt = nouveau;
+  return edtParSemaine;
 }
