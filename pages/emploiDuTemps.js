@@ -69,3 +69,4 @@ function formatFR(d) {
 }
 
 function anneeDebut() {
+}
