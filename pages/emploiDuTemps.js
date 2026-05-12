@@ -22,11 +22,11 @@ const JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"];
    ÉTAT
    ====================================================== */
 
-let edtModele = [];
-let edtParSemaine = {};
-let semaines = [];
-let semaineRefIndex = 0;
-let semainesCibles = new Set();
+let edtModele = [];              // [{ jour, creneau, classe, groupe }]
+let edtParSemaine = {};          // { isoLundi: [{...},{...}] }
+let semaines = [];               // [{ numero, lundi: Date }]
+let semaineRefIndex = 0;         // index semaine de référence dans semaines[]
+let semainesCibles = new Set();  // Set<isoLundi>
 
 let contexte = {
   type: "A",
@@ -40,7 +40,7 @@ let contexte = {
 
 function mondayOfWeek(date) {
   const d = new Date(date);
-  const day = d.getDay() || 7;
+  const day = d.getDay() || 7;      // dimanche -> 7
   if (day !== 1) d.setDate(d.getDate() - day + 1);
   d.setHours(0, 0, 0, 0);
   return d;
@@ -51,7 +51,7 @@ function toISO(d) {
 }
 
 function formatFR(d) {
-  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function capitalize(s) {
@@ -68,7 +68,7 @@ function anneeDebut() {
 
 function genererSemaines() {
   const y = anneeDebut();
-  const sept1 = new Date(y, 8, 1);
+  const sept1 = new Date(y, 8, 1); // 1er septembre
   let lundi = mondayOfWeek(sept1);
 
   const out = [];
@@ -82,8 +82,17 @@ function genererSemaines() {
   return out;
 }
 
+function getIndexSemaineCourante() {
+  // Trouve l’index de la semaine contenant la date du jour (via son lundi)
+  const isoLundiCourant = toISO(mondayOfWeek(new Date()));
+  const idx = semaines.findIndex(s => toISO(s.lundi) === isoLundiCourant);
+  return idx >= 0 ? idx : 0;
+}
+
 export function initEmploiDuTemps() {
   semaines = genererSemaines();
+  // ✅ Demande métier : la semaine de référence = semaine en cours
+  semaineRefIndex = getIndexSemaineCourante();
 }
 
 /* ======================================================
@@ -105,73 +114,72 @@ export function renderEmploiDuTemps() {
         <button id="next">▶</button>
 
         <select id="weekSelect">
-          ${semaines.map((s,i)=>`
-            <option value="${i}" ${i===semaineRefIndex?"selected":""}>
+          ${semaines.map((s, i) => `
+            <option value="${i}" ${i === semaineRefIndex ? "selected" : ""}>
               S${s.numero}
             </option>
           `).join("")}
         </select>
 
         <span>Type</span>
-        ${choix("type",["A","B","V"],contexte.type)}
+        ${choix("type", ["A", "B", "V"], contexte.type)}
 
         <span>T</span>
-        ${choix("trimestre",["T1","T2","T3"],contexte.trimestre)}
+        ${choix("trimestre", ["T1", "T2", "T3"], contexte.trimestre)}
 
         <span>S</span>
-        ${choix("semestre",["S1","S2"],contexte.semestre)}
+        ${choix("semestre", ["S1", "S2"], contexte.semestre)}
 
         <button id="valider">Valider</button>
       </div>
 
       <!-- LAYOUT -->
-<div class="edt-body">
+      <div class="edt-body">
 
-  <div class="edt-leftpanel">
-    <div class="edt-weeklist">
-      ${semaines.map(s=>{
-        const iso=toISO(s.lundi);
-        return `
-          <label class="edt-weekrow">
-            <input type="checkbox" data-iso="${iso}">
-            <span>S${s.numero} ${formatFR(s.lundi)}</span>
-          </label>
-        `;
-      }).join("")}
-    </div>
-  </div>
-
-  <div class="edt-rightpanel">
-    <div class="edt-gridwrap">
-      <table class="edt-grid" border="1" style="width:100%; text-align:center">
-        <tr>
-          <th></th>
-          ${JOURS.map(j=>`<th>${capitalize(j)}</th>`).join("")}
-        </tr>
-
-        ${CRENEAUX.map(cr=>`
-          <tr>
-            <th>${cr.code}<br><small>${cr.debut}-${cr.fin}</small></th>
-
-            ${JOURS.map(j=>{
-              if(cr.code==="PM") return `<td class="edt-off">—</td>`;
-
-              const e = edtModele.find(l=>l.jour===j && l.creneau===cr.code);
-              const txt = e ? (e.groupe?`${e.classe} ${e.groupe}`:e.classe) : "&nbsp;";
-
-              return `<td class="edt-cell" data-j="${j}" data-c="${cr.code}">${txt}</td>`;
+        <div class="edt-leftpanel">
+          <div class="edt-weeklist">
+            ${semaines.map(s => {
+              const iso = toISO(s.lundi);
+              const checked = semainesCibles.has(iso) ? "checked" : "";
+              return `
+                <label class="edt-weekrow">
+                  <input type="checkbox" data-iso="${iso}" ${checked}>
+                  <span>S${s.numero} ${formatFR(s.lundi)}</span>
+                </label>
+              `;
             }).join("")}
+          </div>
+        </div>
 
-          </tr>
-        `).join("")}
+        <div class="edt-rightpanel">
+          <div class="edt-gridwrap">
+            <table class="edt-grid" border="1" style="width:100%; text-align:center">
+              <tr>
+                <th></th>
+                ${JOURS.map(j => `<th>${capitalize(j)}</th>`).join("")}
+              </tr>
 
-      </table>
-    </div>
-  </div>
+              ${CRENEAUX.map(cr => `
+                <tr>
+                  <th>${cr.code}<br><small>${cr.debut}-${cr.fin}</small></th>
 
-</div>
+                  ${JOURS.map(j => {
+                    if (cr.code === "PM") return `<td class="edt-off">—</td>`;
 
-</div>
+                    const e = edtModele.find(l => l.jour === j && l.creneau === cr.code);
+                    const txt = e ? (e.groupe ? `${e.classe} ${e.groupe}` : e.classe) : "&nbsp;";
+
+                    return `<td class="edt-cell" data-j="${j}" data-c="${cr.code}">${txt}</td>`;
+                  }).join("")}
+
+                </tr>
+              `).join("")}
+
+            </table>
+          </div>
+        </div>
+
+      </div>
 
       <div id="modal"></div>
 
@@ -186,49 +194,50 @@ function choix(k, vals, act) {
     </button>
   `).join("");
 }
+
 /* ======================================================
    EVENTS
    ====================================================== */
 
 export function bindEmploiDuTempsEvents() {
 
-  document.getElementById("prev").onclick = ()=>{
-    semaineRefIndex = Math.max(0,semaineRefIndex-1);
+  document.getElementById("prev").onclick = () => {
+    semaineRefIndex = Math.max(0, semaineRefIndex - 1);
     refresh();
   };
 
-  document.getElementById("next").onclick = ()=>{
-    semaineRefIndex = Math.min(semaines.length-1,semaineRefIndex+1);
+  document.getElementById("next").onclick = () => {
+    semaineRefIndex = Math.min(semaines.length - 1, semaineRefIndex + 1);
     refresh();
   };
 
-  document.getElementById("weekSelect").onchange = e=>{
+  document.getElementById("weekSelect").onchange = e => {
     semaineRefIndex = Number(e.target.value);
     refresh();
   };
 
-  document.querySelectorAll("[data-k]").forEach(b=>{
-    b.onclick = ()=>{
+  document.querySelectorAll("[data-k]").forEach(b => {
+    b.onclick = () => {
       contexte[b.dataset.k] = b.dataset.v;
       refresh();
     };
   });
 
-  document.querySelectorAll("td[data-j]").forEach(td=>{
-    td.onclick = ()=>{
+  document.querySelectorAll(".edt-cell").forEach(td => {
+    td.onclick = () => {
       ouvrirModal(td.dataset.j, td.dataset.c);
     };
   });
 
-  document.querySelectorAll("input[type=checkbox]").forEach(cb=>{
-    cb.onchange = ()=>{
+  document.querySelectorAll("input[type=checkbox][data-iso]").forEach(cb => {
+    cb.onchange = () => {
       cb.checked ? semainesCibles.add(cb.dataset.iso) : semainesCibles.delete(cb.dataset.iso);
     };
   });
 
-  document.getElementById("valider").onclick = ()=>{
-    semainesCibles.forEach(iso=>{
-      edtParSemaine[iso]=edtModele.map(x=>({...x, ...contexte}));
+  document.getElementById("valider").onclick = () => {
+    semainesCibles.forEach(iso => {
+      edtParSemaine[iso] = edtModele.map(x => ({ ...x, ...contexte }));
     });
     semainesCibles.clear();
     refresh();
@@ -239,28 +248,40 @@ export function bindEmploiDuTempsEvents() {
    MODALE
    ====================================================== */
 
-function ouvrirModal(j,c){
-  const classes=getClassesAvecGroupes();
+function ouvrirModal(j, c) {
+  const classes = getClassesAvecGroupes();
 
-  document.getElementById("modal").innerHTML=`
+  document.getElementById("modal").innerHTML = `
     <div style="background:white; padding:10px; border:1px solid black">
+      <div style="margin-bottom:8px;"><strong>${capitalize(j)} — ${c}</strong></div>
+
       <select id="sel">
-        ${classes.map(x=>`<option value="${x.classe}|${x.groupe||""}">${x.label}</option>`).join("")}
+        ${classes.map(x =>
+          `<option value="${x.classe}|${x.groupe || ""}">${x.label}</option>`
+        ).join("")}
       </select>
-      <button id="ok">OK</button>
+
+      <div style="margin-top:10px; display:flex; gap:10px;">
+        <button id="ok">OK</button>
+        <button id="cancel">Annuler</button>
+      </div>
     </div>
   `;
 
-  document.getElementById("ok").onclick=()=>{
-    const [classe,g]=document.getElementById("sel").value.split("|");
-    const i=edtModele.findIndex(x=>x.jour===j && x.creneau===c);
+  document.getElementById("cancel").onclick = () => {
+    document.getElementById("modal").innerHTML = "";
+  };
 
-    const obj={jour:j,creneau:c,classe,groupe:g||null};
+  document.getElementById("ok").onclick = () => {
+    const [classe, g] = document.getElementById("sel").value.split("|");
+    const i = edtModele.findIndex(x => x.jour === j && x.creneau === c);
 
-    if(i===-1) edtModele.push(obj);
-    else edtModele[i]=obj;
+    const obj = { jour: j, creneau: c, classe, groupe: g || null };
 
-    document.getElementById("modal").innerHTML="";
+    if (i === -1) edtModele.push(obj);
+    else edtModele[i] = obj;
+
+    document.getElementById("modal").innerHTML = "";
     refresh();
   };
 }
@@ -269,7 +290,7 @@ function ouvrirModal(j,c){
    REFRESH
    ====================================================== */
 
-function refresh(){
+function refresh() {
   document.getElementById("app").innerHTML = renderEmploiDuTemps();
   bindEmploiDuTempsEvents();
 }
@@ -278,10 +299,10 @@ function refresh(){
    ACCÈS
    ====================================================== */
 
-export function getEDT(){
+export function getEDT() {
   return edtParSemaine;
 }
 
-export function setEDT(e){
-  edtParSemaine=e||{};
+export function setEDT(e) {
+  edtParSemaine = e || {};
 }
