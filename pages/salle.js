@@ -4,14 +4,52 @@ import { getEleves } from "./importExport.js";
    CONFIGURATION SALLE
    ============================ */
 
-const SALLE = Array.from({ length: 30 }, (_, i) => ({
-  id: i + 1,
-  numero: i + 1,
-  couleur: ["bleu", "vert", "jaune", "orange", "violet", "gris"][i % 6],
-}));
+/*
+  Plan de salle :
+  - 3 colonnes
+  - 5 rangées
+  - 2 places par rangée
+  - numérotation globale
+*/
+
+const PLAN_SALLE = {
+  gauche:  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  centre:  [11,12,13,14,15,16,17,18,19,20],
+  droite:  [21,22,23,24,25,26,27,28,29,30],
+};
+
+/*
+  Couleurs par colonne / plage
+*/
+function getCouleur(place) {
+  if (place <= 10) {
+    if (place <= 5) return "vert";
+    return "violet";
+  }
+  if (place <= 20) {
+    if (place <= 15) return "jaune";
+    return "bleu";
+  }
+  if (place <= 25) return "rouge";
+  return "noir";
+}
+
+/*
+  Couleur adaptation (1 seule par élève)
+*/
+function getCouleurAdaptation(adaptation) {
+  switch (adaptation) {
+    case "PPS": return "rouge";
+    case "PAP": return "jaune";
+    case "PPRE": return "bleu";
+    case "Adaptations": return "vert-fonce";
+    case "Adaptations partielles": return "vert-clair";
+    default: return null;
+  }
+}
 
 /* ============================
-   ÉTAT MÉTIER SALLE
+   ÉTAT MÉTIER
    ============================ */
 
 let elevesSalle = [];
@@ -23,63 +61,94 @@ let elevesSalle = [];
 export function initSalle(classe) {
   elevesSalle = getEleves()
     .filter(e => e.classe === classe)
-    .map((e, index) => ({
+    .map(e => ({
       ...e,
-
-      place: e.place ?? index + 1,
-
-      suivi: e.suivi ?? {
-        absence: false,
-        retard: false,
-        devoir: false,
-        absentControle: false,
-        observation: "",
-      },
-
-      participation: e.participation ?? "passif",
+      place: e.place ?? null,
+      adaptations: e.adaptations ?? [],
     }));
 }
 
 /* ============================
-   RENDU
+   RENDU PRINCIPAL
    ============================ */
 
 export function renderSalle() {
   return `
-    <section>
-      <h1>Vue de la classe</h1>
+    <div class="salle-plein-ecran">
 
-      <div class="salle">
-        ${SALLE.map(renderTable).join("")}
-      </div>
+      ${renderColonne("gauche")}
+      <div class="allee"></div>
+      ${renderColonne("centre")}
+      <div class="allee"></div>
+      ${renderColonne("droite")}
 
       <div id="modal"></div>
-
-      <button id="finHeure">Fin d’heure</button>
-    </section>
-  `;
-}
-
-function renderTable(table) {
-  const eleve = elevesSalle.find(e => e.place === table.id);
-
-  return `
-    <div class="table ${table.couleur}" data-place="${table.id}">
-      <strong>${table.numero}</strong>
-
-      ${eleve ? `<div>${eleve.prenom}</div>` : ""}
-
-      ${
-        eleve && eleve.adaptations.length
-          ? `<div class="badge">${eleve.adaptations.join(", ")}</div>`
-          : ""
-      }
     </div>
   `;
 }
 
 /* ============================
-   ÉVÉNEMENTS MÉTIER
+   RENDU COLONNE
+   ============================ */
+
+function renderColonne(nom) {
+  const places = PLAN_SALLE[nom];
+
+  // découpe par paires (rangées)
+  const rangees = [];
+  for (let i = 0; i < places.length; i += 2) {
+    rangees.push([places[i], places[i + 1]]);
+  }
+
+  return `
+    <div class="colonne ${nom}">
+      ${rangees.map(renderRangee).join("")}
+    </div>
+  `;
+}
+
+/* ============================
+   RENDU RANGÉE
+   ============================ */
+
+function renderRangee([p1, p2]) {
+  return `
+    <div class="rangee">
+      ${renderTable(p1)}
+      ${renderTable(p2)}
+    </div>
+  `;
+}
+
+/* ============================
+   RENDU TABLE
+   ============================ */
+
+function renderTable(place) {
+  const eleve = elevesSalle.find(e => e.place === place);
+  const couleur = getCouleur(place);
+
+  let adaptationHtml = "";
+  if (eleve && eleve.adaptations.length === 1) {
+    const couleurAdapt = getCouleurAdaptation(eleve.adaptations[0]);
+    if (couleurAdapt) {
+      adaptationHtml = `<span class="adaptation ${couleurAdapt}"></span>`;
+    }
+  }
+
+  return `
+    <div class="table ${couleur}" data-place="${place}">
+      <span class="numero">${place}</span>
+
+      ${eleve ? `<div class="prenom">${eleve.prenom}</div>` : ""}
+
+      ${adaptationHtml}
+    </div>
+  `;
+}
+
+/* ============================
+   ÉVÉNEMENTS
    ============================ */
 
 export function bindSalleEvents() {
@@ -90,66 +159,44 @@ export function bindSalleEvents() {
       if (eleve) ouvrirFicheEleve(eleve);
     });
   });
-
-  document
-    .getElementById("finHeure")
-    .addEventListener("click", ouvrirParticipation);
 }
 
 /* ============================
-   MÉTIER FICHE ÉLÈVE
+   FICHE ÉLÈVE (MODALE)
    ============================ */
 
 function ouvrirFicheEleve(eleve) {
   document.getElementById("modal").innerHTML = `
-    <h2>${eleve.prenom}</h2>
+    <div class="fiche-eleve">
+      <h2>${eleve.prenom} ${eleve.nom}</h2>
 
-    <label>
-      <input type="checkbox" ${eleve.suivi.absence ? "checked" : ""}>
-      Absence
-    </label>
+      <label>
+        <input type="checkbox" ${eleve.suivi?.absence ? "checked" : ""}>
+        Absence
+      </label>
 
-    <label>
-      <input type="checkbox" ${eleve.suivi.retard ? "checked" : ""}>
-      Retard
-    </label>
+      <label>
+        <input type="checkbox" ${eleve.suivi?.retard ? "checked" : ""}>
+        Retard
+      </label>
 
-    <label>
-      <input type="checkbox" ${eleve.suivi.devoir ? "checked" : ""}>
-      Devoir non fait
-    </label>
+      <label>
+        <input type="checkbox" ${eleve.suivi?.devoir ? "checked" : ""}>
+        Devoir non fait
+      </label>
 
-    <label>
-      <input type="checkbox" ${eleve.suivi.absentControle ? "checked" : ""}>
-      Absent au contrôle
-    </label>
+      <label>
+        <input type="checkbox" ${eleve.suivi?.absentControle ? "checked" : ""}>
+        Absent au contrôle
+      </label>
 
-    <textarea>${eleve.suivi.observation}</textarea>
-  `;
-}
+      <textarea>${eleve.suivi?.observation ?? ""}</textarea>
 
-/* ============================
-   MÉTIER PARTICIPATION
-   ============================ */
-
-function ouvrirParticipation() {
-  document.getElementById("modal").innerHTML = `
-    <h2>Participation</h2>
-
-    ${elevesSalle.map(e =>
-      `<div>
-        ${e.prenom}
-        ${["I", "F", "S", "TS"].map(v =>
-          `<button data-id="${e.id}" data-val="${v}">${v}</button>`
-        ).join("")}
-      </div>`
-    ).join("")}
+      <button id="closeFiche">Fermer</button>
+    </div>
   `;
 
-  document.querySelectorAll("button[data-id]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const eleve = elevesSalle.find(e => e.id === Number(btn.dataset.id));
-      eleve.participation = btn.dataset.val;
-    });
-  });
+  document.getElementById("closeFiche").onclick = () => {
+    document.getElementById("modal").innerHTML = "";
+  };
 }
