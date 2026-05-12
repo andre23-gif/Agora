@@ -24,26 +24,20 @@ import { getEDT, CRENEAUX } from "./emploiDuTemps.js";
 
 
 /* -------------------------------------------------------
-   BLOC 1 — RÉFÉRENTIEL CONTENU (codes)
-   But : proposer une base codée H/G/EMC/AP + permettre saisie libre
-   Règles :
-     - H1..H10, G1..G10 : Intro, 1.1..1.3, 2.1..2.3, 3.1..3.3, Conclusion, DST, Correction
-     - EMC1..EMC5 : même logique
-     - AP1..AP25 : simple (AP1..AP25)
+   BLOC — RÉFÉRENTIEL CONTENU (codes) — COMPLET
+   Règle : 1 chapitre = 13 lignes (sans la ligne "H1" seule)
 ------------------------------------------------------- */
 
 function buildContenusCatalogue() {
   const out = [];
 
-  const addChapitre = (prefix, n) => {
+  const addChapitre13 = (prefix, n) => {
     const base = `${prefix}${n}`;
-    out.push(base);
+    // 13 lignes EXACTES
     out.push(`${base} Intro`);
-    // 1.1..1.3
+
     for (let i = 1; i <= 3; i++) out.push(`${base} 1.${i}`);
-    // 2.1..2.3
     for (let i = 1; i <= 3; i++) out.push(`${base} 2.${i}`);
-    // 3.1..3.3
     for (let i = 1; i <= 3; i++) out.push(`${base} 3.${i}`);
 
     out.push(`${base} Conclusion`);
@@ -51,17 +45,22 @@ function buildContenusCatalogue() {
     out.push(`${base} Correction`);
   };
 
-  for (let n = 1; n <= 10; n++) addChapitre("H", n);
-  for (let n = 1; n <= 10; n++) addChapitre("G", n);
-  for (let n = 1; n <= 5; n++) addChapitre("EMC", n);
+  // Histoire : H1..H10
+  for (let n = 1; n <= 10; n++) addChapitre13("H", n);
 
+  // Géographie : G1..G10
+  for (let n = 1; n <= 10; n++) addChapitre13("G", n);
+
+  // EMC : EMC1..EMC5
+  for (let n = 1; n <= 5; n++) addChapitre13("EMC", n);
+
+  // AP : AP1..AP25
   for (let n = 1; n <= 25; n++) out.push(`AP${n}`);
 
   return out;
 }
 
 const CONTENUS_CATALOGUE = buildContenusCatalogue();
-
 
 /* -------------------------------------------------------
    BLOC 2 — PLAN SALLE (structure spatiale)
