@@ -1,5 +1,11 @@
 /* =====================================================
-   TYPOGRAPHIE & BASE
+   GLOBAL — TYPOGRAPHIE, FOND, BASE
+   RÔLE :
+     - Identité visuelle commune
+     - Typographie
+     - Fond animé
+     - Boutons globaux
+     - Bandeau (header)
    ===================================================== */
 
 :root {
@@ -25,7 +31,7 @@ body {
                Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   color: var(--texte-clair);
 
-  /* Fond global vivant */
+  /* Fond vivant */
   background:
     radial-gradient(1200px 700px at 20% 30%, rgba(255,180,90,0.25), transparent),
     radial-gradient(1000px 600px at 80% 70%, rgba(80,120,255,0.35), transparent),
@@ -41,8 +47,9 @@ body {
   100% { background-position: 0% 50%; }
 }
 
+
 /* =====================================================
-   BANDEAU GLOBAL
+   GLOBAL — BANDEAU (corrigé, version vivante)
    ===================================================== */
 
 .ag-header {
@@ -57,13 +64,50 @@ body {
   align-items: center;
   gap: 24px;
 
-  background:
-    linear-gradient(90deg, #040816, #0b1228);
+  /* Base sombre */
+  background: linear-gradient(180deg, #050a18, #0b1228);
 
   border-bottom: 1px solid rgba(255,255,255,0.15);
+  overflow: hidden;
 }
 
-/* Marque */
+/* Volutes chaudes */
+.ag-header::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+
+  background:
+    radial-gradient(circle at 20% 40%, rgba(255,170,80,0.4), transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(255,120,40,0.3), transparent 50%);
+
+  filter: blur(60px);
+  opacity: 0.5;
+}
+
+/* Texture légère */
+.ag-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.015) 0px,
+      rgba(255,255,255,0.015) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+
+  opacity: 0.4;
+}
+
+
+/* =====================================================
+   GLOBAL — NAVIGATION
+   ===================================================== */
+
 .ag-brand {
   display: flex;
   align-items: center;
@@ -81,7 +125,6 @@ body {
   color: var(--accent-chaud);
 }
 
-/* Navigation */
 .ag-tabs {
   margin-left: auto;
   display: flex;
@@ -91,10 +134,8 @@ body {
 .ag-tabs button {
   background: transparent;
   border: 1px solid transparent;
-
   color: var(--texte-doux);
   padding: 6px 12px;
-
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -105,12 +146,9 @@ body {
   box-shadow: 0 0 8px rgba(255,180,90,0.4);
 }
 
-.ag-tabs button:active {
-  box-shadow: 0 0 12px rgba(255,180,90,0.7);
-}
 
 /* =====================================================
-   CONTENEUR APP
+   GLOBAL — CONTENEUR
    ===================================================== */
 
 #app {
@@ -118,55 +156,9 @@ body {
   padding: 16px;
 }
 
-/* =====================================================
-   CADRES DE PAGES (NON MÉTIER)
-   ===================================================== */
-
-/* Pages avec encadrés + scroll */
-.page-classeshg,
-.page-edt {
-  max-width: 1200px;
-  margin: 0 auto;
-
-  background: var(--cadre-bg);
-  border: 1px solid var(--cadre-border);
-
-  padding: 16px;
-  border-radius: 6px;
-
-  overflow: auto;
-}
-
-/* Salle = plein écran, PAS de cadre */
-.page-salle {
-  height: calc(100vh - 70px);
-  padding: 16px;
-}
 
 /* =====================================================
-   TITRES & TEXTES GÉNÉRAUX
-   ===================================================== */
-
-h1, h2, h3 {
-  margin: 0 0 12px 0;
-  font-weight: 600;
-  color: var(--texte-clair);
-}
-
-p {
-  color: var(--texte-doux);
-}
-
-/* =====================================================
-   FORMULAIRES GÉNÉRAUX
-   ===================================================== */
-
-input, select, textarea, button {
-  font-family: inherit;
-}
-
-/* =====================================================
-   MODALES (STRUCTURE SEULE)
+   GLOBAL — MODALES
    ===================================================== */
 
 #modal {
@@ -191,4 +183,112 @@ input, select, textarea, button {
   border-radius: 6px;
   max-width: 600px;
   width: 100%;
+}
+
+
+/* =====================================================
+   PAGE IMPORT / EXPORT
+   ===================================================== */
+
+.page-import {
+  max-width: 800px;
+  margin: auto;
+}
+
+
+/* =====================================================
+   PAGE EDT
+   ===================================================== */
+
+.page-edt {
+  height: calc(100vh - 70px);
+  display: flex;
+  flex-direction: column;
+}
+
+.page-edt .edt-body {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+}
+
+.page-edt .edt-leftpanel {
+  width: 250px;
+  overflow-y: auto;
+}
+
+.page-edt .edt-rightpanel {
+  flex: 1;
+  overflow: auto;
+}
+
+
+/* =====================================================
+   PAGE CLASSES HG
+   ===================================================== */
+
+.page-classeshg {
+  max-width: 1200px;
+  margin: auto;
+}
+
+.page-classeshg .liste-eleves {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.page-classeshg .plan-salle {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+
+/* =====================================================
+   PAGE SALLE
+   ===================================================== */
+
+.page-salle {
+  height: calc(100vh - 70px);
+  display: flex;
+  gap: 16px;
+}
+
+/* Layout spatial salle */
+.page-salle .zone-gauche {
+  flex: 1;
+}
+
+.page-salle .zone-droite {
+  flex: 1;
+}
+
+
+/* =====================================================
+   PAGE BULLETINS
+   ===================================================== */
+
+.page-bulletins {
+  max-width: 900px;
+  margin: auto;
+}
+
+
+/* =====================================================
+   PAGE PP
+   ===================================================== */
+
+.page-pp {
+  max-width: 1000px;
+  margin: auto;
+}
+
+
+/* =====================================================
+   PAGE ARCHIVES
+   ===================================================== */
+
+.page-archives {
+  max-width: 1000px;
+  margin: auto;
 }
