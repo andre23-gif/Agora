@@ -246,21 +246,248 @@ body {
 
 /* =====================================================
    PAGE SALLE
+   RÔLE :
+     - Vue du dessus de la salle
+     - 3 colonnes + allées
+     - Tables en paires (5 rangées)
+     - Couleurs fixes par zone
    ===================================================== */
 
 .page-salle {
   height: calc(100vh - 70px);
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* =====================================================
+   BANDEAU INTERNE SALLE
+   ===================================================== */
+
+.page-salle .salle-topbar {
+  display: flex;
+  align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
+
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-/* Layout spatial salle */
-.page-salle .zone-gauche {
+.page-salle .salle-contexte {
   flex: 1;
 }
 
-.page-salle .zone-droite {
+.page-salle .salle-contenu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-salle .salle-contenu select,
+.page-salle .salle-contenu input {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--texte-clair);
+  padding: 4px 6px;
+}
+
+/* =====================================================
+   ZONE SALLE (layout)
+   ===================================================== */
+
+.page-salle .salle-plein-ecran {
   flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 20px;
+}
+
+/* colonnes */
+.page-salle .colonne {
+  display: flex;
+  flex-direction: column-reverse; /* bas = devant */
+  gap: 12px;
+}
+
+/* passage / allée */
+.page-salle .allee {
+  width: 30px;
+}
+
+/* =====================================================
+   RANGÉES = deux tables collées
+   ===================================================== */
+
+.page-salle .rangee {
+  display: flex;
+  gap: 6px;
+}
+
+/* =====================================================
+   TABLE (rectangle)
+   ===================================================== */
+
+.page-salle .table {
+  width: 90px;
+  height: 70px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  position: relative;
+
+  border-radius: 6px;
+  font-size: 0.75rem;
+  text-align: center;
+
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+/* hover */
+.page-salle .table:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 8px rgba(255,255,255,0.3);
+}
+
+/* numéro de table */
+.page-salle .numero {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.6rem;
+  opacity: 0.7;
+}
+
+/* élève */
+.page-salle .nom {
+  font-weight: 500;
+}
+
+.page-salle .nom.vide {
+  opacity: 0.3;
+}
+
+/* =====================================================
+   COULEURS DES TABLES (structure)
+   ===================================================== */
+
+/* colonne gauche */
+.page-salle .table.vert {
+  background: #2e7d32;
+}
+
+.page-salle .table.violet {
+  background: #7b1fa2;
+}
+
+/* colonne centre */
+.page-salle .table.jaune {
+  background: #fbc02d;
+  color: #000;
+}
+
+.page-salle .table.bleu {
+  background: #1976d2;
+}
+
+/* colonne droite */
+.page-salle .table.rouge {
+  background: #c62828;
+}
+
+.page-salle .table.noir {
+  background: #212121;
+}
+
+/* =====================================================
+   ADAPTATIONS (cercles)
+   ===================================================== */
+
+.page-salle .adaptation-dot {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* couleurs adaptations */
+
+.page-salle .adapt-pps {
+  background: red;
+}
+
+.page-salle .adapt-pap {
+  background: gold;
+}
+
+.page-salle .adapt-ppre {
+  background: #2196f3;
+}
+
+.page-salle .adapt-vert-fonce {
+  background: #2e7d32;
+}
+
+.page-salle .adapt-vert-clair {
+  background: #81c784;
+}
+
+/* =====================================================
+   MODALES SALLE
+   ===================================================== */
+
+.page-salle .fiche-eleve,
+.page-salle .participation {
+  background: #0b1228;
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 16px;
+  border-radius: 6px;
+}
+
+.page-salle .fiche-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-salle .fiche-bloc {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.page-salle textarea {
+  background: rgba(0,0,0,0.3);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* =====================================================
+   PARTICIPATION
+   ===================================================== */
+
+.page-salle .part-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.page-salle .part-btns button {
+  margin-right: 4px;
+}
+
+.page-salle .btn-part.active {
+  background: var(--accent-chaud);
 }
 
 
