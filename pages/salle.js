@@ -328,7 +328,6 @@ export function initSalle() {
 ------------------------------------------------------- */
 
 export function renderSalle() {
-  if (!contexte) initSalle();
 
   const titreClasse = contexte.classe
     ? `${contexte.classe}${contexte.groupe ? " " + contexte.groupe : ""}`
