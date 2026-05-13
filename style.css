@@ -625,3 +625,46 @@ input, select, textarea, button{
   max-width: 1000px;
   margin: 0 auto;
 }
+/* =====================================================
+   PAGE IMPORT — BOUTONS OR (isolé, sans conflit header)
+   BALISE : AG_IMPORT_BTN_OR_V1
+   ===================================================== */
+
+.page-importexport .btn{
+  background: transparent;
+  color: var(--texte-clair);
+
+  border: 2px solid rgba(255,180,90,0.7);
+  border-radius: 14px;
+
+  padding: 10px 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+  position: relative;
+
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.1s ease;
+}
+
+/* HALO OR (sans pseudo-element → évite conflit header) */
+.page-importexport .btn:hover{
+  border-color: var(--accent-chaud);
+
+  box-shadow:
+    0 0 6px rgba(255,180,90,0.5),
+    0 0 12px rgba(255,180,90,0.6),
+    0 0 20px rgba(255,180,90,0.4);
+}
+
+/* CLIC (pression + glow plus fort) */
+.page-importexport .btn:active{
+  transform: translateY(1px);
+
+  box-shadow:
+    0 0 3px rgba(255,180,90,0.6),
+    0 0 8px rgba(255,180,90,0.7),
+    0 0 16px rgba(255,180,90,0.6);
+}
