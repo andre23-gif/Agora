@@ -981,3 +981,12 @@ textarea:focus{
 
   border-radius: 6px;
 }
+/* =====================================================
+   PAGE EDT — FORCER LISTE VERTICALE
+   BALISE : AG_EDT_FORCE_COLUMN_V1
+   ===================================================== */
+
+.page-edt .edt-leftpanel{
+  display: flex;
+  flex-direction: column;
+}
