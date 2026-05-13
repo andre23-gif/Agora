@@ -85,7 +85,7 @@ export function getClassesAvecGroupes() {
 
 function importerElevesCSV(contenuCSV) {
   const lignes = contenuCSV.trim().split("\n");
-  const entetes = lignes[0].split(",").map(h => h.trim().toLowerCase());
+  const entetes = lignes[0].split(/[;,]/).map(h => h.trim().toLowerCase());
 
   // Champs imposés par le métier Import
   const champsObligatoires = ["prenom", "nom", "classe", "genre"];
