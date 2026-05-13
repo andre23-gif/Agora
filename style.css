@@ -72,12 +72,8 @@ body{
 
 
 /* =====================================================
-   GLOBAL — BANDEAU (HEADER)
-   RÔLE :
-     - Support navigation (onglets)
-     - Doit être nuancé (non uniforme)
-   IMPORTANT :
-     - On protège les clics : les pseudo-éléments ne doivent JAMAIS intercepter la souris
+   GLOBAL — BANDEAU (style inspiré du visuel bandeau)
+   Objectif : fond noir + traînée rouge/orange + éclats cyan
    ===================================================== */
 
 .ag-header{
@@ -92,57 +88,77 @@ body{
   align-items:center;
   gap:24px;
 
-  background: linear-gradient(180deg, #050a18, #0b1228);
-  border-bottom: 1px solid rgba(255,255,255,0.15);
-
-  overflow:hidden;
+  /* base plus sombre et plus contrastée */
+  background: linear-gradient(180deg, #04050b 0%, #0b0d14 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.14);
+  overflow: hidden;
 }
 
-/* Couche volutes chaudes (visuel) */
+/* couche "traînée" (rouge/orange + cyan) */
 .ag-header::before{
   content:"";
   position:absolute;
-  inset:-20%;
+  inset:0;
+  pointer-events:none;
 
+  /* 1) grande traînée rouge diagonale
+     2) halo orange chaud
+     3) petites touches cyan/bleu
+  */
   background:
-    radial-gradient(circle at 20% 40%, rgba(255,170,80,0.40), transparent 40%),
-    radial-gradient(circle at 70% 60%, rgba(255,120,40,0.30), transparent 50%);
+    /* traînée rouge */
+    radial-gradient(1200px 220px at 12% 60%,
+      rgba(255, 40, 40, 0.75) 0%,
+      rgba(255, 40, 40, 0.35) 35%,
+      rgba(255, 40, 40, 0.00) 70%),
+    /* halo orange */
+    radial-gradient(900px 260px at 22% 72%,
+      rgba(255, 140, 40, 0.55) 0%,
+      rgba(255, 140, 40, 0.18) 40%,
+      rgba(255, 140, 40, 0.00) 75%),
+    /* touches cyan */
+    radial-gradient(520px 170px at 28% 72%,
+      rgba(0, 200, 255, 0.35) 0%,
+      rgba(0, 200, 255, 0.12) 35%,
+      rgba(0, 200, 255, 0.00) 70%);
 
-  filter: blur(60px);
-  opacity: 0.55;
-
-  /* 🔒 crucial : ne jamais bloquer les clics */
-  pointer-events: none;
+  /* on incline légèrement pour imiter la dynamique de la traînée */
+  transform: skewX(-12deg);
+  filter: blur(18px) saturate(1.25) contrast(1.15);
+  opacity: 1;
 }
 
-/* Couche texture (mosaïque légère) */
+/* couche "particules" (grain + points) */
 .ag-header::after{
   content:"";
   position:absolute;
   inset:0;
+  pointer-events:none;
 
+  /* 1) micro-grain diagonal (très subtil)
+     2) pointillés lumineux (façon particules)
+  */
   background:
     repeating-linear-gradient(
       45deg,
-      rgba(255,255,255,0.015) 0px,
-      rgba(255,255,255,0.015) 1px,
+      rgba(255,255,255,0.018) 0px,
+      rgba(255,255,255,0.018) 1px,
       transparent 1px,
-      transparent 6px
-    );
+      transparent 7px
+    ),
+    radial-gradient(circle at 18% 62%, rgba(255, 80, 80, 0.35) 0px, rgba(255,80,80,0) 7px),
+    radial-gradient(circle at 22% 70%, rgba(255,170,70, 0.28) 0px, rgba(255,170,70,0) 6px),
+    radial-gradient(circle at 26% 74%, rgba( 70,210,255, 0.22) 0px, rgba(70,210,255,0) 6px),
+    radial-gradient(circle at 14% 55%, rgba(255, 60, 60, 0.20) 0px, rgba(255,60,60,0) 8px);
 
-  opacity:0.40;
-
-  /* 🔒 crucial : ne jamais bloquer les clics */
-  pointer-events: none;
+  opacity: 0.75;
 }
 
-/* Le contenu du header doit passer au-dessus des couches */
+/* le contenu (logo + nav) au-dessus des couches */
 .ag-header > *{
   position: relative;
   z-index: 1;
 }
-
-
 /* =====================================================
    GLOBAL — MARQUE
    ===================================================== */
