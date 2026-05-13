@@ -16,18 +16,17 @@
 </head>
 
 <body>
-  <!-- ecran conexxion -->
+
+  <!-- ÉCRAN CONNEXION -->
   <div id="authScreen">
-  <input id="authEmail" type="email" placeholder="email">
-  <input id="authPassword" type="password" placeholder="mot de passe">
-  <button id="authBtn">Connexion</button>
-<span id="authDot" title="État connexion"></span>
-</div>
+    <input id="authEmail" type="email" placeholder="email">
+    <input id="authPassword" type="password" placeholder="mot de passe">
+    <button id="authBtn">Connexion</button>
+    <span id="authDot"></span>
+  </div>
 
-
-  <!-- BANDEAU SIMPLE -->
+  <!-- HEADER -->
   <header class="ag-header" id="mainHeader" style="display:none;">
-
     <div class="ag-brand">
       <img src="icon-192.png" alt="">
       <h1>AgoraMosaïque</h1>
@@ -42,21 +41,20 @@
       <button id="navImportExport">Import / Export</button>
       <button id="navArchives">Archives</button>
     </nav>
-
   </header>
 
-  <!-- CONTENU -->
-  <div id="app" style="display:none;">
+  <!-- APP -->
+  <div id="app" style="display:none;"></div>
 
   <!-- CONFIG -->
   <script>
     const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
+    const SUPABASE_ANON_KEY = "TA_CLE";
 
     window.sb = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
 
     window.appAnneeCourante = "2024-2025";
   </script>
@@ -89,60 +87,59 @@
 
     const app = document.getElementById("app");
 
-// 🔽 ICI on insère AUTH
+    // =====================
+    // AUTH
+    // =====================
 
-// =======================================================
-// AUTH — Connexion Supabase (écran bloquant)
-// =======================================================
+    const authScreen = document.getElementById("authScreen");
+    const authBtn = document.getElementById("authBtn");
+    const emailInput = document.getElementById("authEmail");
+    const passwordInput = document.getElementById("authPassword");
+    const authDot = document.getElementById("authDot");
 
-const authScreen = document.getElementById("authScreen");
-const authBtn = document.getElementById("authBtn");
-const emailInput = document.getElementById("authEmail");
-const passwordInput = document.getElementById("authPassword");
-const authDot = document.getElementById("authDot");
+    const header = document.getElementById("mainHeader");
+    const appDiv = document.getElementById("app");
 
-const header = document.getElementById("mainHeader");
-const appDiv = document.getElementById("app");
+    function setAuthState(ok){
+      if(ok){
+        authScreen.style.display = "none";
+        header.style.display = "";
+        appDiv.style.display = "";
+        authDot.classList.add("ok");
+      } else {
+        authScreen.style.display = "flex";
+        header.style.display = "none";
+        appDiv.style.display = "none";
+        authDot.classList.remove("ok");
+      }
+    }
 
-function setAuthState(ok){
-  if(ok){
-    authScreen.style.display = "none";
-    header.style.display = "";
-    appDiv.style.display = "";
-    authDot.classList.add("ok");
-  } else {
-    authScreen.style.display = "flex";
-    header.style.display = "none";
-    appDiv.style.display = "none";
-    authDot.classList.remove("ok");
-  }
-}
+    // Vérification session au démarrage
+    const { data } = await window.sb.auth.getSession();
+    setAuthState(!!data.session);
 
-const { data } = await window.sb.auth.getSession();
-setAuthState(!!data.session);
+    // Connexion
+    authBtn.addEventListener("click", async () => {
 
-authBtn.addEventListener("click", async ()=>{
-  const email = emailInput.value;
-  const password = passwordInput.value;
+      const email = emailInput.value;
+      const password = passwordInput.value;
 
-  const { error } = await window.sb.auth.signInWithPassword({
-    email,
-    password
-  });
+      const { error } = await window.sb.auth.signInWithPassword({
+        email,
+        password
+      });
 
-  if(error){
-    alert("Connexion échouée");
-  } else {
-    setAuthState(true);
-  }
-});
+      if (error) {
+        alert("Connexion échouée");
+        console.error(error);
+      } else {
+        setAuthState(true);
+      }
+    });
 
-// 🔼 FIN AUTH
-
-function afficher(renderFn, bindFn) {
-  app.innerHTML = renderFn();
-  if (bindFn) bindFn();
-}
+    // =====================
+    // ROUTAGE
+    // =====================
 
     function afficher(renderFn, bindFn) {
       app.innerHTML = renderFn();
@@ -176,4 +173,3 @@ function afficher(renderFn, bindFn) {
 
 </body>
 </html>
-``
