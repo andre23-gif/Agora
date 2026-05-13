@@ -21,7 +21,11 @@ const DB_SCHEMA = "agoram";
 let eleves = [];        // { id(local), prenom, nom, classe, genre, adaptations:[] }
 let bulletinsHG = [];   // conservé si besoin ailleurs
 let nextId = 1;
-
+// === AG_LOAD_STORAGE ===
+try {
+  const saved = localStorage.getItem("eleves");
+  if (saved) eleves = JSON.parse(saved);
+} catch {}
 // -------------------------------------------------------
 // BLOC 2 — NORMALISATION & OUTILS
 // -------------------------------------------------------
@@ -287,6 +291,7 @@ async function importerElevesCSV(contenuCSV) {
 
   // Miroir mémoire : remplace la mémoire par le CSV importé
   eleves = imported.map(e => ({
+    localStorage.setItem("eleves", JSON.stringify(eleves));
     id: nextId++,
     prenom: e.prenom,
     nom: e.nom,
@@ -294,6 +299,8 @@ async function importerElevesCSV(contenuCSV) {
     genre: e.genre,
     adaptations: []
   }));
+// === AG_SAVE_STORAGE ===
+try { localStorage.setItem("eleves", JSON.stringify(eleves)); } catch {}
 
   // Bulletins HG (si utilisé ailleurs)
   bulletinsHG = eleves.map(e => ({
