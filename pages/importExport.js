@@ -2,12 +2,15 @@
 // PAGE : Import / Export — AGORAMOSAÏQUE
 // RÔLE MÉTIER (Supabase, schéma agoram) :
 // - Import CSV élèves : prenom, nom, classe, genre
-// - Accepte CSV séparé par ";" (Excel FR) OU "," (CSV standard) — cas simple
+// - CSV accepté : séparateur ";" (Excel FR) OU "," (CSV standard) — CAS SIMPLE
 // - Crée automatiquement les classes manquantes pour l’année active
 // - Upsert des élèves (clé : classe_id + prenom + nom)
 // - Maintient un miroir mémoire eleves[] (pour les pages qui lisent encore getEleves/getClasses)
 // DÉPENDANCES : window.sb (supabase-js v2), window.appAnneeCourante
-// TABLES : agoram.annees (nom, active), agoram.classes (annee_id, nom, ...), agoram.eleves (classe_id, prenom, nom, genre, ...)
+// TABLES :
+//   - agoram.annees (id, libelle, active, ...)
+//   - agoram.classes (id, annee_id, nom, couleur?, est_pp?, ...)
+//   - agoram.eleves (id, classe_id, prenom, nom, genre, groupe?, adaptations?, ...)
 // =======================================================
 
 const DB_SCHEMA = "agoram";
@@ -39,11 +42,14 @@ function buildEleveKey(eleve) {
 }
 
 function splitLines(text) {
-  return String(text ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  return String(text ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n");
 }
 
 /**
- * Parse CSV CAS SIMPLE :
+ * Parse CSV — CAS SIMPLE
  * - séparateur colonnes : détecté automatiquement ";" ou ","
  * - pas de guillemets complexes, pas de séparateurs internes dans les valeurs
  * - lignes vides ignorées
@@ -54,7 +60,7 @@ function parseCSVSimple(content) {
 
   const headerLine = lines[0];
 
-  // Détection robuste : on choisit le séparateur le plus présent dans l'en-tête
+  // Choix robuste du séparateur : celui le plus présent dans l’en-tête
   const semicolons = (headerLine.match(/;/g) || []).length;
   const commas = (headerLine.match(/,/g) || []).length;
   const sep = semicolons > commas ? ";" : ",";
@@ -64,7 +70,6 @@ function parseCSVSimple(content) {
 
   const rows = lines.slice(1).map(line => {
     const parts = line.split(sep).map(v => norm(v));
-    // Compléter si ligne plus courte que headers
     while (parts.length < headers.length) parts.push("");
     return parts;
   });
@@ -73,14 +78,14 @@ function parseCSVSimple(content) {
 }
 
 function requireSupabase() {
-  if (!window.sb) {
-    throw new Error("Supabase non initialisé (window.sb absent).");
-  }
+  if (!window.sb) throw new Error("Supabase non initialisé (window.sb absent).");
   return window.sb;
 }
 
-// IMPORTANT : on force le schéma pour éviter tout accès par défaut à public.
-// Supabase recommande .schema('myschema').from('table') pour cibler un schéma. [1](https://github.com/orgs/supabase/discussions/16570)
+/**
+ * IMPORTANT : on force le schéma pour toutes les requêtes.
+ * Supabase fournit schema('myschema').from('table') pour cibler un schéma. (docs)
+ */
 function sbAgoram() {
   return requireSupabase().schema(DB_SCHEMA);
 }
@@ -112,19 +117,19 @@ export function getClassesAvecGroupes() {
 // -------------------------------------------------------
 async function ensureAnneeActive() {
   const sb = sbAgoram();
-  const nomAnnee = norm(window.appAnneeCourante);
-  if (!nomAnnee) throw new Error("Année courante absente (window.appAnneeCourante).");
+  const libelleAnnee = norm(window.appAnneeCourante);
+  if (!libelleAnnee) throw new Error("Année courante absente (window.appAnneeCourante).");
 
-  // Chercher l'année par nom
+  // 1) Chercher l'année par libellé
   const { data: found, error: errSel } = await sb
     .from("annees")
     .select("id, libelle, active")
-    .eq("libelle", nomAnnee)
+    .eq("libelle", libelleAnnee)
     .maybeSingle();
 
   if (errSel) throw new Error(`Impossible de lire 'annees'. ${errSel.message}`);
 
-  // Si absente : désactiver toute active, créer celle-ci en active
+  // 2) Si absente : désactiver toute active, créer celle-ci active
   if (!found) {
     const { error: errOff } = await sb
       .from("annees")
@@ -134,15 +139,15 @@ async function ensureAnneeActive() {
 
     const { data: created, error: errIns } = await sb
       .from("annees")
-      .insert([{ libelle: nomAnnee, active: true }])
+      .insert([{ libelle: libelleAnnee, active: true }])
       .select("id, libelle, active")
       .single();
-    if (errIns) throw new Error(`Impossible de créer l’année '${nomAnnee}'. ${errIns.message}`);
+    if (errIns) throw new Error(`Impossible de créer l’année '${libelleAnnee}'. ${errIns.message}`);
 
     return created.id;
   }
 
-  // Si trouvée mais pas active : désactiver l'actuelle, activer celle-ci
+  // 3) Si trouvée mais pas active : désactiver l'actuelle, activer celle-ci
   if (!found.active) {
     const { error: errOff } = await sb
       .from("annees")
@@ -154,7 +159,7 @@ async function ensureAnneeActive() {
       .from("annees")
       .update({ active: true })
       .eq("id", found.id);
-    if (errOn) throw new Error(`Impossible d’activer l’année '${nomAnnee}'. ${errOn.message}`);
+    if (errOn) throw new Error(`Impossible d’activer l’année '${libelleAnnee}'. ${errOn.message}`);
   }
 
   return found.id;
@@ -163,11 +168,12 @@ async function ensureAnneeActive() {
 async function ensureClassesForAnnee(anneeId, nomsClasses) {
   const sb = sbAgoram();
   const uniques = [...new Set(nomsClasses.map(norm).filter(Boolean))].sort();
+
   if (!uniques.length) {
-    return { map: new Map(), createdCount: 0, totalCount: 0 };
+    return { map: new Map(), classesCreated: 0, classesTotal: 0 };
   }
 
-  // Lire les classes existantes
+  // Lire existantes (pour calcul createdCount)
   const { data: existing, error: errSel } = await sb
     .from("classes")
     .select("id, nom")
@@ -175,11 +181,11 @@ async function ensureClassesForAnnee(anneeId, nomsClasses) {
 
   if (errSel) throw new Error(`Impossible de lire 'classes'. ${errSel.message}`);
 
-  const map = new Map();
-  (existing ?? []).forEach(c => map.set(c.nom, c.id));
+  const before = new Set((existing ?? []).map(c => c.nom));
 
-  const toCreate = uniques
-    .filter(nom => !map.has(nom))
+  // Upsert uniquement les manquantes (idempotent)
+  const toUpsert = uniques
+    .filter(n => !before.has(n))
     .map(nom => ({
       annee_id: anneeId,
       nom,
@@ -187,26 +193,29 @@ async function ensureClassesForAnnee(anneeId, nomsClasses) {
       est_pp: false
     }));
 
-  // On rend l'insert idempotent via upsert sur la contrainte (annee_id, nom) si elle existe.
-  // Si l'index unique n'existe pas, l'insert créera tout de même (mais peut doubler).
-  let createdCount = 0;
-
-  if (toCreate.length) {
-    const { data: inserted, error: errUp } = await sb
+  if (toUpsert.length) {
+    const { error: errUp } = await sb
       .from("classes")
-      .upsert(toCreate, { onConflict: "annee_id,nom" })
-      .select("id, nom");
+      .upsert(toUpsert, { onConflict: "annee_id,nom" });
 
     if (errUp) throw new Error(`Création classes impossible. ${errUp.message}`);
-
-    // inserted contient les lignes insérées/affectées selon Supabase, on recalcule la map
-    (inserted ?? []).forEach(c => {
-      if (!map.has(c.nom)) createdCount++;
-      map.set(c.nom, c.id);
-    });
   }
 
-  return { map, createdCount, totalCount: map.size };
+  // Re-lire toutes les classes pour construire une map fiable (inclut anciennes + nouvelles)
+  const { data: all, error: errAll } = await sb
+    .from("classes")
+    .select("id, nom")
+    .eq("annee_id", anneeId);
+
+  if (errAll) throw new Error(`Impossible de relire 'classes'. ${errAll.message}`);
+
+  const map = new Map();
+  (all ?? []).forEach(c => map.set(c.nom, c.id));
+
+  const classesCreated = toUpsert.length;      // ce que l’import a tenté d’ajouter
+  const classesTotal = map.size;
+
+  return { map, classesCreated, classesTotal };
 }
 
 // -------------------------------------------------------
@@ -224,7 +233,7 @@ async function importerElevesCSV(contenuCSV) {
 
   const idx = (h) => headers.indexOf(h);
 
-  // Construire la liste importée depuis CSV
+  // Construire liste élèves depuis CSV
   const imported = [];
   for (let r = 0; r < rows.length; r++) {
     const vals = rows[r];
@@ -241,18 +250,17 @@ async function importerElevesCSV(contenuCSV) {
     imported.push({ prenom, nom, classe, genre });
   }
 
-  // Garantir année active + classes
+  // Année active + classes
   const anneeId = await ensureAnneeActive();
-  const { map: classesMap, createdCount: classesCreated, totalCount: classesTotal } =
+  const { map: classesMap, classesCreated, classesTotal } =
     await ensureClassesForAnnee(anneeId, imported.map(e => e.classe));
 
-  // Construire payload élèves (classe_id obligatoire)
+  // Payload élèves (classe_id obligatoire)
   const payload = imported.map(e => ({
     classe_id: classesMap.get(e.classe),
     prenom: e.prenom,
     nom: e.nom,
     genre: e.genre
-    // groupe / adaptations non importés ici
   }));
 
   // Sécurité : tout classe_id doit être résolu
@@ -274,7 +282,7 @@ async function importerElevesCSV(contenuCSV) {
     nom: e.nom,
     classe: e.classe,
     genre: e.genre,
-    adaptations: [] // non importé
+    adaptations: []
   }));
 
   // Bulletins HG (si utilisé ailleurs)
@@ -284,21 +292,17 @@ async function importerElevesCSV(contenuCSV) {
     texte: "Bulletin HG non encore généré."
   }));
 
-  return {
-    countEleves: eleves.length,
-    classesCreated,
-    classesTotal
-  };
+  return { countEleves: eleves.length, classesCreated, classesTotal };
 }
 
 // -------------------------------------------------------
 // BLOC 6 — EXPORT CSV (depuis mémoire)
 // -------------------------------------------------------
 function exporterElevesCSV() {
-  // Export minimal aligné sur l’import : prenom,nom,classe,genre
-  let csv = "prenom;nom;classe;genre\n"; // Excel FR : ; par défaut
+  // Excel FR : ; par défaut
+  let csv = "prenom;nom;classe;genre\n";
+  const safe = (v) => String(v ?? "").replace(/\n/g, " ").trim();
   eleves.forEach(e => {
-    const safe = (v) => String(v ?? "").replace(/\n/g, " ").trim();
     csv += `${safe(e.prenom)};${safe(e.nom)};${safe(e.classe)};${safe(e.genre)}\n`;
   });
   return csv;
