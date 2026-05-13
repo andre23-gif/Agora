@@ -99,7 +99,7 @@ function importerElevesCSV(contenuCSV) {
 
   // Traitement ligne par ligne
   lignes.slice(1).forEach(ligne => {
-    const valeurs = ligne.split(",");
+    const valeurs = ligne.split(/[;,]/);
 
     const get = champ =>
       valeurs[entetes.indexOf(champ)]?.trim() ?? "";
