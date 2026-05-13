@@ -234,6 +234,39 @@ body{
 
 
 /* =====================================================
+   GLOBAL — AUTH (écran bloquant + voyant)
+   ===================================================== */
+
+#authScreen{
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5,10,24,0.92);
+}
+
+#authScreen input{
+  width: 320px;
+  padding: 10px;
+}
+
+#authDot{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: red;
+}
+
+#authDot.ok{
+  background: green;
+}
+
+
+/* =====================================================
    GLOBAL — TITRES & TEXTE (neutre)
    ===================================================== */
 
