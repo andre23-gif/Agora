@@ -328,10 +328,12 @@ export function initSalle() {
 ------------------------------------------------------- */
 
 export function renderSalle() {
+  if (!contexte) initSalle();   // ✅ AJOUT : garantit que contexte n’est jamais null
 
   const titreClasse = contexte.classe
     ? `${contexte.classe}${contexte.groupe ? " " + contexte.groupe : ""}`
     : "Aucune classe (EDT non renseigné pour ce créneau)";
+
 
   const titreSeance = (contexte.jour && contexte.creneau)
     ? `${capitalize(contexte.jour)} — ${contexte.creneau} — ${contexte.dateISO}`
