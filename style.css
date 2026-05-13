@@ -931,3 +931,26 @@ input[type="checkbox"]:checked::after{
   background: rgba(255,180,90,0.6);
   border-radius:10px;
 }
+
+/* =====================================================
+   SÉCURITÉ — TEXTAREA GLOBAL PROPRE
+   BALISE : AG_TEXTAREA_SAFE
+   ===================================================== */
+
+textarea{
+  background: rgba(0,0,0,0.35);
+  color: var(--texte-clair);
+
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius:8px;
+
+  padding:6px 8px;
+
+  font-family: inherit;
+}
+
+/* focus */
+textarea:focus{
+  border-color: var(--accent-chaud);
+  box-shadow: 0 0 4px rgba(255,180,90,0.4);
+}
