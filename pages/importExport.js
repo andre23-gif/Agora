@@ -289,19 +289,18 @@ async function importerElevesCSV(contenuCSV) {
 
   if (errUpsert) throw new Error(`Upsert élèves impossible. ${errUpsert.message}`);
 
-  // Miroir mémoire : remplace la mémoire par le CSV importé
-  eleves = imported.map(e => ({
-    localStorage.setItem("eleves", JSON.stringify(eleves));
-    id: nextId++,
-    prenom: e.prenom,
-    nom: e.nom,
-    classe: e.classe,
-    genre: e.genre,
-    adaptations: []
-  }));
+// Miroir mémoire : remplace la mémoire par le CSV importé
+eleves = imported.map(e => ({
+  id: nextId++,
+  prenom: e.prenom,
+  nom: e.nom,
+  classe: e.classe,
+  genre: e.genre,
+  adaptations: []
+}));
+
 // === AG_SAVE_STORAGE ===
 try { localStorage.setItem("eleves", JSON.stringify(eleves)); } catch {}
-
   // Bulletins HG (si utilisé ailleurs)
   bulletinsHG = eleves.map(e => ({
     eleveKey: buildEleveKey(e),
