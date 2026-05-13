@@ -4,18 +4,17 @@ import { getEleves, getClasses } from "./importExport.js";
    PAGE : Classes HG
    RÔLE MÉTIER :
      - Cockpit de classe HG : navigation par onglets (1 onglet = 1 classe importée)
-     - Paramétrage élève : genre / groupe / adaptation (unique) / place
-     - Plan de salle (1..30) : attribution des places (source pour la page Salle)
+     - Paramétrage élève (ligne) : adaptation (unique) + place (facultative)
      - Profil élève (modale) :
-         * Assiduité (lecture seule : saisie uniquement en Salle)  [1](https://onedrive.live.com/personal/53edf03465ddcc82/_layouts/15/doc.aspx?resid=e18a3ade-29ce-4e93-a236-9607e02cb018&cid=53edf03465ddcc82)
+         * Assiduité (lecture seule : saisie uniquement en Salle)
          * Comportement (lecture seule : événements Salle)
-         * Compétences HG (I/F/S/TS) éditables par trimestre  [1](https://onedrive.live.com/personal/53edf03465ddcc82/_layouts/15/doc.aspx?resid=e18a3ade-29ce-4e93-a236-9607e02cb018&cid=53edf03465ddcc82)
+         * Compétences HG (I/F/S/TS) éditables par trimestre
          * Participation (compétence calculée : moyenne des fins de séance)
    LIT :
      - Import : getEleves(), getClasses()
      - Events (optionnel) : window.AG_EVENTS (assiduité/participation/comportement)
    ÉCRIT :
-     - Modifie les objets élèves en mémoire : genre, groupe, adaptations[0], place
+     - Modifie les objets élèves en mémoire : adaptations[0], place
      - Stocke les évaluations HG en mémoire : window.AG_COMP_HG
    HORS-PÉRIMÈTRE :
      - Saisie assiduité / participation (Salle)
@@ -48,8 +47,8 @@ const TRIMESTRES = ["T1", "T2", "T3"];
 /* Adaptations (unique par élève : stockée dans eleve.adaptations[0]) */
 const ADAPTATIONS = ["", "PPS", "PAP", "PPRE", "Adaptations", "Adaptations partielles"];
 
-/* Groupes (structure app : classe entière + gr 1 + gr 2) */
-const GROUPES = ["classe entière", "gr 1", "gr 2"];
+/* Places (facultatives) : Table 1..30 */
+const PLACES = Array.from({ length: 30 }, (_, i) => i + 1);
 
 
 /* -------------------------------------------------------
@@ -63,29 +62,13 @@ let elevesClasse = [];
 /* -------------------------------------------------------
    BLOC 3 — STORES (lecture/écriture) — sans inventer
    - AG_EVENTS : alimenté par Salle (plus tard)
-   - AG_COMP_HG : évaluations HG (stock local en attendant persistance Supabase)
+   - AG_COMP_HG : évaluations HG (stock local en attendant persistance)
 ------------------------------------------------------- */
 
-/**
- * Store événements (lecture seule ici)
- * Format attendu si présent :
- * window.AG_EVENTS = {
- *   assiduite: [ { eleveId, date, creneau, type, trimestre? } ... ],
- *   comportement: [ { eleveId, date, creneau, texte, trimestre? } ... ],
- *   participation: [ { eleveId, date, creneau, valeur, trimestre? } ... ]
- * }
- *
- * Si pas présent : on affiche "Aucune donnée enregistrée".
- */
 function getEventsStore() {
   return window.AG_EVENTS || { assiduite: [], comportement: [], participation: [] };
 }
 
-/**
- * Store évaluations compétences HG
- * Structure :
- * window.AG_COMP_HG[eleveId][trimestre][competence] = "I"|"F"|"S"|"TS"
- */
 function getCompStore() {
   if (!window.AG_COMP_HG) window.AG_COMP_HG = {};
   return window.AG_COMP_HG;
@@ -114,9 +97,8 @@ function ensureClasseActive() {
    BLOC 5 — RENDU PRINCIPAL
    Contenu :
      (1) Onglets de classes
-     (2) Liste élèves + options modifiables
-     (3) Plan de salle 1..30
-     (4) Modale profil
+     (2) Liste élèves + 2 menus (Adaptation / Place)
+     (3) Modale profil
 ------------------------------------------------------- */
 
 export function renderClassesHG() {
@@ -163,18 +145,17 @@ export function renderClassesHG() {
       <div class="liste-eleves">
         ${elevesClasse
           .slice()
-          .sort((a, b) => (a.place ?? 999) - (b.place ?? 999))
+          // === AG_SORT_NOM_PRENOM_V1 ===
+          .sort((a, b) => {
+            const n = (a.nom || "").localeCompare(b.nom || "", "fr");
+            if (n !== 0) return n;
+            return (a.prenom || "").localeCompare(b.prenom || "", "fr");
+          })
           .map(renderEleveRow)
           .join("")}
       </div>
 
-      <!-- (4) Plan de salle : attribution des places -->
-      <h2>Plan de salle – attribution des places</h2>
-      <div class="plan-salle">
-        ${Array.from({ length: 30 }, (_, i) => renderPlace(i + 1)).join("")}
-      </div>
-
-      <!-- (5) Modale -->
+      <!-- (4) Modale -->
       <div id="modal"></div>
 
     </div>
@@ -185,49 +166,42 @@ export function renderClassesHG() {
 /* -------------------------------------------------------
    BLOC 6 — RENDU ÉLÈVE (ligne cockpit)
    But :
-     - Afficher élève
-     - Modifier groupe / adaptation / genre (cochables/choix rapides)
+     - Afficher élève (NOM Prénom)
+     - 2 menus : Adaptation / Place
      - Clic nom => ouvre profil élève
-     - Drag => permet attribution place sur plan
+   Note :
+     - Pas de drag & drop (supprimé)
 ------------------------------------------------------- */
 
 function renderEleveRow(eleve) {
-  const groupeActuel = eleve.groupe ?? "classe entière";
   const adaptActuelle = (eleve.adaptations && eleve.adaptations.length) ? eleve.adaptations[0] : "";
-  const placeTxt = eleve.place ?? "—";
+  const placeActuelle = (typeof eleve.place === "number") ? eleve.place : "";
 
   return `
-    <div class="eleve-row" data-id="${eleve.id}" draggable="true">
+    <div class="eleve-row" data-id="${eleve.id}">
       <div class="eleve-ident">
         <button class="eleve-open" data-open="${eleve.id}">
-          ${eleve.prenom} ${eleve.nom}
+          ${eleve.nom} ${eleve.prenom}
         </button>
-        <span class="eleve-place">#${placeTxt}</span>
       </div>
 
       <div class="eleve-options">
-
-        <label class="opt">
-          Genre
-          <select class="opt-genre" data-genre="${eleve.id}">
-            ${["F","M","Autre"].map(g => `<option value="${g}" ${eleve.genre===g?"selected":""}>${g}</option>`).join("")}
-          </select>
-        </label>
-
-        <label class="opt">
-          Groupe
-          <select class="opt-groupe" data-groupe="${eleve.id}">
-            ${GROUPES.map(g => `<option value="${g}" ${groupeActuel===g?"selected":""}>${g}</option>`).join("")}
-          </select>
-        </label>
 
         <label class="opt">
           Adaptation
           <select class="opt-adapt" data-adapt="${eleve.id}">
             ${ADAPTATIONS.map(a => {
               const lab = a === "" ? "—" : a;
-              return `<option value="${a}" ${adaptActuelle===a?"selected":""}>${lab}</option>`;
+              return `<option value="${a}" ${adaptActuelle === a ? "selected" : ""}>${lab}</option>`;
             }).join("")}
+          </select>
+        </label>
+
+        <label class="opt">
+          Place
+          <select class="opt-place" data-place="${eleve.id}">
+            <option value="">—</option>
+            ${renderPlaceOptions(placeActuelle)}
           </select>
         </label>
 
@@ -238,19 +212,16 @@ function renderEleveRow(eleve) {
 
 
 /* -------------------------------------------------------
-   BLOC 7 — RENDU PLACE (plan 1..30)
-   But : afficher la table + prénom si occupée
+   BLOC 7 — OPTIONS PLACES (Table 1..30)
+   But : construire la liste des options "Table n"
 ------------------------------------------------------- */
 
-function renderPlace(numero) {
-  const eleve = elevesClasse.find(e => e.place === numero);
-
-  return `
-    <div class="place" data-place="${numero}">
-      <strong>Table ${numero}</strong>
-      ${eleve ? `<div class="place-prenom">${eleve.prenom}</div>` : ""}
-    </div>
-  `;
+function renderPlaceOptions(current) {
+  const currentNum = current === "" ? null : Number(current);
+  return PLACES.map(p => {
+    const sel = (currentNum === p) ? "selected" : "";
+    return `<option value="${p}" ${sel}>Table ${p}</option>`;
+  }).join("");
 }
 
 
@@ -270,65 +241,42 @@ export function bindClassesHGEvents() {
   // Ouvrir profil élève
   document.querySelectorAll(".eleve-open").forEach(btn => {
     btn.addEventListener("click", () => {
-      const id = Number(btn.dataset.open);
-      const eleve = elevesClasse.find(e => e.id === id);
+      const id = btn.dataset.open;
+      const eleve = elevesClasse.find(e => String(e.id) === String(id));
       if (eleve) ouvrirProfilEleve(eleve);
     });
   });
 
-  // Drag start depuis la ligne élève (déjà draggable=true)
-  document.querySelectorAll(".eleve-row").forEach(row => {
-    row.addEventListener("dragstart", (event) => {
-      event.dataTransfer.setData("eleveId", row.dataset.id);
-    });
-  });
-
-  // Drop sur une place
-  document.querySelectorAll(".place").forEach(placeEl => {
-    placeEl.addEventListener("dragover", (event) => event.preventDefault());
-    placeEl.addEventListener("drop", (event) => {
-      event.preventDefault();
-
-      const eleveId = Number(event.dataTransfer.getData("eleveId"));
-      const place = Number(placeEl.dataset.place);
-
-      const eleve = elevesClasse.find(e => e.id === eleveId);
+  // Adaptation (unique)
+  document.querySelectorAll(".opt-adapt").forEach(sel => {
+    sel.addEventListener("change", () => {
+      const id = sel.dataset.adapt;
+      const eleve = elevesClasse.find(e => String(e.id) === String(id));
       if (!eleve) return;
 
-      // Unicité : libérer l’occupant éventuel
-      elevesClasse.forEach(e => { if (e.place === place) e.place = null; });
-
-      eleve.place = place;
+      eleve.adaptations = sel.value ? [sel.value] : [];
       rerender();
     });
   });
 
-  // Modifs rapides (genre/groupe/adaptation)
-  document.querySelectorAll(".opt-genre").forEach(sel => {
+  // Place (facultative) — règle collision : remplacement automatique
+  document.querySelectorAll(".opt-place").forEach(sel => {
     sel.addEventListener("change", () => {
-      const id = Number(sel.dataset.genre);
-      const eleve = elevesClasse.find(e => e.id === id);
+      const id = sel.dataset.place;
+      const eleve = elevesClasse.find(e => String(e.id) === String(id));
       if (!eleve) return;
-      eleve.genre = sel.value;
-    });
-  });
 
-  document.querySelectorAll(".opt-groupe").forEach(sel => {
-    sel.addEventListener("change", () => {
-      const id = Number(sel.dataset.groupe);
-      const eleve = elevesClasse.find(e => e.id === id);
-      if (!eleve) return;
-      eleve.groupe = (sel.value === "classe entière") ? null : sel.value;
-    });
-  });
+      const place = sel.value ? Number(sel.value) : null;
 
-  document.querySelectorAll(".opt-adapt").forEach(sel => {
-    sel.addEventListener("change", () => {
-      const id = Number(sel.dataset.adapt);
-      const eleve = elevesClasse.find(e => e.id === id);
-      if (!eleve) return;
-      // Adaptation unique stockée dans adaptations[0]
-      eleve.adaptations = sel.value ? [sel.value] : [];
+      if (place !== null) {
+        // Unicité : libérer l’occupant éventuel (règle A = remplacement auto)
+        elevesClasse.forEach(e => {
+          if (e.place === place) e.place = null;
+        });
+      }
+
+      eleve.place = place;
+      rerender();
     });
   });
 }
@@ -336,11 +284,6 @@ export function bindClassesHGEvents() {
 
 /* -------------------------------------------------------
    BLOC 9 — MODALE PROFIL ÉLÈVE
-   Contenu :
-     - Sélecteur trimestre en haut (A)
-     - Assiduité (lecture)
-     - Comportement (lecture)
-     - Compétences HG (édition I/F/S/TS) + Participation (calculée)
 ------------------------------------------------------- */
 
 function ouvrirProfilEleve(eleve) {
@@ -364,10 +307,10 @@ function ouvrirProfilEleve(eleve) {
         <button class="btn-close" id="closeProfil">✕</button>
       </div>
 
-      <!-- Sélecteur trimestre (en haut : choix A validé) -->
+      <!-- Sélecteur trimestre -->
       <div class="trimestres" id="triTabs">
         ${TRIMESTRES.map(t => `
-          <button class="tri ${t===trimestreDefaut?"active":""}" data-tri="${t}">${t}</button>
+          <button class="tri ${t === trimestreDefaut ? "active" : ""}" data-tri="${t}">${t}</button>
         `).join("")}
       </div>
 
@@ -399,9 +342,8 @@ function renderProfilBody(eleve, tri) {
   const events = getEventsStore();
   const compStore = getCompStore();
 
-  // Filtre par trimestre SI l’event porte un champ "trimestre"
-  // (sinon on affiche tout en lecture, sans inventer une règle de calendrier)
-  const filterTri = (arr) => arr.filter(e => e.eleveId === eleve.id).filter(e => !e.trimestre || e.trimestre === tri);
+  const filterTri = (arr) =>
+    arr.filter(e => e.eleveId === eleve.id).filter(e => !e.trimestre || e.trimestre === tri);
 
   const ass = filterTri(events.assiduite);
   const comp = filterTri(events.comportement);
@@ -424,7 +366,7 @@ function renderProfilBody(eleve, tri) {
             .join("")}
         </div>
       ` : `<div class="hint">Aucune donnée enregistrée.</div>`}
-      <div class="hint small">Saisie uniquement en Salle. [1](https://onedrive.live.com/personal/53edf03465ddcc82/_layouts/15/doc.aspx?resid=e18a3ade-29ce-4e93-a236-9607e02cb018&cid=53edf03465ddcc82)</div>
+      <div class="hint small">Saisie uniquement en Salle.</div>
     </div>
 
     <div class="bloc">
@@ -452,7 +394,7 @@ function renderProfilBody(eleve, tri) {
             .join("")}
         </div>
       ` : `<div class="hint">Aucune donnée enregistrée.</div>`}
-      <div class="hint small">Saisie en fin d’heure dans Salle. [1](https://onedrive.live.com/personal/53edf03465ddcc82/_layouts/15/doc.aspx?resid=e18a3ade-29ce-4e93-a236-9607e02cb018&cid=53edf03465ddcc82)</div>
+      <div class="hint small">Saisie en fin d’heure dans Salle.</div>
     </div>
 
     <div class="bloc">
@@ -460,14 +402,14 @@ function renderProfilBody(eleve, tri) {
       <div class="competences">
         ${COMPETENCES_HG.map(label => renderCompetenceRow(eleve.id, tri, label, evals[label] ?? "I")).join("")}
       </div>
-      <div class="hint small">Profil HG par trimestre. [1](https://onedrive.live.com/personal/53edf03465ddcc82/_layouts/15/doc.aspx?resid=e18a3ade-29ce-4e93-a236-9607e02cb018&cid=53edf03465ddcc82)</div>
+      <div class="hint small">Profil HG par trimestre.</div>
     </div>
   `;
 
   // Bind boutons compétences
   document.querySelectorAll(".btn-comp").forEach(btn => {
     btn.addEventListener("click", () => {
-      const eleveId = Number(btn.dataset.eleveid);
+      const eleveId = btn.dataset.eleveid;
       const tri = btn.dataset.tri;
       const label = btn.dataset.label;
       const val = btn.dataset.val;
@@ -477,7 +419,6 @@ function renderProfilBody(eleve, tri) {
       if (!store[eleveId][tri]) store[eleveId][tri] = {};
       store[eleveId][tri][label] = val;
 
-      // Mise à jour visuelle locale (ligne concernée)
       document.querySelectorAll(`.comp-row[data-label="${cssAttr(label)}"] .btn-comp`).forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
@@ -497,7 +438,7 @@ function renderCompetenceRow(eleveId, tri, label, current) {
       <div class="comp-label">${escapeHtml(label)}</div>
       <div class="comp-btns">
         ${vals.map(v => `
-          <button class="btn-comp ${v===current ? "active" : ""}"
+          <button class="btn-comp ${v === current ? "active" : ""}"
                   data-eleveid="${eleveId}"
                   data-tri="${tri}"
                   data-label="${escapeAttr(label)}"
@@ -564,7 +505,6 @@ function escapeAttr(s) {
 }
 
 function cssAttr(s) {
-  // Pour usage dans querySelector, on garde simple (les labels sont stables)
   return s;
 }
 
@@ -576,3 +516,4 @@ function cssAttr(s) {
 export function getElevesClasseHG() {
   return elevesClasse;
 }
+``
