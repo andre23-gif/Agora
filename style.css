@@ -72,8 +72,8 @@ body{
 
 
 /* =====================================================
-   GLOBAL — BANDEAU (style inspiré du visuel bandeau)
-   Objectif : fond noir + traînée rouge/orange + éclats cyan
+   GLOBAL — BANDEAU : MOSAÏQUE EN VOLUTES (ANIMÉ)
+   Objectif : texture type mosaïque + volutes + mouvement lent
    ===================================================== */
 
 .ag-header{
@@ -88,76 +88,88 @@ body{
   align-items:center;
   gap:24px;
 
-  /* base plus sombre et plus contrastée */
-  background: linear-gradient(180deg, #04050b 0%, #0b0d14 100%);
+  /* base sombre */
+  background: linear-gradient(180deg, #050a18 0%, #0b1228 100%);
   border-bottom: 1px solid rgba(255,255,255,0.14);
   overflow: hidden;
+
+  /* pour que les pseudo-éléments soient bien derrière le contenu */
+  position: sticky;
 }
 
-/* couche "traînée" (rouge/orange + cyan) */
+/* Contenu au-dessus */
+.ag-header > *{
+  position: relative;
+  z-index: 2;
+}
+
+/* Couche VOLUTES (forme) */
 .ag-header::before{
   content:"";
   position:absolute;
-  inset:0;
+  inset:-30%;
   pointer-events:none;
+  z-index: 0;
 
-  /* 1) grande traînée rouge diagonale
-     2) halo orange chaud
-     3) petites touches cyan/bleu
-  */
+  /* Volute = conic gradients + halos chauds/froids */
   background:
-    /* traînée rouge */
-    radial-gradient(1200px 220px at 12% 60%,
-      rgba(255, 40, 40, 0.75) 0%,
-      rgba(255, 40, 40, 0.35) 35%,
-      rgba(255, 40, 40, 0.00) 70%),
-    /* halo orange */
-    radial-gradient(900px 260px at 22% 72%,
-      rgba(255, 140, 40, 0.55) 0%,
-      rgba(255, 140, 40, 0.18) 40%,
-      rgba(255, 140, 40, 0.00) 75%),
-    /* touches cyan */
-    radial-gradient(520px 170px at 28% 72%,
-      rgba(0, 200, 255, 0.35) 0%,
-      rgba(0, 200, 255, 0.12) 35%,
-      rgba(0, 200, 255, 0.00) 70%);
+    conic-gradient(
+      from 210deg at 28% 55%,
+      rgba(255,170,80,0.55),
+      rgba(255,70,70,0.45),
+      rgba(70,210,255,0.25),
+      rgba(255,170,80,0.55)
+    ),
+    radial-gradient(900px 420px at 30% 60%, rgba(255,150,70,0.35), transparent 60%),
+    radial-gradient(900px 420px at 65% 45%, rgba(90,140,255,0.25), transparent 60%);
 
-  /* on incline légèrement pour imiter la dynamique de la traînée */
-  transform: skewX(-12deg);
-  filter: blur(18px) saturate(1.25) contrast(1.15);
-  opacity: 1;
+  filter: blur(22px) saturate(1.35) contrast(1.15);
+  opacity: 0.95;
+
+  transform-origin: 30% 55%;
+  animation: bandeau-volute 18s ease-in-out infinite;
 }
 
-/* couche "particules" (grain + points) */
+/* Couche MOSAÏQUE (texture) */
 .ag-header::after{
   content:"";
   position:absolute;
   inset:0;
   pointer-events:none;
+  z-index: 1;
 
-  /* 1) micro-grain diagonal (très subtil)
-     2) pointillés lumineux (façon particules)
-  */
+  /* mosaïque = points + trame diagonale */
   background:
+    /* points façon mosaïque */
+    repeating-radial-gradient(
+      circle at 18px 14px,
+      rgba(255,255,255,0.06) 0 1px,
+      transparent 1px 10px
+    ),
+    /* trame très légère */
     repeating-linear-gradient(
       45deg,
-      rgba(255,255,255,0.018) 0px,
-      rgba(255,255,255,0.018) 1px,
-      transparent 1px,
-      transparent 7px
-    ),
-    radial-gradient(circle at 18% 62%, rgba(255, 80, 80, 0.35) 0px, rgba(255,80,80,0) 7px),
-    radial-gradient(circle at 22% 70%, rgba(255,170,70, 0.28) 0px, rgba(255,170,70,0) 6px),
-    radial-gradient(circle at 26% 74%, rgba( 70,210,255, 0.22) 0px, rgba(70,210,255,0) 6px),
-    radial-gradient(circle at 14% 55%, rgba(255, 60, 60, 0.20) 0px, rgba(255,60,60,0) 8px);
+      rgba(255,255,255,0.022) 0 1px,
+      transparent 1px 8px
+    );
 
   opacity: 0.75;
+  filter: saturate(1.2) contrast(1.1);
+
+  animation: bandeau-mosaique 26s linear infinite;
 }
 
-/* le contenu (logo + nav) au-dessus des couches */
-.ag-header > *{
-  position: relative;
-  z-index: 1;
+/* Mouvement : rotation lente + micro-déplacement */
+@keyframes bandeau-volute{
+  0%   { transform: rotate(-4deg) translateX(-1%) translateY(0%); }
+  50%  { transform: rotate(4deg)  translateX(2%)  translateY(-1%); }
+  100% { transform: rotate(-4deg) translateX(-1%) translateY(0%); }
+}
+
+/* Mouvement : glissement de la mosaïque (effet vivant) */
+@keyframes bandeau-mosaique{
+  0%   { background-position: 0px 0px, 0px 0px; }
+  100% { background-position: 220px 0px, 120px 120px; }
 }
 /* =====================================================
    GLOBAL — MARQUE
