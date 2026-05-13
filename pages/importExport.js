@@ -118,8 +118,8 @@ async function ensureAnneeActive() {
   // Chercher l'année par nom
   const { data: found, error: errSel } = await sb
     .from("annees")
-    .select("id, nom, active")
-    .eq("nom", nomAnnee)
+    .select("id, libelle, active")
+    .eq("libelle", nomAnnee)
     .maybeSingle();
 
   if (errSel) throw new Error(`Impossible de lire 'annees'. ${errSel.message}`);
@@ -134,8 +134,8 @@ async function ensureAnneeActive() {
 
     const { data: created, error: errIns } = await sb
       .from("annees")
-      .insert([{ nom: nomAnnee, active: true }])
-      .select("id, nom, active")
+      .insert([{ libelle: nomAnnee, active: true }])
+      .select("id, libelle, active")
       .single();
     if (errIns) throw new Error(`Impossible de créer l’année '${nomAnnee}'. ${errIns.message}`);
 
