@@ -137,11 +137,19 @@ async function ensureAnneeActive() {
       .eq("active", true);
     if (errOff) throw new Error(`Impossible de désactiver l’année active. ${errOff.message}`);
 
-    const { data: created, error: errIns } = await sb
-      .from("annees")
-      .insert([{ libelle: libelleAnnee, active: true }])
-      .select("id, libelle, active")
-      .single();
+    // === AG_ANNEES_DATES_V2 ===
+const anneeStart = nomAnnee.split("-")[0];
+
+const { data: created, error: errIns } = await sb
+  .from("annees")
+  .insert([{
+    libelle: nomAnnee,
+    active: true,
+    date_debut: `${anneeStart}-09-01`,
+    date_fin: `${parseInt(anneeStart) + 1}-08-31`
+  }])
+  .select("id, libelle, active")
+  .single();
     if (errIns) throw new Error(`Impossible de créer l’année '${libelleAnnee}'. ${errIns.message}`);
 
     return created.id;
