@@ -89,6 +89,61 @@
 
     const app = document.getElementById("app");
 
+// 🔽 ICI on insère AUTH
+
+// =======================================================
+// AUTH — Connexion Supabase (écran bloquant)
+// =======================================================
+
+const authScreen = document.getElementById("authScreen");
+const authBtn = document.getElementById("authBtn");
+const emailInput = document.getElementById("authEmail");
+const passwordInput = document.getElementById("authPassword");
+const authDot = document.getElementById("authDot");
+
+const header = document.getElementById("mainHeader");
+const appDiv = document.getElementById("app");
+
+function setAuthState(ok){
+  if(ok){
+    authScreen.style.display = "none";
+    header.style.display = "";
+    appDiv.style.display = "";
+    authDot.classList.add("ok");
+  } else {
+    authScreen.style.display = "flex";
+    header.style.display = "none";
+    appDiv.style.display = "none";
+    authDot.classList.remove("ok");
+  }
+}
+
+const { data } = await window.sb.auth.getSession();
+setAuthState(!!data.session);
+
+authBtn.addEventListener("click", async ()=>{
+  const email = emailInput.value;
+  const password = passwordInput.value;
+
+  const { error } = await window.sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if(error){
+    alert("Connexion échouée");
+  } else {
+    setAuthState(true);
+  }
+});
+
+// 🔼 FIN AUTH
+
+function afficher(renderFn, bindFn) {
+  app.innerHTML = renderFn();
+  if (bindFn) bindFn();
+}
+
     function afficher(renderFn, bindFn) {
       app.innerHTML = renderFn();
       if (bindFn) bindFn();
