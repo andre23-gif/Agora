@@ -49,6 +49,10 @@ function splitLines(text) {
  */
 function parseCSV(content) {
   const lines = splitLines(content).filter(l => l.trim() !== "");
+  // === AG_CSV_SEPARATOR_DETECT_V1 ===
+const firstLine = lines[0];
+const separator = firstLine.includes(";") ? ";" : ",";
+``
   if (!lines.length) throw new Error("CSV vide.");
 
   const parseLine = (line) => {
@@ -70,7 +74,7 @@ function parseCSV(content) {
         continue;
       }
 
-      if (ch === "," && !inQuotes) {
+      if (ch === separator && !inQuotes) {
         out.push(cur);
         cur = "";
         continue;
