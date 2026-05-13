@@ -771,6 +771,7 @@ button:active,
 
 .card{
   position: relative;
+   z-index: 0;
   background: rgba(0,0,0,0.35);
   border-radius: 14px;
   padding: 12px;
@@ -779,6 +780,7 @@ button:active,
 
 /* liseré lumineux */
 .card::before{
+   pointer-events: none;
   content:"";
   position:absolute;
   inset:0;
@@ -958,3 +960,10 @@ textarea:focus{
 .page-edt .edt-leftpanel{
   max-height: calc(100vh - 160px);
 }
+
+/* === FIX BOUTON FICHIER === */
+.page-importexport input[type="file"]{
+  position: relative;
+  z-index: 2;
+}
+``
