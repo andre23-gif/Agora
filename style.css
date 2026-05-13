@@ -967,3 +967,17 @@ textarea:focus{
   z-index: 2;
 }
 ``
+/* =====================================================
+   PAGE EDT — SEMAINES EN LIGNES (span → bloc)
+   BALISE : AG_EDT_SPAN_FIX_V1
+   ===================================================== */
+
+.page-edt .edt-leftpanel span{
+  display: block;
+  width: 100%;
+
+  padding: 6px 8px;
+  margin-bottom: 4px;
+
+  border-radius: 6px;
+}
