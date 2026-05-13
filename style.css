@@ -954,3 +954,7 @@ textarea:focus{
   border-color: var(--accent-chaud);
   box-shadow: 0 0 4px rgba(255,180,90,0.4);
 }
+/* === AG_EDT_SCROLL_FIX_V1 === */
+.page-edt .edt-leftpanel{
+  max-height: calc(100vh - 160px);
+}
