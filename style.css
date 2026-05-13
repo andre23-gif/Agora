@@ -1,37 +1,60 @@
 /* =====================================================
-   GLOBAL — TYPOGRAPHIE, FOND, BASE
-   RÔLE :
-     - Identité visuelle commune
-     - Typographie
-     - Fond animé
-     - Boutons globaux
-     - Bandeau (header)
+   AGORAMOSAÏQUE — style.css (UNIQUE FICHIER)
+   Organisation :
+     1) GLOBAL : identité, typographie, fond, bandeau, boutons, modales
+     2) PAGES : styles scopés par page (page-import, page-edt, page-classeshg, page-salle, page-bulletins, page-pp, page-archives)
+   Règle absolue :
+     - Tout ce qui est spécifique à une page est préfixé par .page-xxx
    ===================================================== */
 
-:root {
+
+/* =====================================================
+   GLOBAL — VARIABLES
+   RÔLE :
+     - Palette, dimensions et constantes
+   ===================================================== */
+
+:root{
+  /* Dimensions */
+  --header-h: 70px;
+  --app-pad: 16px;
+
+  /* Couleurs fond */
   --bleu-fond: #050a18;
   --bleu-fond-alt: #0b1228;
 
+  /* Texte */
   --texte-clair: #e6eaf0;
   --texte-doux: #b6bcc8;
 
+  /* Accent */
   --accent-chaud: #ffb35c;
 
+  /* Cadres neutres (si besoin) */
   --cadre-bg: rgba(255,255,255,0.04);
   --cadre-border: rgba(255,255,255,0.12);
+
+  /* Ombres */
+  --shadow-soft: 0 0 8px rgba(255,255,255,0.25);
 }
 
-* {
-  box-sizing: border-box;
-}
+*{ box-sizing:border-box; }
 
-body {
-  margin: 0;
+
+/* =====================================================
+   GLOBAL — TYPOGRAPHIE & FOND
+   RÔLE :
+     - Identité visuelle commune (fond animé)
+     - Police et couleurs par défaut
+   ===================================================== */
+
+body{
+  margin:0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
                Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   color: var(--texte-clair);
 
-  /* Fond vivant */
+  /* Fond vivant (validé) */
   background:
     radial-gradient(1200px 700px at 20% 30%, rgba(255,180,90,0.25), transparent),
     radial-gradient(1000px 600px at 80% 70%, rgba(80,120,255,0.35), transparent),
@@ -41,7 +64,7 @@ body {
   animation: fond-mouvant 20s ease-in-out infinite;
 }
 
-@keyframes fond-mouvant {
+@keyframes fond-mouvant{
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 60%; }
   100% { background-position: 0% 50%; }
@@ -49,47 +72,54 @@ body {
 
 
 /* =====================================================
-   GLOBAL — BANDEAU (corrigé, version vivante)
+   GLOBAL — BANDEAU (HEADER)
+   RÔLE :
+     - Support navigation (onglets)
+     - Doit être nuancé (non uniforme)
+   IMPORTANT :
+     - On protège les clics : les pseudo-éléments ne doivent JAMAIS intercepter la souris
    ===================================================== */
 
-.ag-header {
+.ag-header{
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 9999;
 
-  height: 70px;
+  height: var(--header-h);
   padding: 0 24px;
 
-  display: flex;
-  align-items: center;
-  gap: 24px;
+  display:flex;
+  align-items:center;
+  gap:24px;
 
-  /* Base sombre */
   background: linear-gradient(180deg, #050a18, #0b1228);
-
   border-bottom: 1px solid rgba(255,255,255,0.15);
-  overflow: hidden;
+
+  overflow:hidden;
 }
 
-/* Volutes chaudes */
-.ag-header::before {
-  content: "";
-  position: absolute;
-  inset: -20%;
+/* Couche volutes chaudes (visuel) */
+.ag-header::before{
+  content:"";
+  position:absolute;
+  inset:-20%;
 
   background:
-    radial-gradient(circle at 20% 40%, rgba(255,170,80,0.4), transparent 40%),
-    radial-gradient(circle at 70% 60%, rgba(255,120,40,0.3), transparent 50%);
+    radial-gradient(circle at 20% 40%, rgba(255,170,80,0.40), transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(255,120,40,0.30), transparent 50%);
 
   filter: blur(60px);
-  opacity: 0.5;
+  opacity: 0.55;
+
+  /* 🔒 crucial : ne jamais bloquer les clics */
+  pointer-events: none;
 }
 
-/* Texture légère */
-.ag-header::after {
-  content: "";
-  position: absolute;
-  inset: 0;
+/* Couche texture (mosaïque légère) */
+.ag-header::after{
+  content:"";
+  position:absolute;
+  inset:0;
 
   background:
     repeating-linear-gradient(
@@ -100,47 +130,63 @@ body {
       transparent 6px
     );
 
-  opacity: 0.4;
+  opacity:0.40;
+
+  /* 🔒 crucial : ne jamais bloquer les clics */
+  pointer-events: none;
+}
+
+/* Le contenu du header doit passer au-dessus des couches */
+.ag-header > *{
+  position: relative;
+  z-index: 1;
 }
 
 
 /* =====================================================
-   GLOBAL — NAVIGATION
+   GLOBAL — MARQUE
    ===================================================== */
 
-.ag-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.ag-brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
 }
 
-.ag-brand img {
-  height: 40px;
-}
+.ag-brand img{ height:40px; }
 
-.ag-brand h1 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
+.ag-brand h1{
+  margin:0;
+  font-size:1.1rem;
+  font-weight:600;
   color: var(--accent-chaud);
 }
 
-.ag-tabs {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
+
+/* =====================================================
+   GLOBAL — NAVIGATION (ONGLETS)
+   RÔLE :
+     - Boutons simples + liseré “glow” au survol (validé)
+   ===================================================== */
+
+.ag-tabs{
+  margin-left:auto;
+  display:flex;
+  gap:8px;
 }
 
-.ag-tabs button {
+.ag-tabs button{
   background: transparent;
   border: 1px solid transparent;
+
   color: var(--texte-doux);
   padding: 6px 12px;
-  cursor: pointer;
+
+  cursor:pointer;
   transition: all 0.2s ease;
 }
 
-.ag-tabs button:hover {
+.ag-tabs button:hover{
   color: var(--accent-chaud);
   border-color: rgba(255,180,90,0.5);
   box-shadow: 0 0 8px rgba(255,180,90,0.4);
@@ -148,35 +194,62 @@ body {
 
 
 /* =====================================================
-   GLOBAL — CONTENEUR
+   GLOBAL — CONTENEUR APP
+   RÔLE :
+     - Zone de rendu SPA
    ===================================================== */
 
-#app {
-  min-height: calc(100vh - 70px);
-  padding: 16px;
+#app{
+  min-height: calc(100vh - var(--header-h));
+  padding: var(--app-pad);
+}
+
+
+/* =====================================================
+   GLOBAL — TITRES & TEXTE (neutre)
+   ===================================================== */
+
+h1,h2,h3{
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  color: var(--texte-clair);
+}
+
+p{ color: var(--texte-doux); }
+
+
+/* =====================================================
+   GLOBAL — FORMULAIRES (neutre)
+   ===================================================== */
+
+input, select, textarea, button{
+  font-family: inherit;
 }
 
 
 /* =====================================================
    GLOBAL — MODALES
+   RÔLE :
+     - Fond sombre + fenêtre centrée
+   NOTE :
+     - Le sélecteur correct est #modal > * (dans le chat, ">" peut s’afficher "&gt;")
    ===================================================== */
 
-#modal {
+#modal{
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.5);
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
   z-index: 2000;
 }
 
-#modal:empty {
-  display: none;
-}
+#modal:empty{ display:none; }
 
-#modal > * {
+#modal > *{
   background: #0b1228;
   border: 1px solid rgba(255,255,255,0.2);
   padding: 16px;
@@ -188,320 +261,288 @@ body {
 
 /* =====================================================
    PAGE IMPORT / EXPORT
+   RÔLE :
+     - Formulaire simple (pas de layout complexe)
    ===================================================== */
 
-.page-import {
+.page-import{
   max-width: 800px;
-  margin: auto;
+  margin: 0 auto;
 }
 
 
 /* =====================================================
    PAGE EDT
+   RÔLE :
+     - 3 zones : topbar (interne), panneau gauche (semaines), panneau droit (grille)
+     - Ascenseurs : gauche et droite
    ===================================================== */
 
-.page-edt {
-  height: calc(100vh - 70px);
-  display: flex;
-  flex-direction: column;
+.page-edt{
+  min-height: calc(100vh - var(--header-h));
+  display:flex;
+  flex-direction:column;
 }
 
-.page-edt .edt-body {
+.page-edt .topbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+
+  padding-bottom:10px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+.page-edt .edt-body{
   flex: 1;
-  display: flex;
-  gap: 12px;
+  min-height: 0; /* ✅ essentiel pour que les scrolls internes fonctionnent */
+  display:flex;
+  gap:12px;
+  margin-top: 12px;
 }
 
-.page-edt .edt-leftpanel {
-  width: 250px;
+.page-edt .edt-leftpanel{
+  width: 260px;
   overflow-y: auto;
+  padding-right: 6px;
 }
 
-.page-edt .edt-rightpanel {
-  flex: 1;
+.page-edt .edt-rightpanel{
+  flex:1;
+  min-width: 0;
   overflow: auto;
 }
 
 
 /* =====================================================
    PAGE CLASSES HG
+   RÔLE :
+     - Liste élèves scrollable + plan de salle
    ===================================================== */
 
-.page-classeshg {
+.page-classeshg{
   max-width: 1200px;
-  margin: auto;
+  margin: 0 auto;
 }
 
-.page-classeshg .liste-eleves {
-  max-height: 300px;
+.page-classeshg .classes-tabs{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom: 12px;
+}
+
+.page-classeshg .classes-tabs .tab{
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--texte-clair);
+  padding: 6px 10px;
+  cursor:pointer;
+}
+
+.page-classeshg .classes-tabs .tab.active{
+  border-color: rgba(255,180,90,0.5);
+  box-shadow: 0 0 8px rgba(255,180,90,0.25);
+}
+
+.page-classeshg .liste-eleves{
+  max-height: 320px;
   overflow-y: auto;
+  padding-right: 6px;
+  margin-bottom: 12px;
 }
 
-.page-classeshg .plan-salle {
-  display: grid;
+.page-classeshg .plan-salle{
+  display:grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
+  gap:8px;
 }
 
 
 /* =====================================================
    PAGE SALLE
    RÔLE :
-     - Vue du dessus de la salle
-     - 3 colonnes + allées
-     - Tables en paires (5 rangées)
-     - Couleurs fixes par zone
+     - Vue du dessus : 3 colonnes + allées
+     - Tables en paires (5 rangées) + couleurs structurelles
+     - Bandeau interne : contexte + contenu_code
+   IMPORTANT :
+     - On évite tout débordement qui pourrait gêner le header
    ===================================================== */
 
-.page-salle {
-  height: calc(100vh - 70px);
-  display: flex;
-  flex-direction: column;
+.page-salle{
+  /* ✅ min-height (pas height) pour éviter les recouvrements subtils */
+  min-height: calc(100vh - var(--header-h));
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 
-  pointer-events: auto;
   position: relative;
   z-index: 0;
 }
 
+.page-salle .salle-topbar{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  flex-wrap:wrap;
 
-/* =====================================================
-   BANDEAU INTERNE SALLE
-   ===================================================== */
-
-.page-salle .salle-topbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom:10px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
 }
 
-.page-salle .salle-contexte {
-  flex: 1;
-}
+.page-salle .salle-contexte{ flex:1; }
 
-.page-salle .salle-contenu {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.page-salle .salle-contenu{
+  display:flex;
+  align-items:center;
+  gap:6px;
 }
 
 .page-salle .salle-contenu select,
-.page-salle .salle-contenu input {
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.2);
+.page-salle .salle-contenu input{
+  background: rgba(0,0,0,0.40);
+  border: 1px solid rgba(255,255,255,0.20);
   color: var(--texte-clair);
   padding: 4px 6px;
 }
 
-/* =====================================================
-   ZONE SALLE (layout)
-   ===================================================== */
-
-.page-salle .salle-plein-ecran {
+.page-salle .salle-plein-ecran{
   flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  gap: 20px;
+  min-height: 0;      /* ✅ permet au flex de ne pas déborder */
+  overflow: hidden;   /* ✅ empêche les débordements invisibles */
+  display:flex;
+  justify-content:center;
+  align-items:stretch;
+  gap:20px;
 }
 
-/* colonnes */
-.page-salle .colonne {
-  display: flex;
+.page-salle .colonne{
+  display:flex;
   flex-direction: column-reverse; /* bas = devant */
-  gap: 12px;
+  gap:12px;
 }
 
-/* passage / allée */
-.page-salle .allee {
-  width: 30px;
+.page-salle .allee{ width:30px; }
+
+.page-salle .rangee{
+  display:flex;
+  gap:6px;
 }
 
-/* =====================================================
-   RANGÉES = deux tables collées
-   ===================================================== */
-
-.page-salle .rangee {
-  display: flex;
-  gap: 6px;
-}
-
-/* =====================================================
-   TABLE (rectangle)
-   ===================================================== */
-
-.page-salle .table {
+/* Table (rectangle) */
+.page-salle .table{
   width: 90px;
   height: 70px;
 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
 
   position: relative;
 
   border-radius: 6px;
   font-size: 0.75rem;
-  text-align: center;
+  text-align:center;
 
-  cursor: pointer;
+  cursor:pointer;
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-/* hover */
-.page-salle .table:hover {
+.page-salle .table:hover{
   transform: translateY(-2px);
-  box-shadow: 0 0 8px rgba(255,255,255,0.3);
+  box-shadow: var(--shadow-soft);
 }
 
-/* numéro de table */
-.page-salle .numero {
-  position: absolute;
-  top: 2px;
-  right: 4px;
-  font-size: 0.6rem;
-  opacity: 0.7;
+.page-salle .numero{
+  position:absolute;
+  top:2px;
+  right:4px;
+  font-size:0.6rem;
+  opacity:0.7;
 }
 
-/* élève */
-.page-salle .nom {
-  font-weight: 500;
+.page-salle .nom{ font-weight: 500; }
+.page-salle .nom.vide{ opacity:0.30; }
+
+/* Couleurs des tables (structure) */
+.page-salle .table.vert{ background:#2e7d32; }
+.page-salle .table.violet{ background:#7b1fa2; }
+
+.page-salle .table.jaune{ background:#fbc02d; color:#000; }
+.page-salle .table.bleu{ background:#1976d2; }
+
+.page-salle .table.rouge{ background:#c62828; }
+.page-salle .table.noir{ background:#212121; }
+
+/* Adaptations : cercle couleur */
+.page-salle .adaptation-dot{
+  position:absolute;
+  bottom:4px;
+  left:4px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
 }
 
-.page-salle .nom.vide {
-  opacity: 0.3;
+.page-salle .adapt-pps{ background:red; }
+.page-salle .adapt-pap{ background:gold; }
+.page-salle .adapt-ppre{ background:#2196f3; }
+.page-salle .adapt-vert-fonce{ background:#2e7d32; }
+.page-salle .adapt-vert-clair{ background:#81c784; }
+
+/* Modales Salle (surcouche) */
+.page-salle .fiche-eleve,
+.page-salle .participation{
+  background:#0b1228;
+  border:1px solid rgba(255,255,255,0.2);
+  padding:16px;
+  border-radius:6px;
 }
 
-/* =====================================================
-   COULEURS DES TABLES (structure)
-   ===================================================== */
-
-/* colonne gauche */
-.page-salle .table.vert {
-  background: #2e7d32;
+.page-salle .fiche-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
 
-.page-salle .table.violet {
-  background: #7b1fa2;
+.page-salle .fiche-bloc{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
 }
 
-/* colonne centre */
-.page-salle .table.jaune {
-  background: #fbc02d;
+.page-salle textarea{
+  background: rgba(0,0,0,0.30);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.20);
+}
+
+/* Participation (boutons) */
+.page-salle .part-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:6px;
+}
+
+.page-salle .part-btns button{ margin-right:4px; }
+
+.page-salle .btn-part.active{
+  background: var(--accent-chaud);
   color: #000;
 }
 
-.page-salle .table.bleu {
-  background: #1976d2;
-}
-
-/* colonne droite */
-.page-salle .table.rouge {
-  background: #c62828;
-}
-
-.page-salle .table.noir {
-  background: #212121;
-}
 
 /* =====================================================
-   ADAPTATIONS (cercles)
+   PAGE BULLETINS HG
    ===================================================== */
 
-.page-salle .adaptation-dot {
-  position: absolute;
-  bottom: 4px;
-  left: 4px;
-
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-/* couleurs adaptations */
-
-.page-salle .adapt-pps {
-  background: red;
-}
-
-.page-salle .adapt-pap {
-  background: gold;
-}
-
-.page-salle .adapt-ppre {
-  background: #2196f3;
-}
-
-.page-salle .adapt-vert-fonce {
-  background: #2e7d32;
-}
-
-.page-salle .adapt-vert-clair {
-  background: #81c784;
-}
-
-/* =====================================================
-   MODALES SALLE
-   ===================================================== */
-
-.page-salle .fiche-eleve,
-.page-salle .participation {
-  background: #0b1228;
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 16px;
-  border-radius: 6px;
-}
-
-.page-salle .fiche-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.page-salle .fiche-bloc {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.page-salle textarea {
-  background: rgba(0,0,0,0.3);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-/* =====================================================
-   PARTICIPATION
-   ===================================================== */
-
-.page-salle .part-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.page-salle .part-btns button {
-  margin-right: 4px;
-}
-
-.page-salle .btn-part.active {
-  background: var(--accent-chaud);
-}
-
-
-/* =====================================================
-   PAGE BULLETINS
-   ===================================================== */
-
-.page-bulletins {
+.page-bulletins{
   max-width: 900px;
-  margin: auto;
+  margin: 0 auto;
 }
 
 
@@ -509,9 +550,9 @@ body {
    PAGE PP
    ===================================================== */
 
-.page-pp {
+.page-pp{
   max-width: 1000px;
-  margin: auto;
+  margin: 0 auto;
 }
 
 
@@ -519,7 +560,7 @@ body {
    PAGE ARCHIVES
    ===================================================== */
 
-.page-archives {
+.page-archives{
   max-width: 1000px;
-  margin: auto;
+  margin: 0 auto;
 }
