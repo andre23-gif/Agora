@@ -16,9 +16,16 @@
 </head>
 
 <body>
+  <!-- ecran conexxion -->
+  <div id="authScreen">
+  <input id="authEmail" type="email" placeholder="email">
+  <input id="authPassword" type="password" placeholder="mot de passe">
+  <button id="authBtn">Connexion</button>
+</div>
+
 
   <!-- BANDEAU SIMPLE -->
-  <header class="ag-header">
+  <header class="ag-header" id="mainHeader" style="display:none;">
 
     <div class="ag-brand">
       <img src="icon-192.png" alt="">
@@ -38,7 +45,7 @@
   </header>
 
   <!-- CONTENU -->
-  <div id="app"></div>
+  <div id="app" style="display:none;">
 
   <!-- CONFIG -->
   <script>
