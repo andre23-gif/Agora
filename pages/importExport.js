@@ -156,7 +156,7 @@ if (errIns) {
 }
 
 return created.id;
-
+}
   // 3) Si trouvée mais pas active : désactiver l'actuelle, activer celle-ci
   if (!found.active) {
     const { error: errOff } = await sb
