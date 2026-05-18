@@ -167,9 +167,6 @@ async function loadClasseFromSupabase(nomClasse) {
 
   const classeId = await getClasseIdByNom(nomClasse);
 
-  // places pour cette classe
-  await loadPlacesForClasse(classeId);
-
   // élèves
   const { data: eleves, error: errEleves } = await sb
     .from("eleves")
@@ -185,17 +182,11 @@ async function loadClasseFromSupabase(nomClasse) {
   });
 
   // affectations -> places
-  const ids = list.map(e => e.id);
-  let aff = [];
-  if (ids.length) {
-    const { data: rows, error: errAff } = await sb
-      .from("affectations")
-      .select("eleve_id, place_id")
-      .in("eleve_id", ids);
-
-    if (errAff) throw new Error(`Impossible de lire 'affectations'. ${errAff.message}`);
-    aff = rows || [];
-  }
+elevesClasse = list.map(e => ({
+  ...e,
+  place: e.place ?? null,
+}));
+/* === AG_CLASSeshg_PLACE_SIMPLE_V1 === */
 
   const eleveIdToNumero = new Map();
   aff.forEach(a => {
