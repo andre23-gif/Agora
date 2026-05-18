@@ -169,9 +169,9 @@ async function loadClasseFromSupabase(nomClasse) {
 
   // élèves
   const { data: eleves, error: errEleves } = await sb
-    .from("eleves")
-    .select("id, prenom, nom, genre, groupe, adaptations, classe_id")
-    .eq("classe_id", classeId);
+ .from("eleves")
+.select("id, prenom, nom, genre, groupe, adaptations, place, classe_id")
+.eq("classe_id", classeId);
 
   if (errEleves) throw new Error(`Impossible de lire 'eleves'. ${errEleves.message}`);
 
@@ -181,12 +181,11 @@ async function loadClasseFromSupabase(nomClasse) {
     return (a.prenom || "").localeCompare(b.prenom || "", "fr");
   });
 
-  // affectations -> places
 elevesClasse = list.map(e => ({
   ...e,
-  place: e.place ?? null,
+  place: (typeof e.place === "number") ? e.place : null,
 }));
-/* === AG_CLASSeshg_PLACE_SIMPLE_V1 === */
+/* === AG_CLASSeshg_PLACE_SIMPLE_V3 === */
 
   const eleveIdToNumero = new Map();
   aff.forEach(a => {
@@ -379,29 +378,31 @@ if (syncBtn) {
     });
   });
 
-  // groupe : écriture immédiate + relecture (source de vérité)
+// groupe : écriture immédiate + relecture (source de vérité)
   document.querySelectorAll(".opt-groupe").forEach(zone => {
     const eleveId = zone.dataset.eid;
 
-    zone.querySelectorAll("input[type=radio]").forEach(input => {
-  input.addEventListener("change", async () => {
-    const grp = input.value;
+    zone.querySelectorAll('input[type="radio"]').forEach(input => {
+      input.addEventListener("change", async () => {
+        const grp = input.value;
 
-    const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
-    if (!eleve) return;
+        const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
+        if (!eleve) return;
 
-    const sb = sbAgoram();
-    const { error } = await sb
-      .from("eleves")
-      .update({ groupe: grp })
-      .eq("id", eleve.id);
+        const sb = sbAgoram();
+        const { error } = await sb
+          .from("eleves")
+          .update({ groupe: grp })
+          .eq("id", eleve.id);
 
-    if (error) throw new Error(`Écriture groupe impossible. ${error.message}`);
+        if (error) throw new Error(`Écriture groupe impossible. ${error.message}`);
 
-    await rerender();
+        syncState = "dirty";
+        await rerender();
+      });
+    });
   });
-});
-/* === AG_CLASSeshg_RADIO_EVENT_V1 === */
+  /* === AG_CLASSeshg_RADIO_EVENT_V2 === */
 
 
   // adaptation : écriture immédiate + relecture
