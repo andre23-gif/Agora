@@ -634,12 +634,6 @@ document.getElementById("valider").onclick = async () => {
    BLOC 9 — MODALE : choix classe/groupe sur une case
    ====================================================== */
 
-/* === AG_EDT_BIND_EVENTS_END_V1 =================================
-   IMPORTANT : fermeture explicite de bindEmploiDuTempsEvents()
-   (sinon les fonctions suivantes + export tombent “dans” bindEmploiDuTempsEvents)
-   ============================================================= */
-} // <-- FIN bindEmploiDuTempsEvents()
-
 
 /* === AG_EDT_MODAL_V1 ===========================================
    Modale simple : choix classe / groupe pour une cellule (jour, créneau)
