@@ -76,8 +76,15 @@
     const { renderPP, bindPPEvents } =
       await import(`./pages/pp.js?v=${V}`);
 
+/* ======================================================
+   AG_IMPORT_EDT_PATH_FIX_CONTEXT_V1
+   chemin absolu correct GitHub Pages
+   ====================================================== */
 const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
-  await import(`/pages/emploiDuTemps.js?v=${V}`);
+  await import(`/Agora/pages/emploiDuTemps.js?v=${V}`);
+/* ======================================================
+   AG_IMPORT_EDT_PATH_FIX_CONTEXT_END
+   =================================================
 /* === AG_FIX_IMPORT_PATH_V1 === */
 
     const { renderImportExport, bindImportExportEvents } =
