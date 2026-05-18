@@ -415,8 +415,11 @@ button:active,
   padding-right: 6px;
   max-height: calc(100vh - 160px);
 
-  scroll-snap-type: y proximity;
+  /* Snap “ligne par ligne” sans casser le layout */
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: 4px;
 }
+/* === AG_EDT_SCROLL_SNAP_PARENT_V1 === */
 /* === AG_EDT_SCROLL_LIGHT_V1 === */
 
 
@@ -970,7 +973,7 @@ textarea:focus{
   position: relative;
   z-index: 2;
 }
-``
+
 /* =====================================================
    PAGE EDT — SEMAINES EN LIGNES (span → bloc)
    BALISE : AG_EDT_SPAN_FIX_V1
