@@ -634,6 +634,16 @@ document.getElementById("valider").onclick = async () => {
    BLOC 9 — MODALE : choix classe/groupe sur une case
    ====================================================== */
 
+/* === AG_EDT_BIND_EVENTS_END_V1 =================================
+   IMPORTANT : fermeture explicite de bindEmploiDuTempsEvents()
+   (sinon les fonctions suivantes + export tombent “dans” bindEmploiDuTempsEvents)
+   ============================================================= */
+} // <-- FIN bindEmploiDuTempsEvents()
+
+
+/* === AG_EDT_MODAL_V1 ===========================================
+   Modale simple : choix classe / groupe pour une cellule (jour, créneau)
+   ============================================================= */
 async function ouvrirModal(j, c) {
   const classes = await getClassesAvecGroupesSupabase();
   /* === AG_EDT_MODAL_CLASSES_SUPABASE_V1 === */
@@ -659,24 +669,25 @@ async function ouvrirModal(j, c) {
     document.getElementById("modal").innerHTML = "";
   };
 
-/* === AG_EDT_UPDATE_MODELE_WITH_DIRTY_SYNC_V1 === */
-document.getElementById("ok").onclick = () => {
+  /* === AG_EDT_UPDATE_MODELE_WITH_DIRTY_SYNC_V1 === */
+  document.getElementById("ok").onclick = () => {
 
-  const [classe, g] = document.getElementById("sel").value.split("|");
-  const i = edtModele.findIndex(x => x.jour === j && x.creneau === c);
+    const [classe, g] = document.getElementById("sel").value.split("|");
+    const i = edtModele.findIndex(x => x.jour === j && x.creneau === c);
 
-  const obj = { jour: j, creneau: c, classe, groupe: g || null };
+    const obj = { jour: j, creneau: c, classe, groupe: g || null };
 
-  if (i === -1) edtModele.push(obj);
-  else edtModele[i] = obj;
+    if (i === -1) edtModele.push(obj);
+    else edtModele[i] = obj;
 
-  /* ✅ état modifié */
-  syncState = "dirty";
+    // état modifié (avant sauvegarde)
+    syncState = "dirty";
 
-  document.getElementById("modal").innerHTML = "";
-  refresh();
-};
-/* === AG_EDT_UPDATE_MODELE_WITH_DIRTY_SYNC_END === */
+    document.getElementById("modal").innerHTML = "";
+    refresh();
+  };
+  /* === AG_EDT_UPDATE_MODELE_WITH_DIRTY_SYNC_END === */
+}
 
 
 /* ======================================================
