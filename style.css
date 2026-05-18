@@ -996,5 +996,61 @@ textarea:focus{
    PAGE EDT — FORCER LISTE VERTICALE
    BALISE : AG_EDT_FORCE_COLUMN_V1
    ===================================================== */
+/* =====================================================
+   PAGE CLASSES HG — LIGNE ROUGE SI GROUPE MANQUANT
+   BALISE : AG_CLASSeshg_MISSING_GROUP_RED_V1
+   ===================================================== */
 
+.page-classeshg .eleve-row.missing-groupe{
+  border: 1px solid rgba(255, 70, 70, 0.85);
+  background: rgba(255, 70, 70, 0.12);
+}
+
+.page-classeshg .eleve-row.missing-groupe .eleve-open{
+  color: rgba(255, 170, 170, 1);
+}
+/* =====================================================
+   PAGE CLASSES HG — 1 ÉLÈVE = 1 LIGNE (COMPACT)
+   BALISE : AG_CLASSeshg_ONE_LINE_V1
+   ===================================================== */
+
+.page-classeshg .eleve-row{
+  display: grid;
+  grid-template-columns: 1fr 150px 220px 160px;
+  gap: 10px;
+  align-items: center;
+
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+}
+
+.page-classeshg .eleve-ident{
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.page-classeshg .eleve-open{
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* fait rester les "opt" sur la même ligne */
+.page-classeshg .eleve-options{
+  display: contents;
+}
+
+.page-classeshg .opt{
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.page-classeshg .opt select{
+  width: 100%;
+}
 
