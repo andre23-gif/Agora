@@ -1,8 +1,9 @@
 /* =====================================================
-   AGORAMOSAÏQUE — style.css (UNIQUE FICHIER)
+   AGORAMOSAÏQUE — style.css
+   Thème : Art Déco Futuriste · Mosaïque Foundation
    Organisation :
      1) GLOBAL : identité, typographie, fond, bandeau, boutons, modales
-     2) PAGES : styles scopés par page (page-import, page-edt, page-classeshg, page-salle, page-bulletins, page-pp, page-archives)
+     2) PAGES : styles scopés par page
    Règle absolue :
      - Tout ce qui est spécifique à une page est préfixé par .page-xxx
    ===================================================== */
@@ -10,8 +11,6 @@
 
 /* =====================================================
    GLOBAL — VARIABLES
-   RÔLE :
-     - Palette, dimensions et constantes
    ===================================================== */
 
 :root{
@@ -19,49 +18,56 @@
   --header-h: 70px;
   --app-pad: 16px;
 
-  /* Couleurs fond */
-  --bleu-fond: #050a18;
-  --bleu-fond-alt: #0b1228;
+  /* Fond galactique */
+  --bleu-fond: #03060f;
+  --bleu-fond-alt: #07102a;
 
   /* Texte */
-  --texte-clair: #e6eaf0;
-  --texte-doux: #b6bcc8;
+  --texte-clair: #e8ecf4;
+  --texte-doux: #8fa0bf;
 
-  /* Accent */
-  --accent-chaud: #ffb35c;
+  /* Accent or Foundation */
+  --accent-chaud: #f0a840;
+  --accent-froid: #4a90d9;
+  --accent-bronze: #c87830;
 
-  /* Cadres neutres (si besoin) */
-  --cadre-bg: rgba(255,255,255,0.04);
-  --cadre-border: rgba(255,255,255,0.12);
+  /* Cadres */
+  --cadre-bg: rgba(255,255,255,0.03);
+  --cadre-border: rgba(240,168,64,0.18);
 
   /* Ombres */
-  --shadow-soft: 0 0 8px rgba(255,255,255,0.25);
+  --shadow-soft: 0 0 12px rgba(240,168,64,0.22);
+
+  /* Géométrie art déco */
+  --deco-line: rgba(240,168,64,0.35);
+  --deco-angle: 4deg;
 }
 
-*{ box-sizing:border-box; }
+*{ box-sizing: border-box; }
 
 
 /* =====================================================
    GLOBAL — TYPOGRAPHIE & FOND
-   RÔLE :
-     - Identité visuelle commune (fond animé)
-     - Police et couleurs par défaut
+   Fond : cosmos profond + halos chauds/froids animés
    ===================================================== */
 
 body{
-  margin:0;
+  margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
                Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   color: var(--texte-clair);
 
-  /* Fond vivant (validé) */
   background:
-    radial-gradient(1200px 700px at 20% 30%, rgba(255,180,90,0.25), transparent),
-    radial-gradient(1000px 600px at 80% 70%, rgba(80,120,255,0.35), transparent),
-    linear-gradient(140deg, var(--bleu-fond), var(--bleu-fond-alt));
+    /* halo or central — galion Foundation */
+    radial-gradient(900px 520px at 22% 32%, rgba(240,168,64,0.18), transparent 70%),
+    /* halo bleu galactique */
+    radial-gradient(1100px 650px at 78% 68%, rgba(74,144,217,0.22), transparent 70%),
+    /* halo pourpre profond */
+    radial-gradient(800px 500px at 55% 15%, rgba(120,60,200,0.10), transparent 70%),
+    linear-gradient(160deg, var(--bleu-fond) 0%, var(--bleu-fond-alt) 100%);
 
   background-size: 200% 200%;
-  animation: fond-mouvant 20s ease-in-out infinite;
+  animation: fond-mouvant 24s ease-in-out infinite;
 }
 
 @keyframes fond-mouvant{
@@ -72,8 +78,8 @@ body{
 
 
 /* =====================================================
-   GLOBAL — BANDEAU : MOSAÏQUE EN VOLUTES (ANIMÉ)
-   Objectif : texture type mosaïque + volutes + mouvement lent
+   GLOBAL — BANDEAU ART DÉCO FOUNDATION
+   Mosaïque géométrique + volutes or + grille fine
    ===================================================== */
 
 .ag-header{
@@ -82,149 +88,169 @@ body{
   z-index: 9999;
 
   height: var(--header-h);
-  padding: 0 24px;
+  padding: 0 28px;
 
-  display:flex;
-  align-items:center;
-  gap:24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 
-  /* base sombre */
-  background: linear-gradient(180deg, #050a18 0%, #0b1228 100%);
-  border-bottom: 1px solid rgba(255,255,255,0.14);
+  /* Fond sombre mat avec liseré or bas */
+  background: linear-gradient(180deg, #060b1c 0%, #0a1428 100%);
+  border-bottom: 1px solid rgba(240,168,64,0.40);
+  /* Ligne dorée secondaire sous le liseré */
+  box-shadow: 0 1px 0 rgba(240,168,64,0.12), 0 4px 24px rgba(0,0,0,0.55);
   overflow: hidden;
-
-  /* pour que les pseudo-éléments soient bien derrière le contenu */
-  position: sticky;
 }
 
-/* Contenu au-dessus */
+/* Contenu au-dessus des couches */
 .ag-header > *{
   position: relative;
   z-index: 2;
 }
 
-/* Couche VOLUTES (forme) */
+/* Couche VOLUTES ET HALOS (Foundation : chaud + froid) */
 .ag-header::before{
-  content:"";
-  position:absolute;
-  inset:-30%;
-  pointer-events:none;
+  content: "";
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
   z-index: 0;
 
-  /* Volute = conic gradients + halos chauds/froids */
   background:
+    /* halo or chaud gauche */
+    radial-gradient(600px 200px at 18% 60%, rgba(240,160,48,0.55), transparent 60%),
+    /* halo bleu froid droite */
+    radial-gradient(700px 180px at 75% 45%, rgba(74,144,217,0.30), transparent 60%),
+    /* cône conic déco */
     conic-gradient(
-      from 210deg at 28% 55%,
-      rgba(255,170,80,0.55),
-      rgba(255,70,70,0.45),
-      rgba(70,210,255,0.25),
-      rgba(255,170,80,0.55)
-    ),
-    radial-gradient(900px 420px at 30% 60%, rgba(255,150,70,0.35), transparent 60%),
-    radial-gradient(900px 420px at 65% 45%, rgba(90,140,255,0.25), transparent 60%);
-
-  filter: blur(22px) saturate(1.35) contrast(1.15);
-  opacity: 0.95;
-
-  transform-origin: 30% 55%;
-  animation: bandeau-volute 18s ease-in-out infinite;
-}
-
-/* Couche MOSAÏQUE (texture) */
-.ag-header::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  z-index: 1;
-
-  /* mosaïque = points + trame diagonale */
-  background:
-    /* points façon mosaïque */
-    repeating-radial-gradient(
-      circle at 18px 14px,
-      rgba(255,255,255,0.06) 0 1px,
-      transparent 1px 10px
-    ),
-    /* trame très légère */
-    repeating-linear-gradient(
-      45deg,
-      rgba(255,255,255,0.022) 0 1px,
-      transparent 1px 8px
+      from 200deg at 25% 55%,
+      rgba(240,160,48,0.45),
+      rgba(200,100,30,0.35),
+      rgba(74,144,217,0.20),
+      rgba(240,160,48,0.45)
     );
 
-  opacity: 0.75;
-  filter: saturate(1.2) contrast(1.1);
-
-  animation: bandeau-mosaique 26s linear infinite;
+  filter: blur(20px) saturate(1.5) contrast(1.1);
+  opacity: 0.90;
+  transform-origin: 28% 55%;
+  animation: bandeau-volute 22s ease-in-out infinite;
 }
 
-/* Mouvement : rotation lente + micro-déplacement */
+/* Couche MOSAÏQUE GÉOMÉTRIQUE ART DÉCO */
+.ag-header::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+
+  background:
+    /* Grille losange art déco */
+    repeating-linear-gradient(
+      45deg,
+      rgba(240,168,64,0.065) 0,
+      rgba(240,168,64,0.065) 1px,
+      transparent 1px,
+      transparent 14px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(240,168,64,0.045) 0,
+      rgba(240,168,64,0.045) 1px,
+      transparent 1px,
+      transparent 14px
+    ),
+    /* Points mosaïque */
+    repeating-radial-gradient(
+      circle at 20px 16px,
+      rgba(255,220,120,0.07) 0 1.5px,
+      transparent 1.5px 12px
+    );
+
+  opacity: 0.85;
+  animation: bandeau-mosaique 32s linear infinite;
+}
+
 @keyframes bandeau-volute{
-  0%   { transform: rotate(-4deg) translateX(-1%) translateY(0%); }
-  50%  { transform: rotate(4deg)  translateX(2%)  translateY(-1%); }
-  100% { transform: rotate(-4deg) translateX(-1%) translateY(0%); }
+  0%   { transform: rotate(-3deg) translateX(-1%) translateY(0%); }
+  50%  { transform: rotate(3deg)  translateX(2%)  translateY(-1.5%); }
+  100% { transform: rotate(-3deg) translateX(-1%) translateY(0%); }
 }
 
-/* Mouvement : glissement de la mosaïque (effet vivant) */
 @keyframes bandeau-mosaique{
-  0%   { background-position: 0px 0px, 0px 0px; }
-  100% { background-position: 220px 0px, 120px 120px; }
+  0%   { background-position: 0px 0px, 0px 0px, 0px 0px; }
+  100% { background-position: 280px 0px, -280px 0px, 240px 120px; }
 }
+
+
 /* =====================================================
    GLOBAL — MARQUE
    ===================================================== */
 
 .ag-brand{
-  display:flex;
-  align-items:center;
-  gap:12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.ag-brand img{ height:40px; }
+.ag-brand img{ height: 40px; }
 
 .ag-brand h1{
-  margin:0;
-  font-size:1.1rem;
-  font-weight:600;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--accent-chaud);
+  /* Lueur dorée subtile sur le titre */
+  text-shadow:
+    0 0 10px rgba(240,168,64,0.55),
+    0 0 24px rgba(240,168,64,0.25);
 }
 
 
 /* =====================================================
    GLOBAL — NAVIGATION (ONGLETS)
-   RÔLE :
-     - Boutons simples + liseré “glow” au survol (validé)
+   Boutons angulaires art déco
    ===================================================== */
 
 .ag-tabs{
-  margin-left:auto;
-  display:flex;
-  gap:8px;
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
 }
 
 .ag-tabs button{
   background: transparent;
   border: 1px solid transparent;
+  border-bottom: 1px solid rgba(240,168,64,0.25);
 
   color: var(--texte-doux);
-  padding: 6px 12px;
+  padding: 6px 14px;
+  letter-spacing: 0.04em;
+  font-size: 0.88rem;
+  text-transform: uppercase;
 
-  cursor:pointer;
+  cursor: pointer;
   transition: all 0.2s ease;
+
+  /* Coin coupé art déco */
+  clip-path: polygon(4px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 4px);
 }
 
 .ag-tabs button:hover{
   color: var(--accent-chaud);
-  border-color: rgba(255,180,90,0.5);
-  box-shadow: 0 0 8px rgba(255,180,90,0.4);
+  border-color: rgba(240,168,64,0.55);
+  border-bottom-color: var(--accent-chaud);
+  background: rgba(240,168,64,0.06);
+  box-shadow:
+    0 0 8px rgba(240,168,64,0.35),
+    0 0 18px rgba(240,168,64,0.18);
 }
 
 
 /* =====================================================
    GLOBAL — CONTENEUR APP
-   RÔLE :
-     - Zone de rendu SPA
    ===================================================== */
 
 #app{
@@ -234,7 +260,7 @@ body{
 
 
 /* =====================================================
-   GLOBAL — AUTH (écran bloquant + voyant)
+   GLOBAL — AUTH
    ===================================================== */
 
 #authScreen{
@@ -246,7 +272,14 @@ body{
   gap: 12px;
   align-items: center;
   justify-content: center;
-  background: rgba(5,10,24,0.92);
+  background: rgba(3,6,15,0.94);
+  /* Grille de fond auth */
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(240,168,64,0.04) 0, rgba(240,168,64,0.04) 1px,
+      transparent 1px, transparent 18px
+    );
 }
 
 #authScreen input{
@@ -258,37 +291,47 @@ body{
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: red;
+  background: #c0392b;
 }
 
 #authDot.ok{
-  background: green;
+  background: #1db87a;
+  box-shadow: 0 0 8px rgba(29,184,122,0.6);
 }
 
 
 /* =====================================================
-   GLOBAL — TITRES & TEXTE (neutre)
+   GLOBAL — TITRES & TEXTE
    ===================================================== */
 
-h1,h2,h3{
+h1, h2, h3{
   margin: 0 0 12px 0;
   font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--texte-clair);
+}
+
+h2{
+  /* Petite ligne or sous les h2 */
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(240,168,64,0.25);
 }
 
 p{ color: var(--texte-doux); }
 
 
 /* =====================================================
-   GLOBAL — FORMULAIRES (neutre)
+   GLOBAL — FORMULAIRES (héritage)
    ===================================================== */
 
 input, select, textarea, button{
   font-family: inherit;
 }
 
+
 /* =====================================================
    GLOBAL — BOUTONS (STYLE PRINCIPAL APP)
+   Art déco : coins coupés + halo or
    BALISE : AG_GLOBAL_BTN_V1
    ===================================================== */
 
@@ -297,20 +340,26 @@ button,
   background: transparent;
   color: var(--texte-clair);
 
-  border: 2px solid rgba(255,180,90,0.6);
-  border-radius: 12px;
+  /* Bordure or */
+  border: 1.5px solid rgba(240,168,64,0.55);
+  border-radius: 0;
 
-  padding: 8px 14px;
+  /* Coin coupé bas-gauche et haut-droit */
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+
+  padding: 8px 18px;
   font-weight: 600;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  text-transform: uppercase;
 
   cursor: pointer;
-
   transition:
     box-shadow 0.25s ease,
     border-color 0.25s ease,
+    background 0.25s ease,
     transform 0.1s ease;
 
-  /* très important pour cohérence */
   outline: none;
 }
 
@@ -318,59 +367,58 @@ button,
 button:hover,
 .btn:hover{
   border-color: var(--accent-chaud);
-
+  background: rgba(240,168,64,0.08);
   box-shadow:
-    0 0 6px rgba(255,180,90,0.5),
-    0 0 12px rgba(255,180,90,0.5),
-    0 0 20px rgba(255,180,90,0.3);
+    0 0 8px rgba(240,168,64,0.45),
+    0 0 18px rgba(240,168,64,0.28),
+    0 0 34px rgba(240,168,64,0.12);
 }
 
 /* CLICK */
 button:active,
 .btn:active{
   transform: translateY(1px);
-
+  background: rgba(240,168,64,0.14);
   box-shadow:
-    0 0 3px rgba(255,180,90,0.6),
-    0 0 8px rgba(255,180,90,0.6);
+    0 0 4px rgba(240,168,64,0.6),
+    0 0 10px rgba(240,168,64,0.5);
 }
+
 
 /* =====================================================
    GLOBAL — MODALES
-   RÔLE :
-     - Fond sombre + fenêtre centrée
-   NOTE :
-     - Le sélecteur correct est #modal > * (dans le chat, ">" peut s’afficher "&gt;")
    ===================================================== */
 
 #modal{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 2000;
 }
 
-#modal:empty{ display:none; }
+#modal:empty{ display: none; }
 
 #modal > *{
-  background: #0b1228;
-  border: 1px solid rgba(255,255,255,0.2);
-  padding: 16px;
-  border-radius: 6px;
+  background: #080e20;
+  border: 1px solid rgba(240,168,64,0.30);
+  /* Liseré art déco haut */
+  border-top: 2px solid rgba(240,168,64,0.70);
+  padding: 20px;
+  border-radius: 0;
   max-width: 600px;
   width: 100%;
+  box-shadow:
+    0 0 40px rgba(0,0,0,0.7),
+    0 0 20px rgba(240,168,64,0.08);
+  clip-path: polygon(14px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 14px);
 }
 
 
 /* =====================================================
    PAGE IMPORT / EXPORT
-   RÔLE :
-     - Formulaire simple (pas de layout complexe)
    ===================================================== */
 
 .page-import{
@@ -381,50 +429,42 @@ button:active,
 
 /* =====================================================
    PAGE EDT
-   RÔLE :
-     - 3 zones : topbar (interne), panneau gauche (semaines), panneau droit (grille)
-     - Ascenseurs : gauche et droite
    ===================================================== */
 
 .page-edt{
   min-height: calc(100vh - var(--header-h));
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-edt .topbar{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  align-items:center;
-
-  padding-bottom:10px;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(240,168,64,0.18);
 }
 
 .page-edt .edt-body{
   flex: 1;
-  min-height: 0; /* ✅ essentiel pour que les scrolls internes fonctionnent */
-  display:flex;
-  gap:12px;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
   margin-top: 12px;
 }
+
 .page-edt .edt-leftpanel{
   width: 260px;
   overflow-y: auto;
   padding-right: 6px;
   max-height: calc(100vh - 160px);
-
-  /* Snap “ligne par ligne” sans casser le layout */
   scroll-snap-type: y mandatory;
   scroll-padding-top: 4px;
 }
-/* === AG_EDT_SCROLL_SNAP_PARENT_V1 === */
-/* === AG_EDT_SCROLL_LIGHT_V1 === */
-
 
 .page-edt .edt-rightpanel{
-  flex:1;
+  flex: 1;
   min-width: 0;
   overflow: auto;
 }
@@ -432,8 +472,6 @@ button:active,
 
 /* =====================================================
    PAGE CLASSES HG
-   RÔLE :
-     - Liste élèves scrollable + plan de salle
    ===================================================== */
 
 .page-classeshg{
@@ -442,23 +480,26 @@ button:active,
 }
 
 .page-classeshg .classes-tabs{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 12px;
 }
 
 .page-classeshg .classes-tabs .tab{
-  background: rgba(0,0,0,0.25);
-  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.30);
+  border: 1px solid rgba(240,168,64,0.18);
   color: var(--texte-clair);
-  padding: 6px 10px;
-  cursor:pointer;
+  padding: 6px 12px;
+  cursor: pointer;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  transition: all 0.2s ease;
 }
 
 .page-classeshg .classes-tabs .tab.active{
-  border-color: rgba(255,180,90,0.5);
-  box-shadow: 0 0 8px rgba(255,180,90,0.25);
+  border-color: rgba(240,168,64,0.60);
+  background: rgba(240,168,64,0.08);
+  box-shadow: 0 0 10px rgba(240,168,64,0.22);
 }
 
 .page-classeshg .liste-eleves{
@@ -469,185 +510,198 @@ button:active,
 }
 
 .page-classeshg .plan-salle{
-  display:grid;
+  display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap:8px;
+  gap: 8px;
 }
 
 
 /* =====================================================
    PAGE SALLE
-   RÔLE :
-     - Vue du dessus : 3 colonnes + allées
-     - Tables en paires (5 rangées) + couleurs structurelles
-     - Bandeau interne : contexte + contenu_code
-   IMPORTANT :
-     - On évite tout débordement qui pourrait gêner le header
    ===================================================== */
 
 .page-salle{
-  /* ✅ min-height (pas height) pour éviter les recouvrements subtils */
   min-height: calc(100vh - var(--header-h));
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   position: relative;
   z-index: 0;
 }
 
 .page-salle .salle-topbar{
-  display:flex;
-  align-items:center;
-  gap:16px;
-  flex-wrap:wrap;
-
-  padding-bottom:10px;
-  border-bottom: 1px solid rgba(255,255,255,0.10);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(240,168,64,0.14);
 }
 
-.page-salle .salle-contexte{ flex:1; }
+.page-salle .salle-contexte{ flex: 1; }
 
 .page-salle .salle-contenu{
-  display:flex;
-  align-items:center;
-  gap:6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .page-salle .salle-contenu select,
 .page-salle .salle-contenu input{
-  background: rgba(0,0,0,0.40);
-  border: 1px solid rgba(255,255,255,0.20);
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(240,168,64,0.22);
   color: var(--texte-clair);
-  padding: 4px 6px;
+  padding: 4px 8px;
 }
 
 .page-salle .salle-plein-ecran{
   flex: 1;
-  min-height: 0;      /* ✅ permet au flex de ne pas déborder */
-  overflow: hidden;   /* ✅ empêche les débordements invisibles */
-  display:flex;
-  justify-content:center;
-  align-items:stretch;
-  gap:20px;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 20px;
 }
 
 .page-salle .colonne{
-  display:flex;
-  flex-direction: column-reverse; /* bas = devant */
-  gap:12px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 12px;
 }
 
-.page-salle .allee{ width:30px; }
+.page-salle .allee{ width: 30px; }
 
 .page-salle .rangee{
-  display:flex;
-  gap:6px;
+  display: flex;
+  gap: 6px;
 }
 
-/* Table (rectangle) */
+/* Table (rectangle) — style plateau mosaïque */
 .page-salle .table{
   width: 90px;
   height: 70px;
-
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   position: relative;
-
-  border-radius: 6px;
+  border-radius: 0;
+  /* Coin coupé art déco */
+  clip-path: polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px);
   font-size: 0.75rem;
-  text-align:center;
-
-  cursor:pointer;
-  transition: transform 0.1s, box-shadow 0.1s;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.15s;
 }
 
 .page-salle .table:hover{
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-soft);
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 10px rgba(240,168,64,0.40),
+    0 0 20px rgba(240,168,64,0.18);
 }
 
 .page-salle .numero{
-  position:absolute;
-  top:2px;
-  right:4px;
-  font-size:0.6rem;
-  opacity:0.7;
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 0.6rem;
+  opacity: 0.65;
+  letter-spacing: 0.04em;
 }
 
-.page-salle .nom{ font-weight: 500; }
-.page-salle .nom.vide{ opacity:0.30; }
+.page-salle .nom{ font-weight: 600; letter-spacing: 0.02em; }
+.page-salle .nom.vide{ opacity: 0.28; }
 
-/* Couleurs des tables (structure) */
-.page-salle .table.vert{ background:#2e7d32; }
-.page-salle .table.violet{ background:#7b1fa2; }
+/* Couleurs des tables (structure — INCHANGÉES) */
+.page-salle .table.vert{
+  background: #1b5e20;
+  border: 1px solid rgba(76,175,80,0.45);
+}
+.page-salle .table.violet{
+  background: #4a148c;
+  border: 1px solid rgba(156,39,176,0.45);
+}
+.page-salle .table.jaune{
+  background: #f9a825;
+  color: #1a1000;
+  border: 1px solid rgba(255,214,0,0.45);
+}
+.page-salle .table.bleu{
+  background: #0d47a1;
+  border: 1px solid rgba(33,150,243,0.40);
+}
+.page-salle .table.rouge{
+  background: #b71c1c;
+  border: 1px solid rgba(244,67,54,0.45);
+}
+.page-salle .table.noir{
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.14);
+}
 
-.page-salle .table.jaune{ background:#fbc02d; color:#000; }
-.page-salle .table.bleu{ background:#1976d2; }
-
-.page-salle .table.rouge{ background:#c62828; }
-.page-salle .table.noir{ background:#212121; }
-
-/* Adaptations : cercle couleur */
+/* Adaptations */
 .page-salle .adaptation-dot{
-  position:absolute;
-  bottom:4px;
-  left:4px;
-  width:10px;
-  height:10px;
-  border-radius:50%;
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 4px currentColor;
 }
 
-.page-salle .adapt-pps{ background:red; }
-.page-salle .adapt-pap{ background:gold; }
-.page-salle .adapt-ppre{ background:#2196f3; }
-.page-salle .adapt-vert-fonce{ background:#2e7d32; }
-.page-salle .adapt-vert-clair{ background:#81c784; }
+.page-salle .adapt-pps{ background: #ef5350; }
+.page-salle .adapt-pap{ background: #ffd740; }
+.page-salle .adapt-ppre{ background: #42a5f5; }
+.page-salle .adapt-vert-fonce{ background: #2e7d32; }
+.page-salle .adapt-vert-clair{ background: #81c784; }
 
-/* Modales Salle (surcouche) */
+/* Modales Salle */
 .page-salle .fiche-eleve,
 .page-salle .participation{
-  background:#0b1228;
-  border:1px solid rgba(255,255,255,0.2);
-  padding:16px;
-  border-radius:6px;
+  background: #060d1e;
+  border: 1px solid rgba(240,168,64,0.28);
+  border-top: 2px solid rgba(240,168,64,0.65);
+  padding: 18px;
+  clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
 }
 
 .page-salle .fiche-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .page-salle .fiche-bloc{
-  margin-top:10px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .page-salle textarea{
-  background: rgba(0,0,0,0.30);
+  background: rgba(0,0,0,0.40);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.20);
+  border: 1px solid rgba(240,168,64,0.22);
 }
 
-/* Participation (boutons) */
+/* Participation */
 .page-salle .part-row{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
 }
 
-.page-salle .part-btns button{ margin-right:4px; }
+.page-salle .part-btns button{ margin-right: 4px; }
 
 .page-salle .btn-part.active{
-  background: var(--accent-chaud);
-  color: #000;
+  background: rgba(240,168,64,0.20);
+  color: var(--accent-chaud);
+  border-color: var(--accent-chaud);
+  box-shadow: 0 0 8px rgba(240,168,64,0.40);
 }
 
 
@@ -679,130 +733,126 @@ button:active,
   max-width: 1000px;
   margin: 0 auto;
 }
+
+
 /* =====================================================
-   PAGE IMPORT — FILE INPUT (BOUTON OR + NOM FICHIER)
+   PAGE IMPORT — FILE INPUT
    BALISE : AG_IMPORT_FILE_V1
    ===================================================== */
 
 .page-importexport input[type="file"]{
   color: var(--texte-doux);
   margin-top: 8px;
+  position: relative;
+  z-index: 2;
 }
 
-/* Bouton interne du file input */
 .page-importexport input[type="file"]::file-selector-button{
   background: transparent;
   color: var(--texte-clair);
-
-  border: 2px solid rgba(255,180,90,0.7);
-  border-radius: 14px;
-
-  padding: 8px 14px;
+  border: 1.5px solid rgba(240,168,64,0.60);
+  border-radius: 0;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  padding: 8px 16px;
   margin-right: 12px;
-
   font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
-
-  transition:
-    box-shadow 0.25s ease,
-    border-color 0.25s ease,
-    transform 0.1s ease;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.1s ease;
 }
 
-/* HOVER */
 .page-importexport input[type="file"]::file-selector-button:hover{
   border-color: var(--accent-chaud);
-
   box-shadow:
-    0 0 6px rgba(255,180,90,0.5),
-    0 0 12px rgba(255,180,90,0.6),
-    0 0 20px rgba(255,180,90,0.4);
+    0 0 8px rgba(240,168,64,0.50),
+    0 0 18px rgba(240,168,64,0.30);
 }
 
-/* CLICK */
 .page-importexport input[type="file"]::file-selector-button:active{
   transform: translateY(1px);
-
   box-shadow:
-    0 0 3px rgba(255,180,90,0.6),
-    0 0 8px rgba(255,180,90,0.7),
-    0 0 16px rgba(255,180,90,0.6);
+    0 0 4px rgba(240,168,64,0.65),
+    0 0 10px rgba(240,168,64,0.55);
 }
+
+
 /* =====================================================
-   PAGE IMPORT — BOUTONS OR (isolé, sans conflit header)
+   PAGE IMPORT — BOUTONS
    BALISE : AG_IMPORT_BTN_OR_V1
    ===================================================== */
 
 .page-importexport .btn{
   background: transparent;
   color: var(--texte-clair);
-
-  border: 2px solid rgba(255,180,90,0.7);
-  border-radius: 14px;
-
-  padding: 10px 16px;
+  border: 1.5px solid rgba(240,168,64,0.60);
+  border-radius: 0;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  padding: 10px 20px;
   font-weight: 600;
-
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
   position: relative;
-
-  transition:
-    box-shadow 0.25s ease,
-    border-color 0.25s ease,
-    transform 0.1s ease;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.1s ease;
 }
 
-/* HALO OR (sans pseudo-element → évite conflit header) */
 .page-importexport .btn:hover{
   border-color: var(--accent-chaud);
-
+  background: rgba(240,168,64,0.07);
   box-shadow:
-    0 0 6px rgba(255,180,90,0.5),
-    0 0 12px rgba(255,180,90,0.6),
-    0 0 20px rgba(255,180,90,0.4);
+    0 0 8px rgba(240,168,64,0.50),
+    0 0 18px rgba(240,168,64,0.30),
+    0 0 32px rgba(240,168,64,0.12);
 }
 
-/* CLIC (pression + glow plus fort) */
 .page-importexport .btn:active{
   transform: translateY(1px);
-
   box-shadow:
-    0 0 3px rgba(255,180,90,0.6),
-    0 0 8px rgba(255,180,90,0.7),
-    0 0 16px rgba(255,180,90,0.6);
+    0 0 4px rgba(240,168,64,0.65),
+    0 0 10px rgba(240,168,64,0.55),
+    0 0 18px rgba(240,168,64,0.40);
 }
+
+
 /* =====================================================
-   GLOBAL — CARD VISUELLES (ajout non destructif)
+   GLOBAL — CARD
+   Art déco : liseré animé + coins angulaires
    BALISE : AG_CARD_V2_SAFE
    ===================================================== */
 
 .card{
   position: relative;
-   z-index: 0;
-  background: rgba(0,0,0,0.35);
-  border-radius: 14px;
-  padding: 12px;
-  box-shadow: var(--shadow-soft);
+  z-index: 0;
+  background: rgba(4,8,22,0.55);
+  border-radius: 0;
+  clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px);
+  padding: 14px;
+  box-shadow:
+    var(--shadow-soft),
+    inset 0 0 0 1px rgba(240,168,64,0.12);
 }
 
-/* liseré lumineux */
+/* Liseré animé */
 .card::before{
-   pointer-events: none;
-  content:"";
-  position:absolute;
-  inset:0;
-  border-radius:14px;
-  padding:2px;
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  padding: 1.5px;
 
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255,180,90,0.8),
+    rgba(240,168,64,0.90),
+    rgba(200,120,48,0.60),
     transparent
   );
-
-  background-size:200% 100%;
-  animation: ag-card-glow 3s linear infinite;
+  background-size: 220% 100%;
+  animation: ag-card-glow 3.5s linear infinite;
 
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -811,18 +861,27 @@ button:active,
           mask-composite: exclude;
 }
 
-@keyframes ag-card-glow{
-  0%{ background-position:200% 0; }
-  100%{ background-position:-200% 0; }
+/* Coin déco bas-droite (trait fin) */
+.card::after{
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 1.5px;
+  background: rgba(240,168,64,0.55);
+  transform: rotate(-45deg) translate(8px, -8px);
 }
 
+@keyframes ag-card-glow{
+  0%  { background-position: 220% 0; }
+  100%{ background-position: -220% 0; }
+}
+
+
 /* =====================================================
-   =====================================================
-   AJOUTS DESIGN SYSTEM (NE PAS MODIFIER LE RESTE)
-   =====================================================
-   ===================================================== */
-/* =====================================================
-   PAGES — INPUT STYLE DISCRET
+   PAGES — INPUT STYLE
    BALISE : AG_FORM_V2_SAFE
    ===================================================== */
 
@@ -838,15 +897,13 @@ button:active,
 .page-edt input,
 .page-edt textarea,
 .page-edt select{
-  appearance:none;
-
-  background: rgba(0,0,0,0.35);
+  appearance: none;
+  background: rgba(3,6,18,0.55);
   color: var(--texte-clair);
-
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius:8px;
-
-  padding:6px 8px;
+  border: 1px solid rgba(240,168,64,0.22);
+  border-radius: 0;
+  padding: 6px 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .page-importexport input:focus,
@@ -858,8 +915,10 @@ button:active,
 .page-bulletins textarea:focus,
 .page-edt textarea:focus{
   border-color: var(--accent-chaud);
-  box-shadow: 0 0 4px rgba(255,180,90,0.4);
+  box-shadow: 0 0 6px rgba(240,168,64,0.35);
+  outline: none;
 }
+
 
 /* =====================================================
    PAGES — SELECT CUSTOM
@@ -871,12 +930,13 @@ button:active,
 .page-bulletins select,
 .page-edt select{
   background:
-    rgba(0,0,0,0.35)
-    url("data:image/svg+xml,%3Csvg fill='orange' height='18' viewBox='0 0 20 20' width='18'%3E%3Cpath d='M5 7l5 5 5-5z'/%3E%3C/svg%3E")
+    rgba(3,6,18,0.55)
+    url("data:image/svg+xml,%3Csvg fill='%23f0a840' height='18' viewBox='0 0 20 20' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 5 5-5z'/%3E%3C/svg%3E")
     no-repeat right 6px center;
 
-  padding-right:26px;
+  padding-right: 28px;
 }
+
 
 /* =====================================================
    GLOBAL — CHECKBOX STYLE
@@ -884,31 +944,34 @@ button:active,
    ===================================================== */
 
 input[type="checkbox"]{
-  appearance:none;
-  width:16px;
-  height:16px;
-  border:2px solid rgba(255,255,255,0.4);
-  border-radius:4px;
-  position:relative;
-  cursor:pointer;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid rgba(240,168,64,0.45);
+  border-radius: 0;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 input[type="checkbox"]:checked{
   background: var(--accent-chaud);
   border-color: var(--accent-chaud);
+  box-shadow: 0 0 6px rgba(240,168,64,0.45);
 }
 
 input[type="checkbox"]:checked::after{
-  content:"";
-  position:absolute;
-  left:4px;
-  top:1px;
-  width:4px;
-  height:8px;
-  border:solid black;
-  border-width:0 2px 2px 0;
-  transform:rotate(45deg);
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #0a0800;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
+
 
 /* =====================================================
    PAGE EDT — STRUCTURE VISUELLE
@@ -916,16 +979,17 @@ input[type="checkbox"]:checked::after{
    ===================================================== */
 
 .page-edt .topbar{
-  margin-bottom:12px;
+  margin-bottom: 12px;
 }
 
-/* visuel des blocs sans casser layout */
 .page-edt .edt-leftpanel,
 .page-edt .edt-rightpanel{
-  background: rgba(0,0,0,0.25);
-  border-radius:14px;
-  padding:10px;
+  background: rgba(3,8,20,0.45);
+  border: 1px solid rgba(240,168,64,0.14);
+  border-top: 1px solid rgba(240,168,64,0.30);
+  padding: 10px;
 }
+
 
 /* =====================================================
    PAGE EDT — SCROLL STYLÉ
@@ -933,84 +997,90 @@ input[type="checkbox"]:checked::after{
    ===================================================== */
 
 .page-edt .edt-leftpanel::-webkit-scrollbar{
-  width:6px;
+  width: 4px;
+}
+
+.page-edt .edt-leftpanel::-webkit-scrollbar-track{
+  background: rgba(240,168,64,0.04);
 }
 
 .page-edt .edt-leftpanel::-webkit-scrollbar-thumb{
-  background: rgba(255,180,90,0.6);
-  border-radius:10px;
+  background: rgba(240,168,64,0.55);
+  border-radius: 0;
 }
 
+
 /* =====================================================
-   SÉCURITÉ — TEXTAREA GLOBAL PROPRE
+   SÉCURITÉ — TEXTAREA GLOBAL
    BALISE : AG_TEXTAREA_SAFE
    ===================================================== */
 
 textarea{
-  background: rgba(0,0,0,0.35);
+  background: rgba(3,6,18,0.50);
   color: var(--texte-clair);
-
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius:8px;
-
-  padding:6px 8px;
-
+  border: 1px solid rgba(240,168,64,0.22);
+  border-radius: 0;
+  padding: 6px 10px;
   font-family: inherit;
 }
 
-/* focus */
 textarea:focus{
   border-color: var(--accent-chaud);
-  box-shadow: 0 0 4px rgba(255,180,90,0.4);
+  box-shadow: 0 0 6px rgba(240,168,64,0.35);
+  outline: none;
 }
-/* === AG_EDT_SCROLL_FIX_V1 === */
+
+
+/* =====================================================
+   PAGE EDT — SCROLL FIX
+   BALISE : AG_EDT_SCROLL_FIX_V1
+   ===================================================== */
+
 .page-edt .edt-leftpanel{
   max-height: calc(100vh - 160px);
 }
 
-/* === FIX BOUTON FICHIER === */
-.page-importexport input[type="file"]{
-  position: relative;
-  z-index: 2;
-}
 
 /* =====================================================
-   PAGE EDT — SEMAINES EN LIGNES (span → bloc)
+   PAGE EDT — SEMAINES EN LIGNES
    BALISE : AG_EDT_SPAN_FIX_V1
    ===================================================== */
 
 .page-edt .edt-leftpanel span{
   display: block;
   width: 100%;
-
-  padding: 6px 8px;
+  padding: 6px 10px;
   margin-bottom: 4px;
-  border-radius: 6px;
+  border-left: 2px solid rgba(240,168,64,0.35);
+  transition: background 0.15s, border-color 0.15s;
 
-  /* Snap sur chaque semaine */
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
-/* === AG_EDT_SCROLL_SNAP_ITEM_V1 === */
-/* =====================================================
-   PAGE EDT — FORCER LISTE VERTICALE
-   BALISE : AG_EDT_FORCE_COLUMN_V1
-   ===================================================== */
+
+.page-edt .edt-leftpanel span:hover{
+  background: rgba(240,168,64,0.06);
+  border-left-color: var(--accent-chaud);
+}
+
+
 /* =====================================================
    PAGE CLASSES HG — LIGNE ROUGE SI GROUPE MANQUANT
    BALISE : AG_CLASSeshg_MISSING_GROUP_RED_V1
    ===================================================== */
 
 .page-classeshg .eleve-row.missing-groupe{
-  border: 1px solid rgba(255, 70, 70, 0.85);
-  background: rgba(255, 70, 70, 0.12);
+  border: 1px solid rgba(220,50,50,0.75);
+  background: rgba(180,30,30,0.12);
 }
 
 .page-classeshg .eleve-row.missing-groupe .eleve-open{
-  color: rgba(255, 170, 170, 1);
+  color: rgba(255,160,160,1);
 }
+
+
 /* =====================================================
-   PAGE CLASSES HG — 1 ÉLÈVE = 1 LIGNE (COMPACT)
+   PAGE CLASSES HG — 1 ÉLÈVE = 1 LIGNE
    BALISE : AG_CLASSeshg_ONE_LINE_V1
    ===================================================== */
 
@@ -1019,10 +1089,15 @@ textarea:focus{
   grid-template-columns: 1fr 150px 220px 160px;
   gap: 10px;
   align-items: center;
-
-  padding: 6px 8px;
+  padding: 6px 10px;
   margin-bottom: 6px;
-  border-radius: 10px;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.page-classeshg .eleve-row:hover{
+  background: rgba(240,168,64,0.05);
+  border-left-color: rgba(240,168,64,0.40);
 }
 
 .page-classeshg .eleve-ident{
@@ -1039,7 +1114,6 @@ textarea:focus{
   text-overflow: ellipsis;
 }
 
-/* fait rester les "opt" sur la même ligne */
 .page-classeshg .eleve-options{
   display: contents;
 }
@@ -1053,4 +1127,3 @@ textarea:focus{
 .page-classeshg .opt select{
   width: 100%;
 }
-
