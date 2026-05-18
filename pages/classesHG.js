@@ -174,9 +174,6 @@ async function getClassesSupabase() {
   return (data || []).map(c => c.nom);
 }
 /* === AG_CLASSeshg_GET_CLASSES_SUPABASE_V1 === */
-    .order("nom");
-
-
 
 async function getClasseIdByNom(nomClasse) {
   const sb = sbAgoram();
@@ -668,10 +665,11 @@ function syntheseParticipationIFST(events) {
    BLOC 12 — RERENDER PAGE
 ------------------------------------------------------- */
 
-function rerender() {
-  document.getElementById("app").innerHTML = renderClassesHG();
+async function rerender() {
+  document.getElementById("app").innerHTML = await renderClassesHG();
   bindClassesHGEvents();
 }
+/* === AG_CLASSeshg_RERENDER_ASYNC_V1 === */
 
 
 /* -------------------------------------------------------
