@@ -264,6 +264,11 @@ export async function renderClassesHG() {
   const classes = await getClassesSupabase();
   ensureClasseActive(classes);
 
+  // ✅ AJOUT
+  if (classeActive && elevesClasse.length === 0) {
+    await loadClasseFromSupabase(classeActive);
+  }
+
   if (!classes.length) {
     return `
       <div class="page page-classeshg">
