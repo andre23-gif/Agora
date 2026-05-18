@@ -239,7 +239,11 @@ export async function renderClassesHG() {
   if (classeActive && elevesClasse.length === 0) {
     await loadClasseFromSupabase(classeActive);
   }
-
+if (syncState === "unknown") {
+  syncState = "ok";
+  lastSyncAt = new Date();
+}
+/* === AG_CLASSeshg_INIT_SYNC_OK_V1 === */
   return `
     <div class="page page-classeshg">
 
