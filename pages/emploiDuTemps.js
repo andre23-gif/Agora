@@ -1,4 +1,7 @@
-import { getClassesAvecGroupes } from "./importExport.js";
+
+// Classes EDT : liste fournie par Supabase (agoram.classes + année active)
+/* === AG_EDT_CLASSES_FROM_SUPABASE_V1 === */
+
 
 /* =======================================================
    PAGE : Emploi du Temps (EDT)
@@ -62,6 +65,67 @@ let contexte = {
   semestre: "S1"     // S1 / S2
 };
 
+/* ======================================================
+   BLOC 2B — SUPABASE (classes pour modale EDT)
+   BALISE : AG_EDT_SUPABASE_HELPERS_V1
+   ====================================================== */
+
+function requireSupabase() {
+  if (!window.sb) throw new Error("Supabase non initialisé (window.sb absent).");
+  return window.sb;
+}
+
+function sbAgoram() {
+  return requireSupabase().schema("agoram");
+}
+
+async function getActiveAnneeId() {
+  const sb = sbAgoram();
+  const { data, error } = await sb
+    .from("annees")
+    .select("id")
+    .eq("active", true)
+    .maybeSingle();
+
+  if (error) throw new Error(`Impossible de lire 'annees'. ${error.message}`);
+  return data ? data.id : null;
+}
+
+// Cache pour éviter de recharger à chaque clic
+let _edtClassesAvecGroupesCache = null;
+let _edtAnneeIdCache = null;
+
+async function getClassesAvecGroupesSupabase() {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) return [];
+
+  if (_edtClassesAvecGroupesCache && _edtAnneeIdCache === anneeId) {
+    return _edtClassesAvecGroupesCache;
+  }
+
+  const sb = sbAgoram();
+  const { data, error } = await sb
+    .from("classes")
+    .select("nom")
+    .eq("annee_id", anneeId)
+    .order("nom");
+
+  if (error) throw new Error(`Impossible de lire 'classes'. ${error.message}`);
+
+  // Même format que getClassesAvecGroupes(): { classe, groupe, label }
+  const out = [];
+  (data || []).forEach(c => {
+    const nom = c.nom;
+    out.push({ classe: nom, groupe: null, label: nom });
+    out.push({ classe: nom, groupe: "gr 1", label: `${nom} gr 1` });
+    out.push({ classe: nom, groupe: "gr 2", label: `${nom} gr 2` });
+  });
+
+  _edtClassesAvecGroupesCache = out;
+  _edtAnneeIdCache = anneeId;
+
+  return out;
+}
 
 /* ======================================================
    BLOC 3 — OUTILS DATE (ISO week)
@@ -405,11 +469,12 @@ export function bindEmploiDuTempsEvents() {
   });
 
   // Clic cellule -> modale choix classe/groupe
-  document.querySelectorAll(".edt-cell").forEach(td => {
-    td.onclick = () => {
-      ouvrirModal(td.dataset.j, td.dataset.c);
-    };
-  });
+document.querySelectorAll(".edt-cell").forEach(td => {
+  td.onclick = async () => {
+    await ouvrirModal(td.dataset.j, td.dataset.c);
+  };
+});
+/* === AG_EDT_MODAL_CALL_ASYNC_V1 === */
 
   // Coche semaines cibles
   document.querySelectorAll("input[type=checkbox][data-iso]").forEach(cb => {
@@ -433,8 +498,10 @@ export function bindEmploiDuTempsEvents() {
    BLOC 9 — MODALE : choix classe/groupe sur une case
    ====================================================== */
 
-function ouvrirModal(j, c) {
-  const classes = getClassesAvecGroupes();
+async function ouvrirModal(j, c) {
+  const classes = await getClassesAvecGroupesSupabase();
+  /* === AG_EDT_MODAL_CLASSES_SUPABASE_V1 === */
+``
 
   document.getElementById("modal").innerHTML = `
     <div style="background:white; padding:10px; border:1px solid black">
