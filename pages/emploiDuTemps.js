@@ -332,6 +332,15 @@ function setAnneeScolaire(nouvelleAnnee) {
 export function renderEmploiDuTemps() {
   if (semaines.length === 0) initEmploiDuTemps();
 
+/* === AG_EDT_INITIAL_LOAD_V1 === */
+const sem = semaines[semaineRefIndex];
+
+if (!edtParSemaine[sem.isoLundi]) {
+  // ⚠️ non await (render est synchrone)
+  loadEDTSemaine(sem.isoLundi).then(() => refresh());
+}
+/* === AG_EDT_INITIAL_LOAD_END === */
+   
   const sem = semaines[semaineRefIndex];
   const annee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
 
@@ -395,8 +404,6 @@ export function renderEmploiDuTemps() {
 <span id="edtSyncTime">
   ${lastSyncAt ? lastSyncAt.toLocaleTimeString("fr-FR") : ""}
 </span>
-/* === AG_EDT_SYNC_DISPLAY_V1 === */
-
 
         <button id="valider">Valider</button>
       </div>
@@ -641,19 +648,24 @@ async function ouvrirModal(j, c) {
     document.getElementById("modal").innerHTML = "";
   };
 
-  document.getElementById("ok").onclick = () => {
-    const [classe, g] = document.getElementById("sel").value.split("|");
-    const i = edtModele.findIndex(x => x.jour === j && x.creneau === c);
+/* === AG_EDT_UPDATE_MODELE_WITH_DIRTY_SYNC_V1 === */
+document.getElementById("ok").onclick = () => {
 
-    const obj = { jour: j, creneau: c, classe, groupe: g || null };
+  const [classe, g] = document.getElementById("sel").value.split("|");
+  const i = edtModele.findIndex(x => x.jour === j && x.creneau === c);
 
-    if (i === -1) edtModele.push(obj);
-    else edtModele[i] = obj;
+  const obj = { jour: j, creneau: c, classe, groupe: g || null };
 
-    document.getElementById("modal").innerHTML = "";
-    refresh();
-  };
-}
+  if (i === -1) edtModele.push(obj);
+  else edtModele[i] = obj;
+
+  /* ✅ état modifié */
+  syncState = "dirty";
+
+  document.getElementById("modal").innerHTML = "";
+  refresh();
+};
+/* === AG_EDT_UPDATE_MODELE_WITH_DIRTY_SYNC_END === */
 
 
 /* ======================================================
