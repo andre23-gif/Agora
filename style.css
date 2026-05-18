@@ -765,7 +765,64 @@ button:active,
   border-color: var(--accent-chaud);
   box-shadow: 0 0 8px rgba(240,168,64,0.40);
 }
+/* =====================================================
+   PAGE SALLE — PARTICIPATION (boutons Art déco)
+   Valeurs :
+     Perturbateur = rouge
+     Passif       = jaune
+     Impliqué     = bleu
+     Moteur       = vert
+   Règle : seul le bouton actif est coloré
+   BALISE : AG_SALLE_PARTICIPATION_BTN_V1
+   ===================================================== */
 
+.page-salle .part-btns{
+  display:flex;
+  gap:6px;
+}
+
+.page-salle .btn-part{
+  padding: 6px 10px;
+  min-width: 44px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1.5px solid rgba(240,168,64,0.35);
+  background: rgba(0,0,0,0.20);
+}
+
+/* Base : pas de couleur forte si non actif */
+.page-salle .btn-part.part-perturbateur,
+.page-salle .btn-part.part-passif,
+.page-salle .btn-part.part-implique,
+.page-salle .btn-part.part-moteur{
+  color: var(--texte-clair);
+}
+
+/* Actif : couleur + glow fort */
+.page-salle .btn-part.active.part-perturbateur{
+  border-color: rgba(244,67,54,0.85);
+  background: rgba(244,67,54,0.18);
+  box-shadow: 0 0 8px rgba(244,67,54,0.55), 0 0 18px rgba(244,67,54,0.25);
+}
+
+.page-salle .btn-part.active.part-passif{
+  border-color: rgba(255,214,0,0.85);
+  background: rgba(255,214,0,0.18);
+  color: #1a1000;
+  box-shadow: 0 0 8px rgba(255,214,0,0.55), 0 0 18px rgba(255,214,0,0.25);
+}
+
+.page-salle .btn-part.active.part-implique{
+  border-color: rgba(33,150,243,0.85);
+  background: rgba(33,150,243,0.18);
+  box-shadow: 0 0 8px rgba(33,150,243,0.55), 0 0 18px rgba(33,150,243,0.25);
+}
+
+.page-salle .btn-part.active.part-moteur{
+  border-color: rgba(76,175,80,0.85);
+  background: rgba(76,175,80,0.18);
+  box-shadow: 0 0 8px rgba(76,175,80,0.55), 0 0 18px rgba(76,175,80,0.25);
+}
 
 /* =====================================================
    PAGE BULLETINS HG
