@@ -5,27 +5,26 @@ import { getEleves, getClasses } from "./importExport.js";
    RÔLE MÉTIER :
      - Cockpit de classe HG : navigation par onglets (1 onglet = 1 classe importée)
      - Paramétrage élève (ligne) : adaptation (unique) + place (facultative)
-     - Profil élève (modale) :
+     - AU CLIC sur l’onglet de classe : recharge depuis SUPABASE (source de vérité)
+     - Écriture immédiate Supabase sur changement adaptation/place
+     - Profil élève (modale) inchangé :
          * Assiduité (lecture seule : saisie uniquement en Salle)
          * Comportement (lecture seule : événements Salle)
          * Compétences HG (I/F/S/TS) éditables par trimestre
-         * Participation (compétence calculée : moyenne des fins de séance)
+         * Participation (calculée)
    LIT :
-     - Import : getEleves(), getClasses()
+     - Import : getEleves(), getClasses() (sert seulement à fabriquer les onglets)
+     - Supabase : classes, annees(active), eleves, places, affectations
      - Events (optionnel) : window.AG_EVENTS (assiduité/participation/comportement)
    ÉCRIT :
-     - Modifie les objets élèves en mémoire : adaptations[0], place
-     - Stocke les évaluations HG en mémoire : window.AG_COMP_HG
-   HORS-PÉRIMÈTRE :
-     - Saisie assiduité / participation (Salle)
-     - Génération des bulletins (Bulletins HG)
+     - Supabase : eleves.adaptations ; affectations(eleve_id, place_id)
+     - Mémoire : elevesClasse (cache d’affichage)
+     - Store compétences : window.AG_COMP_HG
    ======================================================= */
 
 
 /* -------------------------------------------------------
-   BLOC 1 — RÉFÉRENTIEL COMPÉTENCES HG (figé par tes décisions)
-   But : liste unique utilisée dans la modale profil élève.
-   Règle : "Participation" est calculée (non éditable).
+   BLOC 1 — RÉFÉRENTIEL COMPÉTENCES HG
 ------------------------------------------------------- */
 
 const COMPETENCES_HG = [
@@ -40,15 +39,8 @@ const COMPETENCES_HG = [
 ];
 
 const COMPETENCE_PARTICIPATION = "Participation";
-
-/* Trimestres (sélecteur en haut de modale : choix A validé) */
 const TRIMESTRES = ["T1", "T2", "T3"];
-
-/* Adaptations (unique par élève : stockée dans eleve.adaptations[0]) */
 const ADAPTATIONS = ["", "PPS", "PAP", "PPRE", "Adaptations", "Adaptations partielles"];
-
-/* Places (facultatives) : Table 1..30 */
-const PLACES = Array.from({ length: 30 }, (_, i) => i + 1);
 
 
 /* -------------------------------------------------------
@@ -58,11 +50,13 @@ const PLACES = Array.from({ length: 30 }, (_, i) => i + 1);
 let classeActive = null;
 let elevesClasse = [];
 
+// caches places (chargés depuis Supabase)
+let placeIdToNumero = new Map();   // place_id -> numero (1..30)
+let numeroToPlaceId = new Map();   // numero -> place_id
+
 
 /* -------------------------------------------------------
-   BLOC 3 — STORES (lecture/écriture) — sans inventer
-   - AG_EVENTS : alimenté par Salle (plus tard)
-   - AG_COMP_HG : évaluations HG (stock local en attendant persistance)
+   BLOC 3 — STORES (lecture/écriture)
 ------------------------------------------------------- */
 
 function getEventsStore() {
@@ -76,13 +70,27 @@ function getCompStore() {
 
 
 /* -------------------------------------------------------
+   BLOC 3B — SUPABASE (accès)
+   Hypothèse minimale : window.sb existe déjà dans ton app
+------------------------------------------------------- */
+
+function requireSupabase() {
+  if (!window.sb) throw new Error("Supabase non initialisé (window.sb absent).");
+  return window.sb;
+}
+
+function sbAgoram() {
+  return requireSupabase().schema("agoram");
+}
+
+
+/* -------------------------------------------------------
    BLOC 4 — INITIALISATION / SÉLECTION CLASSE
-   But : rendre la page autonome (onglets issus de l'import)
 ------------------------------------------------------- */
 
 export function initClassesHG(nomClasse) {
   classeActive = nomClasse;
-  elevesClasse = getEleves().filter(e => e.classe === nomClasse);
+  elevesClasse = []; // le vrai contenu viendra de Supabase au clic
 }
 
 function ensureClasseActive() {
@@ -94,11 +102,144 @@ function ensureClasseActive() {
 
 
 /* -------------------------------------------------------
+   BLOC 4B — CHARGEMENT SUPABASE (classe -> élèves + places)
+   Objectif :
+     - Au clic sur l’onglet classe, recharger elevesClasse depuis Supabase
+     - Charger places + affectations pour remplir eleve.place (numero)
+------------------------------------------------------- */
+
+async function loadPlacesFromSupabase() {
+  const sb = sbAgoram();
+
+  // On prend tout (*) pour éviter de dépendre d’un nom de colonne supposé.
+  const { data: rows, error } = await sb.from("places").select("*");
+  if (error) throw new Error(`Impossible de lire 'places'. ${error.message}`);
+
+  placeIdToNumero = new Map();
+  numeroToPlaceId = new Map();
+
+  if (!rows || !rows.length) return;
+
+  // Détection robuste du champ "numero" (1..30) dans la table places
+  const sample = rows[0];
+  const keys = Object.keys(sample);
+
+  // Cherche un champ numérique entre 1 et 30
+  let numeroKey = null;
+  for (const k of keys) {
+    const v = sample[k];
+    if (typeof v === "number" && v >= 1 && v <= 30) {
+      numeroKey = k;
+      break;
+    }
+  }
+
+  if (!numeroKey) {
+    throw new Error("Table 'places' : impossible d’identifier la colonne numérique (1..30).");
+  }
+
+  rows.forEach(r => {
+    const pid = r.id;
+    const num = r[numeroKey];
+    if (pid && typeof num === "number") {
+      placeIdToNumero.set(pid, num);
+      numeroToPlaceId.set(num, pid);
+    }
+  });
+}
+
+async function getActiveAnneeId() {
+  const sb = sbAgoram();
+  const { data, error } = await sb
+    .from("annees")
+    .select("id")
+    .eq("active", true)
+    .maybeSingle();
+
+  if (error) throw new Error(`Impossible de lire 'annees'. ${error.message}`);
+  return data ? data.id : null;
+}
+
+async function getClasseIdByNom(nomClasse) {
+  const sb = sbAgoram();
+  const anneeId = await getActiveAnneeId();
+
+  if (anneeId) {
+    const { data, error } = await sb
+      .from("classes")
+      .select("id")
+      .eq("annee_id", anneeId)
+      .eq("nom", nomClasse)
+      .maybeSingle();
+
+    if (error) throw new Error(`Impossible de lire 'classes'. ${error.message}`);
+    if (data?.id) return data.id;
+  }
+
+  // fallback si aucune année active trouvée
+  const { data, error } = await sb
+    .from("classes")
+    .select("id")
+    .eq("nom", nomClasse)
+    .maybeSingle();
+
+  if (error) throw new Error(`Impossible de lire 'classes'. ${error.message}`);
+  if (!data?.id) throw new Error(`Classe introuvable en base : '${nomClasse}'`);
+  return data.id;
+}
+
+async function loadClasseFromSupabase(nomClasse) {
+  const sb = sbAgoram();
+
+  // 1) places (pour traduire place_id -> numero)
+  await loadPlacesFromSupabase();
+
+  // 2) classe_id
+  const classeId = await getClasseIdByNom(nomClasse);
+
+  // 3) élèves de la classe
+  const { data: eleves, error: errEleves } = await sb
+    .from("eleves")
+    .select("id, prenom, nom, genre, adaptations, classe_id")
+    .eq("classe_id", classeId);
+
+  if (errEleves) throw new Error(`Impossible de lire 'eleves'. ${errEleves.message}`);
+
+  const list = (eleves || []).slice().sort((a, b) => {
+    const n = (a.nom || "").localeCompare(b.nom || "", "fr");
+    if (n !== 0) return n;
+    return (a.prenom || "").localeCompare(b.prenom || "", "fr");
+  });
+
+  // 4) affectations pour ces élèves
+  const ids = list.map(e => e.id);
+  let aff = [];
+  if (ids.length) {
+    const { data: rows, error: errAff } = await sb
+      .from("affectations")
+      .select("eleve_id, place_id")
+      .in("eleve_id", ids);
+
+    if (errAff) throw new Error(`Impossible de lire 'affectations'. ${errAff.message}`);
+    aff = rows || [];
+  }
+
+  const eleveIdToNumero = new Map();
+  aff.forEach(a => {
+    const num = placeIdToNumero.get(a.place_id) ?? null;
+    if (num) eleveIdToNumero.set(a.eleve_id, num);
+  });
+
+  // 5) enrichir la vue locale
+  elevesClasse = list.map(e => ({
+    ...e,
+    place: eleveIdToNumero.get(e.id) ?? null, // numero 1..30 ou null
+  }));
+}
+
+
+/* -------------------------------------------------------
    BLOC 5 — RENDU PRINCIPAL
-   Contenu :
-     (1) Onglets de classes
-     (2) Liste élèves + 2 menus (Adaptation / Place)
-     (3) Modale profil
 ------------------------------------------------------- */
 
 export function renderClassesHG() {
@@ -123,9 +264,6 @@ export function renderClassesHG() {
     `;
   }
 
-  // Rafraîchir à partir de l’import (source centrale)
-  elevesClasse = getEleves().filter(e => e.classe === classeActive);
-
   return `
     <div class="page page-classeshg">
 
@@ -141,18 +279,9 @@ export function renderClassesHG() {
       <!-- (2) Classe active -->
       <h1>Classe ${classeActive}</h1>
 
-      <!-- (3) Liste élèves + options -->
+      <!-- (3) Liste élèves + 2 menus -->
       <div class="liste-eleves">
-        ${elevesClasse
-          .slice()
-          // === AG_SORT_NOM_PRENOM_V1 ===
-          .sort((a, b) => {
-            const n = (a.nom || "").localeCompare(b.nom || "", "fr");
-            if (n !== 0) return n;
-            return (a.prenom || "").localeCompare(b.prenom || "", "fr");
-          })
-          .map(renderEleveRow)
-          .join("")}
+        ${elevesClasse.map(renderEleveRow).join("")}
       </div>
 
       <!-- (4) Modale -->
@@ -165,12 +294,6 @@ export function renderClassesHG() {
 
 /* -------------------------------------------------------
    BLOC 6 — RENDU ÉLÈVE (ligne cockpit)
-   But :
-     - Afficher élève (NOM Prénom)
-     - 2 menus : Adaptation / Place
-     - Clic nom => ouvre profil élève
-   Note :
-     - Pas de drag & drop (supprimé)
 ------------------------------------------------------- */
 
 function renderEleveRow(eleve) {
@@ -213,12 +336,12 @@ function renderEleveRow(eleve) {
 
 /* -------------------------------------------------------
    BLOC 7 — OPTIONS PLACES (Table 1..30)
-   But : construire la liste des options "Table n"
 ------------------------------------------------------- */
 
 function renderPlaceOptions(current) {
   const currentNum = current === "" ? null : Number(current);
-  return PLACES.map(p => {
+  const nums = Array.from({ length: 30 }, (_, i) => i + 1);
+  return nums.map(p => {
     const sel = (currentNum === p) ? "selected" : "";
     return `<option value="${p}" ${sel}>Table ${p}</option>`;
   }).join("");
@@ -230,13 +353,22 @@ function renderPlaceOptions(current) {
 ------------------------------------------------------- */
 
 export function bindClassesHGEvents() {
-  // Onglets classes
+  // Onglets classes -> charge depuis Supabase
   document.querySelectorAll("#classesTabs .tab").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       initClassesHG(btn.dataset.classe);
+
+      await loadClasseFromSupabase(classeActive);
       rerender();
     });
   });
+
+  // Auto-chargement initial (classe active au premier affichage)
+  if (classeActive && elevesClasse.length === 0) {
+    loadClasseFromSupabase(classeActive)
+      .then(() => rerender())
+      .catch(e => { console.error(e); });
+  }
 
   // Ouvrir profil élève
   document.querySelectorAll(".eleve-open").forEach(btn => {
@@ -247,35 +379,103 @@ export function bindClassesHGEvents() {
     });
   });
 
-  // Adaptation (unique)
+  // Adaptation -> update Supabase.eleves.adaptations
   document.querySelectorAll(".opt-adapt").forEach(sel => {
-    sel.addEventListener("change", () => {
+    sel.addEventListener("change", async () => {
       const id = sel.dataset.adapt;
       const eleve = elevesClasse.find(e => String(e.id) === String(id));
       if (!eleve) return;
 
-      eleve.adaptations = sel.value ? [sel.value] : [];
+      const newAdaptations = sel.value ? [sel.value] : [];
+
+      const sb = sbAgoram();
+      const { error } = await sb
+        .from("eleves")
+        .update({ adaptations: newAdaptations })
+        .eq("id", eleve.id);
+
+      if (error) {
+        // on reste cohérent : pas de mise à jour locale si DB échoue
+        rerender();
+        throw new Error(`Écriture adaptation impossible. ${error.message}`);
+      }
+
+      eleve.adaptations = newAdaptations;
       rerender();
     });
   });
 
-  // Place (facultative) — règle collision : remplacement automatique
+  // Place -> update Supabase via agoram.affectations (remplacement automatique)
   document.querySelectorAll(".opt-place").forEach(sel => {
-    sel.addEventListener("change", () => {
+    sel.addEventListener("change", async () => {
       const id = sel.dataset.place;
       const eleve = elevesClasse.find(e => String(e.id) === String(id));
       if (!eleve) return;
 
-      const place = sel.value ? Number(sel.value) : null;
+      const sb = sbAgoram();
+      const newNumero = sel.value ? Number(sel.value) : null;
 
-      if (place !== null) {
-        // Unicité : libérer l’occupant éventuel (règle A = remplacement auto)
-        elevesClasse.forEach(e => {
-          if (e.place === place) e.place = null;
-        });
+      // suppression (place vide)
+      if (newNumero === null) {
+        const { error } = await sb
+          .from("affectations")
+          .delete()
+          .eq("eleve_id", eleve.id);
+
+        if (error) {
+          rerender();
+          throw new Error(`Suppression affectation impossible. ${error.message}`);
+        }
+
+        eleve.place = null;
+        rerender();
+        return;
       }
 
-      eleve.place = place;
+      // numero -> place_id
+      const placeId = numeroToPlaceId.get(newNumero);
+      if (!placeId) {
+        rerender();
+        throw new Error(`Place inconnue en base pour le numéro ${newNumero}.`);
+      }
+
+      // Règle A : remplacement automatique
+      // 1) libérer la place (si occupée)
+      const { error: errFreePlace } = await sb
+        .from("affectations")
+        .delete()
+        .eq("place_id", placeId);
+
+      if (errFreePlace) {
+        rerender();
+        throw new Error(`Libération place impossible. ${errFreePlace.message}`);
+      }
+
+      // 2) libérer l’élève (s’il avait déjà une place)
+      const { error: errFreeEleve } = await sb
+        .from("affectations")
+        .delete()
+        .eq("eleve_id", eleve.id);
+
+      if (errFreeEleve) {
+        rerender();
+        throw new Error(`Libération élève impossible. ${errFreeEleve.message}`);
+      }
+
+      // 3) créer la nouvelle affectation
+      const { error: errIns } = await sb
+        .from("affectations")
+        .insert([{ eleve_id: eleve.id, place_id: placeId }]);
+
+      if (errIns) {
+        rerender();
+        throw new Error(`Création affectation impossible. ${errIns.message}`);
+      }
+
+      // mettre à jour la vue locale (libérer l’occupant local aussi)
+      elevesClasse.forEach(e => { if (e.place === newNumero) e.place = null; });
+      eleve.place = newNumero;
+
       rerender();
     });
   });
@@ -284,13 +484,13 @@ export function bindClassesHGEvents() {
 
 /* -------------------------------------------------------
    BLOC 9 — MODALE PROFIL ÉLÈVE
+   (inchangé dans son principe)
 ------------------------------------------------------- */
 
 function ouvrirProfilEleve(eleve) {
   const events = getEventsStore();
   const compStore = getCompStore();
 
-  // Init store élève
   if (!compStore[eleve.id]) compStore[eleve.id] = {};
   TRIMESTRES.forEach(t => {
     if (!compStore[eleve.id][t]) compStore[eleve.id][t] = {};
@@ -301,20 +501,17 @@ function ouvrirProfilEleve(eleve) {
   document.getElementById("modal").innerHTML = `
     <div class="modal profil-eleve" role="dialog" aria-modal="true">
 
-      <!-- En-tête : élève + fermeture -->
       <div class="modal-head">
         <h2>${eleve.prenom} ${eleve.nom}</h2>
         <button class="btn-close" id="closeProfil">✕</button>
       </div>
 
-      <!-- Sélecteur trimestre -->
       <div class="trimestres" id="triTabs">
         ${TRIMESTRES.map(t => `
           <button class="tri ${t === trimestreDefaut ? "active" : ""}" data-tri="${t}">${t}</button>
         `).join("")}
       </div>
 
-      <!-- Contenu dynamique par trimestre -->
       <div id="profilBody"></div>
 
     </div>
@@ -324,10 +521,8 @@ function ouvrirProfilEleve(eleve) {
     document.getElementById("modal").innerHTML = "";
   };
 
-  // Rendu initial
   renderProfilBody(eleve, trimestreDefaut);
 
-  // Tabs trimestre
   document.querySelectorAll("#triTabs .tri").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#triTabs .tri").forEach(b => b.classList.remove("active"));
@@ -336,7 +531,6 @@ function ouvrirProfilEleve(eleve) {
     });
   });
 }
-
 
 function renderProfilBody(eleve, tri) {
   const events = getEventsStore();
@@ -350,8 +544,6 @@ function renderProfilBody(eleve, tri) {
   const part = filterTri(events.participation);
 
   const participationIFST = syntheseParticipationIFST(part);
-
-  // Compétences éditables (8)
   const evals = compStore[eleve.id][tri];
 
   document.getElementById("profilBody").innerHTML = `
@@ -366,7 +558,6 @@ function renderProfilBody(eleve, tri) {
             .join("")}
         </div>
       ` : `<div class="hint">Aucune donnée enregistrée.</div>`}
-      <div class="hint small">Saisie uniquement en Salle.</div>
     </div>
 
     <div class="bloc">
@@ -385,16 +576,6 @@ function renderProfilBody(eleve, tri) {
     <div class="bloc">
       <h3>Participation (calculée)</h3>
       <div class="hint">Niveau : <b>${participationIFST}</b></div>
-      ${part.length ? `
-        <div class="liste-mini">
-          ${part
-            .slice()
-            .sort((a,b) => (a.date||"").localeCompare(b.date||""))
-            .map(x => `<div class="mini-ligne">${x.date ?? "—"} · ${x.creneau ?? "—"} · ${x.valeur ?? "—"}</div>`)
-            .join("")}
-        </div>
-      ` : `<div class="hint">Aucune donnée enregistrée.</div>`}
-      <div class="hint small">Saisie en fin d’heure dans Salle.</div>
     </div>
 
     <div class="bloc">
@@ -402,11 +583,9 @@ function renderProfilBody(eleve, tri) {
       <div class="competences">
         ${COMPETENCES_HG.map(label => renderCompetenceRow(eleve.id, tri, label, evals[label] ?? "I")).join("")}
       </div>
-      <div class="hint small">Profil HG par trimestre.</div>
     </div>
   `;
 
-  // Bind boutons compétences
   document.querySelectorAll(".btn-comp").forEach(btn => {
     btn.addEventListener("click", () => {
       const eleveId = btn.dataset.eleveid;
@@ -425,11 +604,6 @@ function renderProfilBody(eleve, tri) {
     });
   });
 }
-
-
-/* -------------------------------------------------------
-   BLOC 10 — Rendu d’une compétence (ligne + boutons)
-------------------------------------------------------- */
 
 function renderCompetenceRow(eleveId, tri, label, current) {
   const vals = ["I","F","S","TS"];
@@ -451,14 +625,8 @@ function renderCompetenceRow(eleveId, tri, label, current) {
   `;
 }
 
-
-/* -------------------------------------------------------
-   BLOC 11 — Synthèse Participation -> IFST (au plus bas)
-------------------------------------------------------- */
-
 function syntheseParticipationIFST(events) {
   if (!events || !events.length) return "—";
-
   const score = (v) => {
     switch (v) {
       case "perturbateur": return 0;
@@ -468,11 +636,9 @@ function syntheseParticipationIFST(events) {
       default: return 1;
     }
   };
-
   const total = events.reduce((acc, e) => acc + score(e.valeur), 0);
   const avg = total / events.length;
   const flo = Math.floor(avg);
-
   if (flo === 0) return "I";
   if (flo === 1) return "F";
   if (flo === 2) return "S";
@@ -491,7 +657,7 @@ function rerender() {
 
 
 /* -------------------------------------------------------
-   BLOC 13 — UTILITAIRES (échappement)
+   BLOC 13 — UTILITAIRES
 ------------------------------------------------------- */
 
 function escapeHtml(s) {
@@ -516,4 +682,3 @@ function cssAttr(s) {
 export function getElevesClasseHG() {
   return elevesClasse;
 }
-``
