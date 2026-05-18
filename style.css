@@ -547,6 +547,49 @@ button:active,
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
+/* =====================================================
+   CLASSESHG — PP TOGGLE (style visuel type radio)
+   INSERTION : juste après .classes-tabs
+   ===================================================== */
+
+.page-classeshg .pp-toggle{
+  cursor: pointer;
+
+  padding: 4px 10px;
+  font-size: 0.75em;
+  letter-spacing: 0.05em;
+
+  opacity: 0.45;
+
+  border: 1px solid rgba(240,168,64,0.25);
+  background: rgba(0,0,0,0.25);
+
+  transition:
+    opacity 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    color 0.2s;
+}
+
+.page-classeshg .pp-toggle:hover{
+  opacity: 0.7;
+  border-color: rgba(240,168,64,0.4);
+}
+
+.page-classeshg .pp-toggle.active{
+  opacity: 1;
+
+  color: var(--accent-chaud);
+  border-color: var(--accent-chaud);
+
+  background: rgba(240,168,64,0.12);
+
+  box-shadow:
+    0 0 6px rgba(240,168,64,0.5),
+    0 0 14px rgba(240,168,64,0.25);
+}
+
+/* === AG_CLASSeshg_PP_TOGGLE_STYLE === */
 
 .page-classeshg .classes-tabs .tab{
   background: rgba(0,0,0,0.30);
@@ -557,7 +600,11 @@ button:active,
   clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
   transition: all 0.2s ease;
 }
-
+.page-classeshg .tab-wrap{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 .page-classeshg .classes-tabs .tab.active{
   border-color: rgba(240,168,64,0.60);
   background: rgba(240,168,64,0.08);
