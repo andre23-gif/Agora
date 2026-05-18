@@ -8,16 +8,22 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
 
+  <!-- =====================================================
+       AG_APP_VERSION_V1
+       ===================================================== -->
   <script>
     window.APP_VERSION = "v1.0.5";
   </script>
 
+  <!-- Supabase JS (UMD) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
 
-  <!-- ÉCRAN CONNEXION -->
+  <!-- =====================================================
+       ÉCRAN CONNEXION
+       ===================================================== -->
   <div id="authScreen">
     <input id="authEmail" type="email" placeholder="email">
     <input id="authPassword" type="password" placeholder="mot de passe">
@@ -25,7 +31,9 @@
     <span id="authDot"></span>
   </div>
 
-  <!-- HEADER -->
+  <!-- =====================================================
+       HEADER
+       ===================================================== -->
   <header class="ag-header" id="mainHeader" style="display:none;">
     <div class="ag-brand">
       <img src="icon-192.png" alt="">
@@ -43,61 +51,75 @@
     </nav>
   </header>
 
-  <!-- APP -->
+  <!-- =====================================================
+       APP
+       ===================================================== -->
   <div id="app" style="display:none;"></div>
 
-  <!-- CONFIG -->
+  <!-- =====================================================
+       CONFIG SUPABASE
+       ===================================================== -->
   <script>
     const SUPABASE_URL = "https://bkztwcyrqszqwicyqnzb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
 
-    window.sb = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY
-    );
-
+    window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     window.appAnneeCourante = "2024-2025";
   </script>
 
-  <!-- ROUTAGE -->
+  <!-- =====================================================
+       ROUTAGE (MODULE)
+       - Corrige définitivement les erreurs de chemin GitHub Pages
+       - Conserve toutes les fonctionnalités
+       ===================================================== -->
   <script type="module">
+    /* =====================================================
+       AG_ROUTER_MODULE_V2
+       ===================================================== */
 
-    const V = window.APP_VERSION;
+    const V = window.APP_VERSION || "v1";
 
-    const { renderSalle, bindSalleEvents } =
-      await import(`./pages/salle.js?v=${V}`);
+    // Base URL réelle (marche en local, GitHub Pages, sous-dossier /Agora/, etc.)
+    // Exemple: si index est https://.../Agora/index.html
+    // BASE_URL devient https://.../Agora/
+    const BASE_URL = new URL("./", import.meta.url);
 
-    const { renderClassesHG } =
-      await import(`./pages/classesHG.js?v=${V}`);
+    // Helper d'import robuste : construit toujours l'URL correcte + ajoute ?v=
+    async function importPage(relPath) {
+      const u = new URL(relPath, BASE_URL);
+      u.searchParams.set("v", V);
+      return import(u.href);
+    }
 
-    const { renderBulletinsHG, bindBulletinsHGEvents } =
-      await import(`./pages/bulletinsHG.js?v=${V}`);
+    // Import des pages (toutes via le même mécanisme fiable)
+    // =====================================================
+    let renderSalle, bindSalleEvents;
+    let renderClassesHG;
+    let renderBulletinsHG, bindBulletinsHGEvents;
+    let renderPP, bindPPEvents;
+    let renderEmploiDuTemps, bindEmploiDuTempsEvents;
+    let renderImportExport, bindImportExportEvents;
+    let renderArchives, bindArchivesEvents;
 
-    const { renderPP, bindPPEvents } =
-      await import(`./pages/pp.js?v=${V}`);
-
-/* ======================================================
-   AG_IMPORT_EDT_PATH_FIX_CONTEXT_V1
-   chemin absolu correct GitHub Pages
-   ====================================================== */
-const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
-  await import(`/Agora/pages/emploiDuTemps.js?v=${V}`);
-/* ======================================================
-   AG_IMPORT_EDT_PATH_FIX_CONTEXT_END
-   =================================================
-/* === AG_FIX_IMPORT_PATH_V1 === */
-
-    const { renderImportExport, bindImportExportEvents } =
-      await import(`./pages/importExport.js?v=${V}`);
-
-    const { renderArchives, bindArchivesEvents } =
-      await import(`./pages/archives.js?v=${V}`);
+    try {
+      ({ renderSalle, bindSalleEvents } = await importPage("./pages/salle.js"));
+      ({ renderClassesHG } = await importPage("./pages/classesHG.js"));
+      ({ renderBulletinsHG, bindBulletinsHGEvents } = await importPage("./pages/bulletinsHG.js"));
+      ({ renderPP, bindPPEvents } = await importPage("./pages/pp.js"));
+      ({ renderEmploiDuTemps, bindEmploiDuTempsEvents } = await importPage("./pages/emploiDuTemps.js"));
+      ({ renderImportExport, bindImportExportEvents } = await importPage("./pages/importExport.js"));
+      ({ renderArchives, bindArchivesEvents } = await importPage("./pages/archives.js"));
+    } catch (e) {
+      console.error("Erreur import modules:", e);
+      alert("Erreur de chargement des modules. Ouvre la console (F12) pour voir quel fichier manque.");
+      throw e; // stop net : évite état incohérent
+    }
 
     const app = document.getElementById("app");
 
-    // =====================
+    // =====================================================
     // AUTH
-    // =====================
+    // =====================================================
 
     const authScreen = document.getElementById("authScreen");
     const authBtn = document.getElementById("authBtn");
@@ -108,8 +130,8 @@ const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
     const header = document.getElementById("mainHeader");
     const appDiv = document.getElementById("app");
 
-    function setAuthState(ok){
-      if(ok){
+    function setAuthState(ok) {
+      if (ok) {
         authScreen.style.display = "none";
         header.style.display = "";
         appDiv.style.display = "";
@@ -128,14 +150,10 @@ const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
 
     // Connexion
     authBtn.addEventListener("click", async () => {
-
       const email = emailInput.value;
       const password = passwordInput.value;
 
-      const { error } = await window.sb.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { error } = await window.sb.auth.signInWithPassword({ email, password });
 
       if (error) {
         alert("Connexion échouée");
@@ -145,18 +163,23 @@ const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
       }
     });
 
-    // =====================
+    // =====================================================
     // ROUTAGE
-    // =====================
+    // =====================================================
 
-   async function afficher(renderFn, bindFn) {
-  const html = await renderFn();
-  app.innerHTML = html;
-  if (bindFn) bindFn();
-}
-/* === AG_ROUTAGE_AFFICHER_ASYNC_V1 === */
+    /* === AG_ROUTAGE_AFFICHER_ASYNC_V2 === */
+    async function afficher(renderFn, bindFn) {
+      try {
+        const html = await renderFn();
+        app.innerHTML = html;
+        if (bindFn) bindFn();
+      } catch (e) {
+        console.error("Erreur render/bind:", e);
+        app.innerHTML = "<div class='card'>Erreur d’affichage. Ouvre la console (F12).</div>";
+      }
+    }
 
-
+    // Boutons nav
     document.getElementById("navSalle").onclick = () =>
       afficher(renderSalle, bindSalleEvents);
 
@@ -178,6 +201,7 @@ const { renderEmploiDuTemps, bindEmploiDuTempsEvents } =
     document.getElementById("navArchives").onclick = () =>
       afficher(renderArchives, bindArchivesEvents);
 
+    // Page par défaut
     afficher(renderSalle, bindSalleEvents);
 
   </script>
