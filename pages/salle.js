@@ -1,5 +1,23 @@
+/* === AG_SALLE_IMPORTS_V2_BEGIN ================================= */
 import { getEleves } from "./importExport.js";
-import { getEDT, CRENEAUX } from "./emploiDuTemps.js";
+import * as EDT from "./emploiDuTemps.js";
+
+/*
+  Contrat Salle ↔ EDT (compat)
+  - Ancien EDT : exportait getEDT + CRENEAUX
+  - Nouveau EDT : peut ne plus exporter getEDT
+  => On expose ici un getEDT() compatible pour que le reste de salle.js ne casse pas.
+*/
+const CRENEAUX = EDT.CRENEAUX;
+
+const getEDT = (...args) => {
+  if (typeof EDT.getEDT === "function") return EDT.getEDT(...args);
+
+  // Nouveau contrat : si tu exposes plus tard un getter explicite, branche-le ici.
+  // Pour l’instant, on renvoie une structure vide plutôt que casser Salle.
+  return {};
+};
+/* === AG_SALLE_IMPORTS_V2_END =================================== */
 
 /* =======================================================
    PAGE : Salle
