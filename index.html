@@ -141,10 +141,13 @@
     // ROUTAGE
     // =====================
 
-    function afficher(renderFn, bindFn) {
-      app.innerHTML = renderFn();
-      if (bindFn) bindFn();
-    }
+   async function afficher(renderFn, bindFn) {
+  const html = await renderFn();
+  app.innerHTML = html;
+  if (bindFn) bindFn();
+}
+/* === AG_ROUTAGE_AFFICHER_ASYNC_V1 === */
+
 
     document.getElementById("navSalle").onclick = () =>
       afficher(renderSalle, bindSalleEvents);
