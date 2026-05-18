@@ -93,12 +93,12 @@ export function initClassesHG(nomClasse) {
   elevesClasse = []; // le vrai contenu viendra de Supabase au clic
 }
 
-function ensureClasseActive() {
-  const classes = getClasses();
+function ensureClasseActive(classes) {
   if (!classeActive && classes.length) {
     initClassesHG(classes[0]);
   }
 }
+/* === AG_CLASSeshg_ENSURE_ACTIVE_V1 === */
 
 
 /* -------------------------------------------------------
@@ -159,6 +159,24 @@ async function getActiveAnneeId() {
   if (error) throw new Error(`Impossible de lire 'annees'. ${error.message}`);
   return data ? data.id : null;
 }
+
+async function getClassesSupabase() {
+  const sb = sbAgoram();
+
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) return [];
+
+  const { data, error } = await sb
+    .from("classes")
+    .select("nom")
+    .eq("annee_id", anneeId(`Impossible de lire 'classes'. ${error.message}`);    .eq("annee_id", anneeId)
+
+  return (data || []).map(c => c.nom);
+}
+/* === AG_CLASSeshg_GET_CLASSES_SUPABASE_V1 === */
+    .order("nom");
+
+
 
 async function getClasseIdByNom(nomClasse) {
   const sb = sbAgoram();
@@ -242,9 +260,9 @@ async function loadClasseFromSupabase(nomClasse) {
    BLOC 5 — RENDU PRINCIPAL
 ------------------------------------------------------- */
 
-export function renderClassesHG() {
-  const classes = getClasses();
-  ensureClasseActive();
+export async function renderClassesHG() {
+  const classes = await getClassesSupabase();
+  ensureClasseActive(classes);
 
   if (!classes.length) {
     return `
