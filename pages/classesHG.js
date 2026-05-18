@@ -42,6 +42,8 @@ const IFST = ["I", "F", "S", "TS"];
 
 let classeActive = null;
 let elevesClasse = []; // [{id, nom, prenom, groupe, adaptations, place(numero)}]
+let syncState = "unknown";     // "unknown" | "ok" | "dirty" | "error"
+let lastSyncAt = null;         // Date
 
 // cache places pour la classe active : numero -> place_id
 let numeroToPlaceId = new Map();
@@ -249,7 +251,21 @@ export async function renderClassesHG() {
         `).join("")}
       </div>
 
-      <h1>Classe ${classeActive}</h1>
+      <!-- (2) Classe active -->
+<h1>Classe ${classeActive}</h1>
+
+<div class="classeshg-syncbar">
+  <span id="syncState">
+    ${syncState === "ok" ? "🟢 Synchronisé" :
+      syncState === "dirty" ? "🟠 Modifications non synchronisées" :
+      syncState === "error" ? "🔴 Erreur de synchronisation" :
+      "⚪ Statut inconnu"}
+  </span>
+  <span id="syncTime">
+    ${lastSyncAt ? `Dernière synchronisation : ${lastSyncAt.toLocaleTimeString("fr-FR")}` : ""}
+  </span>
+  <button id="syncBtn">Synchroniser</button>
+</div>
 
       <div class="liste-eleves">
         ${elevesClasse.map(renderEleveRow).join("")}
@@ -326,6 +342,23 @@ function renderPlaceOptions(current) {
 ------------------------------------------------------- */
 
 export function bindClassesHGEvents() {
+   // === BOUTON SYNCHRONISER ===
+const syncBtn = document.getElementById("syncBtn");
+
+if (syncBtn) {
+  syncBtn.onclick = async () => {
+    try {
+      await loadClasseFromSupabase(classeActive);
+      syncState = "ok";
+      lastSyncAt = new Date();
+      await rerender();
+    } catch (e) {
+      syncState = "error";
+      await rerender();
+      console.error(e);
+    }
+  };
+}
   // onglets classe
   document.querySelectorAll("#classesTabs .tab").forEach(btn => {
     btn.addEventListener("click", async () => {
