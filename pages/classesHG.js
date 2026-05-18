@@ -220,7 +220,11 @@ export async function renderClassesHG() {
             <button class="tab ${c.nom === classeActive ? "active" : ""}" data-classe="${escapeAttr(c.nom)}">
               ${escapeHtml(c.nom)}
             </button>
-            <button class="btn-pp ${c.is_pp ? "active" : ""}" data-pp-id="${escapeAttr(c.id)}" data-pp-nom="${escapeAttr(c.nom)}" title="Classe PP">
+            
+<div class="pp-toggle ${c.is_pp ? "active" : ""}" data-pp-id="${escapeAttr(c.id)}" title="Classe PP">
+  PP
+</div>
+
               PP
             </button>
           </div>
@@ -357,32 +361,35 @@ export function bindClassesHGEvents() {
   });
 
   // Bouton PP : toggle Supabase classes.is_pp
-  document.querySelectorAll("#classesTabs .btn-pp").forEach(btn => {
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
+ document.querySelectorAll("#classesTabs .pp-toggle").forEach(el => {
+  el.addEventListener("click", async (e) => {
+    e.stopPropagation();
 
-      const classeId = btn.dataset.ppId;
-      const current = btn.classList.contains("active");
-      const want = !current;
+    const classeId = el.dataset.ppId;
+    const isActive = el.classList.contains("active");
 
-      try {
-        const sb = sbAgoram();
-        const { error } = await sb
-          .from("classes")
-          .update({ is_pp: want })
-          .eq("id", classeId);
+    try {
+      const sb = sbAgoram();
 
-        if (error) throw new Error(error.message);
+      const { error } = await sb
+        .from("classes")
+        .update({ is_pp: !isActive })
+        .eq("id", classeId);
 
-        syncState = "dirty";
-        await rerender();
-      } catch (err) {
-        console.error(err);
-        syncState = "error";
-        await rerender();
-      }
-    });
+      if (error) throw new Error(error.message);
+
+      syncState = "dirty";
+      await rerender();
+
+    } catch (err) {
+      console.error(err);
+      syncState = "error";
+      await rerender();
+    }
   });
+});
+/* === AG_PP_TOGGLE_EVENT_PATCH_V1 === */
+
 
   // Modale élève
   document.querySelectorAll(".eleve-open").forEach(btn => {
