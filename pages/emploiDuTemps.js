@@ -334,14 +334,19 @@ export function renderEmploiDuTemps() {
 
   /* === AG_EDT_RENDER_START_PATCH_V1 === */
 
-  const sem = semaines[semaineRefIndex];
+const sem = semaines[semaineRefIndex];
 
-  // charge la semaine SI non en mémoire
-  if (!edtParSemaine[sem.isoLundi]) {
-    loadEDTSemaine(sem.isoLundi)
-      .catch(console.error)
-      .then(() => refresh());
-  }
+/* === AG_EDT_LOAD_SAFE_V1 === */
+if (!edtParSemaine[sem.isoLundi]) {
+  loadEDTSemaine(sem.isoLundi)
+    .then(() => {
+      // ✅ évite boucle infinie
+      if (!edtParSemaine[sem.isoLundi]) return;
+      refresh();
+    })
+    .catch(console.error);
+}
+/* === AG_EDT_LOAD_SAFE_END === */
 
   const annee = window.appAnneeCourante ||
     `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
@@ -507,11 +512,14 @@ export function bindEmploiDuTempsEvents() {
     refresh();
   };
 
-  document.getElementById("weekSelect").onchange = async e => {
+document.getElementById("weekSelect").onchange = async e => {
   semaineRefIndex = Number(e.target.value);
 
   const sem = semaines[semaineRefIndex];
-  await loadEDTSemaine(sem.isoLundi);
+
+  if (!edtParSemaine[sem.isoLundi]) {
+    await loadEDTSemaine(sem.isoLundi);
+  }
 
   refresh();
 };
