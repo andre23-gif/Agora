@@ -974,6 +974,48 @@ input[type="checkbox"]:checked::after{
 
 
 /* =====================================================
+   GLOBAL — RADIO STYLE (aligné checkbox Art déco)
+   BALISE : AG_RADIO_V1
+   ===================================================== */
+
+input[type="radio"]{
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(240,168,64,0.45);
+  border-radius: 50%;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+
+input[type="radio"]:checked{
+  border-color: var(--accent-chaud);
+  background: rgba(240,168,64,0.12);
+
+  box-shadow:
+    0 0 6px rgba(240,168,64,0.55),
+    0 0 14px rgba(240,168,64,0.35),
+    0 0 28px rgba(240,168,64,0.18);
+}
+
+
+input[type="radio"]:checked::after{
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: var(--accent-chaud);
+  border-radius: 50%;
+
+  box-shadow:
+    0 0 6px rgba(240,168,64,0.7),
+    0 0 10px rgba(240,168,64,0.5);
+}
+
+
+
+/* =====================================================
    PAGE EDT — STRUCTURE VISUELLE
    BALISE : AG_EDT_VISUAL_V2_SAFE
    ===================================================== */
@@ -1086,7 +1128,7 @@ textarea:focus{
 
 .page-classeshg .eleve-row{
   display: grid;
-  grid-template-columns: 1fr 150px 220px 160px;
+  grid-template-columns: 1fr 140px 60px 180px 120px;
   gap: 10px;
   align-items: center;
   padding: 6px 10px;
