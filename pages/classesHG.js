@@ -641,9 +641,14 @@ function renderCompetenceRow(eleveId, tri, label, current) {
 ------------------------------------------------------- */
 
 async function rerender() {
+  if (classeActive) {
+    await loadClasseFromSupabase(classeActive);
+  }
+
   document.getElementById("app").innerHTML = await renderClassesHG();
   bindClassesHGEvents();
 }
+
 
 /* -------------------------------------------------------
    BLOC 13 — UTILITAIRES
