@@ -322,9 +322,13 @@ export async function renderClassesHG() {
 function renderEleveRow(eleve) {
   const adaptActuelle = (eleve.adaptations && eleve.adaptations.length) ? eleve.adaptations[0] : "";
   const placeActuelle = (typeof eleve.place === "number") ? eleve.place : "";
-
+const groupeActuel = eleve.groupe || "";
+/* === AG_CLASSeshg_GROUPE_REQUIRED_V1 === */
+``
   return `
-    <div class="eleve-row" data-id="${eleve.id}">
+    <div class="eleve-row${groupeActuel ? "" : " missing-groupe"}" data-id="${eleve.id}">
+/* === AG_CLASSeshg_ROW_RED_IF_NO_GROUP_V1 === */
+.id}">
       <div class="eleve-ident">
         <button class="eleve-open" data-open="${eleve.id}">
           ${eleve.nom} ${eleve.prenom}
