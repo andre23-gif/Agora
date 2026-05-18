@@ -2,6 +2,18 @@ import { getEleves, getClasses } from "./importExport.js";
 
 /* =======================================================
    PAGE : Classes HG
+   RÔLE MÉTIER :
+     - Onglets = classes (depuis Supabase, année active)
+     - Liste élèves (1 ligne) : Nom / Prénom / Genre / Groupe (gr1/gr2) / Adaptation / Place
+     - Groupe : obligatoire (radio), écriture immédiate Supabase
+     - Adaptation : écriture immédiate Supabase (eleves.adaptations)
+     - Place : écriture immédiate Supabase (eleves.place) + remplacement automatique (règle A)
+     - Bouton Synchroniser : relecture Supabase + preuve visuelle (syncState + horodatage)
+     - Clic sur nom : modale élève HG
+         * Onglets T1/T2/T3
+         * Compétences HG I/F/S/TS enregistrées en Supabase (agoram.competences_hg)
+   NOTE IMPORT :
+     - getEleves/getClasses importés mais non utilisés ici (historique).
    ======================================================= */
 
 /* -------------------------------------------------------
@@ -21,6 +33,7 @@ const COMPETENCES_HG = [
 
 const TRIMESTRES = ["T1", "T2", "T3"];
 const ADAPTATIONS = ["", "PPS", "PAP", "PPRE", "Adaptations", "Adaptations partielles"];
+const IFST = ["I", "F", "S", "TS"];
 
 // Mapping compétences -> colonnes Supabase agoram.competences_hg
 const COMP_COL = {
@@ -34,21 +47,15 @@ const COMP_COL = {
   "Usages numériques": "usages_numeriques",
 };
 
-const IFST = ["I", "F", "S", "TS"];
-
 /* -------------------------------------------------------
    BLOC 2 — ÉTAT LOCAL DE PAGE
 ------------------------------------------------------- */
 
 let classeActive = null;
-let elevesClasse = []; // [{id, nom, prenom, groupe, adaptations, place(numero)}]
-let syncState = "unknown";     // "unknown" | "ok" | "dirty" | "error"
-let lastSyncAt = null;         // Date
+let elevesClasse = []; // [{id, nom, prenom, genre, groupe, adaptations, place, classe_id}]
 
-// cache places pour la classe active : numero -> place_id
-let numeroToPlaceId = new Map();
-// cache inverse pour affichage : place_id -> numero
-let placeIdToNumero = new Map();
+let syncState = "unknown"; // "unknown" | "ok" | "dirty" | "error"
+let lastSyncAt = null;     // Date | null
 
 /* -------------------------------------------------------
    BLOC 3 — STORES (lecture/écriture)
@@ -131,6 +138,7 @@ async function getClasseIdByNom(nomClasse) {
     if (data?.id) return data.id;
   }
 
+  // fallback si aucune année active trouvée
   const { data, error } = await sb
     .from("classes")
     .select("id")
@@ -142,36 +150,14 @@ async function getClasseIdByNom(nomClasse) {
   return data.id;
 }
 
-async function loadPlacesForClasse(classeId) {
-  const sb = sbAgoram();
-
-  // places sont liées à la classe (agoram.places.classe_id)
-  const { data, error } = await sb
-    .from("places")
-    .select("id, numero")
-    .eq("classe_id", classeId);
-
-  if (error) throw new Error(`Impossible de lire 'places'. ${error.message}`);
-
-  numeroToPlaceId = new Map();
-  placeIdToNumero = new Map();
-
-  (data || []).forEach(p => {
-    numeroToPlaceId.set(p.numero, p.id);
-    placeIdToNumero.set(p.id, p.numero);
-  });
-}
-
 async function loadClasseFromSupabase(nomClasse) {
   const sb = sbAgoram();
-
   const classeId = await getClasseIdByNom(nomClasse);
 
-  // élèves
   const { data: eleves, error: errEleves } = await sb
- .from("eleves")
-.select("id, prenom, nom, genre, groupe, adaptations, place, classe_id")
-.eq("classe_id", classeId);
+    .from("eleves")
+    .select("id, prenom, nom, genre, groupe, adaptations, place, classe_id")
+    .eq("classe_id", classeId);
 
   if (errEleves) throw new Error(`Impossible de lire 'eleves'. ${errEleves.message}`);
 
@@ -181,21 +167,11 @@ async function loadClasseFromSupabase(nomClasse) {
     return (a.prenom || "").localeCompare(b.prenom || "", "fr");
   });
 
-elevesClasse = list.map(e => ({
-  ...e,
-  place: (typeof e.place === "number") ? e.place : null,
-}));
-/* === AG_CLASSeshg_PLACE_SIMPLE_V3 === */
-
-  const eleveIdToNumero = new Map();
-  aff.forEach(a => {
-    const num = placeIdToNumero.get(a.place_id) ?? null;
-    if (num) eleveIdToNumero.set(a.eleve_id, num);
-  });
-
   elevesClasse = list.map(e => ({
     ...e,
-    place: eleveIdToNumero.get(e.id) ?? null,
+    place: (typeof e.place === "number") ? e.place : null,
+    adaptations: Array.isArray(e.adaptations) ? e.adaptations : [],
+    groupe: e.groupe || null,
   }));
 }
 
@@ -226,40 +202,41 @@ export async function renderClassesHG() {
   }
 
   // charge la classe active si nécessaire
-  if (classeActive && elevesClasse.length === 0) {
+  if (elevesClasse.length === 0) {
     await loadClasseFromSupabase(classeActive);
   }
-if (syncState === "unknown") {
-  syncState = "ok";
-  lastSyncAt = new Date();
-}
-/* === AG_CLASSeshg_INIT_SYNC_OK_V1 === */
+
+  // init sync au premier rendu réel
+  if (syncState === "unknown") {
+    syncState = "ok";
+    lastSyncAt = new Date();
+  }
+
   return `
     <div class="page page-classeshg">
 
       <div class="classes-tabs" id="classesTabs">
         ${classes.map(c => `
           <button class="tab ${c === classeActive ? "active" : ""}" data-classe="${c}">
-            ${c}
+            ${escapeHtml(c)}
           </button>
         `).join("")}
       </div>
 
-      <!-- (2) Classe active -->
-<h1>Classe ${classeActive}</h1>
+      <h1>Classe ${escapeHtml(classeActive)}</h1>
 
-<div class="classeshg-syncbar">
-  <span id="syncState">
-    ${syncState === "ok" ? "🟢 Synchronisé" :
-      syncState === "dirty" ? "🟠 Modifications non synchronisées" :
-      syncState === "error" ? "🔴 Erreur de synchronisation" :
-      "⚪ Statut inconnu"}
-  </span>
-  <span id="syncTime">
-    ${lastSyncAt ? `Dernière synchronisation : ${lastSyncAt.toLocaleTimeString("fr-FR")}` : ""}
-  </span>
-  <button id="syncBtn">Synchroniser</button>
-</div>
+      <div class="classeshg-syncbar">
+        <span id="syncState">
+          ${syncState === "ok" ? "🟢 Synchronisé" :
+            syncState === "dirty" ? "🟠 Modifications non synchronisées" :
+            syncState === "error" ? "🔴 Erreur de synchronisation" :
+            "⚪ Statut inconnu"}
+        </span>
+        <span id="syncTime">
+          ${lastSyncAt ? `Dernière synchronisation : ${lastSyncAt.toLocaleTimeString("fr-FR")}` : ""}
+        </span>
+        <button id="syncBtn">Synchroniser</button>
+      </div>
 
       <div class="liste-eleves">
         ${elevesClasse.map(renderEleveRow).join("")}
@@ -284,30 +261,33 @@ function renderEleveRow(eleve) {
     <div class="eleve-row${groupeActuel ? "" : " missing-groupe"}" data-id="${eleve.id}">
       <div class="eleve-ident">
         <button class="eleve-open" data-open="${eleve.id}">
-          ${eleve.nom} ${eleve.prenom}
+          ${escapeHtml(eleve.nom)} ${escapeHtml(eleve.prenom)}
         </button>
       </div>
 
       <div class="eleve-options">
 
         <div class="opt opt-groupe" data-eid="${eleve.id}">
-  <label>
-    <input type="radio" name="grp-${eleve.id}" value="gr 1" ${groupeActuel === "gr 1" ? "checked" : ""}>
-    gr 1
-  </label>
-  <label>
-    <input type="radio" name="grp-${eleve.id}" value="gr 2" ${groupeActuel === "gr 2" ? "checked" : ""}>
-    gr 2
-  </label>
-</div>
-/* === AG_CLASSeshg_RADIO_GROUP_V1 === */
+          <label>
+            <input type="radio" name="grp-${eleve.id}" value="gr 1" ${groupeActuel === "gr 1" ? "checked" : ""}>
+            gr 1
+          </label>
+          <label>
+            <input type="radio" name="grp-${eleve.id}" value="gr 2" ${groupeActuel === "gr 2" ? "checked" : ""}>
+            gr 2
+          </label>
+        </div>
+
+        <div class="opt opt-genre">
+          ${escapeHtml(eleve.genre || "—")}
+        </div>
 
         <label class="opt">
           Adaptation
           <select class="opt-adapt" data-adapt="${eleve.id}">
             ${ADAPTATIONS.map(a => {
               const lab = a === "" ? "—" : a;
-              return `<option value="${a}" ${adaptActuelle === a ? "selected" : ""}>${lab}</option>`;
+              return `<option value="${escapeAttr(a)}" ${adaptActuelle === a ? "selected" : ""}>${escapeHtml(lab)}</option>`;
             }).join("")}
           </select>
         </label>
@@ -326,7 +306,7 @@ function renderEleveRow(eleve) {
 }
 
 /* -------------------------------------------------------
-   BLOC 7 — OPTIONS PLACES (Table 1..30)
+   BLOC 7 — OPTIONS PLACES (1..30)
 ------------------------------------------------------- */
 
 function renderPlaceOptions(current) {
@@ -343,33 +323,36 @@ function renderPlaceOptions(current) {
 ------------------------------------------------------- */
 
 export function bindClassesHGEvents() {
-   // === BOUTON SYNCHRONISER ===
-const syncBtn = document.getElementById("syncBtn");
 
-if (syncBtn) {
-  syncBtn.onclick = async () => {
-    try {
-      await loadClasseFromSupabase(classeActive);
-      syncState = "ok";
-      lastSyncAt = new Date();
-      await rerender();
-    } catch (e) {
-      syncState = "error";
-      await rerender();
-      console.error(e);
-    }
-  };
-}
-  // onglets classe
+  // Synchroniser : relecture Supabase + preuve
+  const syncBtn = document.getElementById("syncBtn");
+  if (syncBtn) {
+    syncBtn.onclick = async () => {
+      try {
+        await loadClasseFromSupabase(classeActive);
+        syncState = "ok";
+        lastSyncAt = new Date();
+        await rerender();
+      } catch (e) {
+        syncState = "error";
+        await rerender();
+        console.error(e);
+      }
+    };
+  }
+
+  // Onglets classe
   document.querySelectorAll("#classesTabs .tab").forEach(btn => {
     btn.addEventListener("click", async () => {
       initClassesHG(btn.dataset.classe);
       await loadClasseFromSupabase(classeActive);
+      syncState = "ok";
+      lastSyncAt = new Date();
       await rerender();
     });
   });
 
-  // modale élève
+  // Modale élève
   document.querySelectorAll(".eleve-open").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.open;
@@ -378,14 +361,13 @@ if (syncBtn) {
     });
   });
 
-// groupe : écriture immédiate + relecture (source de vérité)
+  // Groupe : écriture immédiate
   document.querySelectorAll(".opt-groupe").forEach(zone => {
     const eleveId = zone.dataset.eid;
 
     zone.querySelectorAll('input[type="radio"]').forEach(input => {
       input.addEventListener("change", async () => {
         const grp = input.value;
-
         const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
         if (!eleve) return;
 
@@ -402,10 +384,8 @@ if (syncBtn) {
       });
     });
   });
-  /* === AG_CLASSeshg_RADIO_EVENT_V2 === */
 
-
-  // adaptation : écriture immédiate + relecture
+  // Adaptation : écriture immédiate
   document.querySelectorAll(".opt-adapt").forEach(sel => {
     sel.addEventListener("change", async () => {
       const id = sel.dataset.adapt;
@@ -421,12 +401,12 @@ if (syncBtn) {
 
       if (error) throw new Error(`Écriture adaptation impossible. ${error.message}`);
 
-      await loadClasseFromSupabase(classeActive);
+      syncState = "dirty";
       await rerender();
     });
   });
 
-// place : eleves.place (remplacement automatique) + relecture
+  // Place : eleves.place + remplacement automatique (règle A)
   document.querySelectorAll(".opt-place").forEach(sel => {
     sel.addEventListener("change", async () => {
       const id = sel.dataset.place;
@@ -436,7 +416,7 @@ if (syncBtn) {
       const sb = sbAgoram();
       const newNumero = sel.value ? Number(sel.value) : null;
 
-      // Règle A : si la place est déjà occupée dans la même classe, on libère l'autre élève
+      // Règle A : si la place est prise dans la même classe, libérer l'autre élève
       if (newNumero !== null) {
         const { error: errFree } = await sb
           .from("eleves")
@@ -448,7 +428,7 @@ if (syncBtn) {
         if (errFree) throw new Error(`Libération place impossible. ${errFree.message}`);
       }
 
-      // Affecter la place à cet élève (ou null)
+      // Affecter la place à l'élève (ou null)
       const { error: errSet } = await sb
         .from("eleves")
         .update({ place: newNumero })
@@ -460,60 +440,10 @@ if (syncBtn) {
       await rerender();
     });
   });
-  /* === AG_CLASSeshg_PLACE_EVENT_SIMPLE_V1 === */
-      const id = sel.dataset.place;
-      const eleve = elevesClasse.find(e => String(e.id) === String(id));
-      if (!eleve) return;
-
-      const sb = sbAgoram();
-      const newNumero = sel.value ? Number(sel.value) : null;
-
-      // supprimer affectation si place vide
-      if (newNumero === null) {
-        const { error } = await sb
-          .from("affectations")
-          .delete()
-          .eq("eleve_id", eleve.id);
-
-        if (error) throw new Error(`Suppression affectation impossible. ${error.message}`);
-
-        await loadClasseFromSupabase(classeActive);
-        await rerender();
-        return;
-      }
-
-      const placeId = numeroToPlaceId.get(newNumero);
-      if (!placeId) throw new Error(`Place inconnue en base pour le numéro ${newNumero}.`);
-
-      // remplacement auto : libérer la place puis libérer l'élève
-      const { error: errFreePlace } = await sb
-        .from("affectations")
-        .delete()
-        .eq("place_id", placeId);
-
-      if (errFreePlace) throw new Error(`Libération place impossible. ${errFreePlace.message}`);
-
-      const { error: errFreeEleve } = await sb
-        .from("affectations")
-        .delete()
-        .eq("eleve_id", eleve.id);
-
-      if (errFreeEleve) throw new Error(`Libération élève impossible. ${errFreeEleve.message}`);
-
-      const { error: errIns } = await sb
-        .from("affectations")
-        .insert([{ eleve_id: eleve.id, place_id: placeId }]);
-
-      if (errIns) throw new Error(`Création affectation impossible. ${errIns.message}`);
-
-      await loadClasseFromSupabase(classeActive);
-      await rerender();
-    });
-  });
 }
 
 /* -------------------------------------------------------
-   BLOC 9 — MODALE PROFIL ÉLÈVE (Compétences HG enregistrées en Supabase)
+   BLOC 9 — MODALE PROFIL ÉLÈVE (Compétences HG)
 ------------------------------------------------------- */
 
 function ouvrirProfilEleve(eleve) {
@@ -523,7 +453,7 @@ function ouvrirProfilEleve(eleve) {
     <div class="modal profil-eleve" role="dialog" aria-modal="true">
 
       <div class="modal-head">
-        <h2>${eleve.prenom} ${eleve.nom}</h2>
+        <h2>${escapeHtml(eleve.prenom)} ${escapeHtml(eleve.nom)}</h2>
         <button class="btn-close" id="closeProfil">✕</button>
       </div>
 
@@ -542,13 +472,14 @@ function ouvrirProfilEleve(eleve) {
     document.getElementById("modal").innerHTML = "";
   };
 
-  renderProfilBody(eleve, trimestreDefaut);
+  // rendu initial + binds onglets
+  renderProfilBody(eleve, trimestreDefaut).catch(console.error);
 
   document.querySelectorAll("#triTabs .tri").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#triTabs .tri").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      renderProfilBody(eleve, btn.dataset.tri);
+      renderProfilBody(eleve, btn.dataset.tri).catch(console.error);
     });
   });
 }
@@ -556,7 +487,6 @@ function ouvrirProfilEleve(eleve) {
 async function getOrCreateCompetencesRow(eleveId, anneeId, periode) {
   const sb = sbAgoram();
 
-  // chercher une ligne existante
   const { data: existing, error: e1 } = await sb
     .from("competences_hg")
     .select("id")
@@ -568,7 +498,6 @@ async function getOrCreateCompetencesRow(eleveId, anneeId, periode) {
   if (e1) throw new Error(`Lecture competences_hg impossible. ${e1.message}`);
   if (existing?.id) return existing.id;
 
-  // créer une ligne vide
   const { data: inserted, error: e2 } = await sb
     .from("competences_hg")
     .insert([{ eleve_id: eleveId, annee_id: anneeId, periode }])
@@ -619,11 +548,10 @@ async function renderProfilBody(eleve, tri) {
   const anneeId = await getActiveAnneeId();
   const row = anneeId ? await readCompetences(eleve.id, anneeId, tri) : null;
 
-  // valeurs actuelles (par défaut I)
   const current = {};
   COMPETENCES_HG.forEach(label => {
     const col = COMP_COL[label];
-    current[label] = row && row[col] ? row[col] : "I";
+    current[label] = (row && row[col]) ? row[col] : "I";
   });
 
   document.getElementById("profilBody").innerHTML = `
@@ -635,7 +563,6 @@ async function renderProfilBody(eleve, tri) {
     </div>
   `;
 
-  // bind boutons IFST
   document.querySelectorAll(".btn-comp").forEach(btn => {
     btn.addEventListener("click", async () => {
       const eleveId = btn.dataset.eleveid;
@@ -645,10 +572,11 @@ async function renderProfilBody(eleve, tri) {
 
       await writeCompetence(eleveId, periode, label, val);
 
-      // MAJ visuelle locale
       document.querySelectorAll(`.comp-row[data-label="${escapeAttr(label)}"] .btn-comp`).forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
+
+      syncState = "dirty";
     });
   });
 }
@@ -662,7 +590,7 @@ function renderCompetenceRow(eleveId, tri, label, current) {
           <button class="btn-comp ${v === current ? "active" : ""}"
                   data-eleveid="${eleveId}"
                   data-tri="${tri}"
-                  data-label="${label}"
+                  data-label="${escapeAttr(label)}"
                   data-val="${v}">
             ${v}
           </button>
@@ -680,11 +608,9 @@ async function rerender() {
   if (classeActive) {
     await loadClasseFromSupabase(classeActive);
   }
-
   document.getElementById("app").innerHTML = await renderClassesHG();
   bindClassesHGEvents();
 }
-
 
 /* -------------------------------------------------------
    BLOC 13 — UTILITAIRES
