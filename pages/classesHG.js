@@ -3,15 +3,16 @@ import { getEleves, getClasses } from "./importExport.js";
 /* =======================================================
    PAGE : Classes HG
    RÔLE MÉTIER :
-     - Onglets = classes (depuis Supabase, année active)
-     - Liste élèves (1 ligne) : Nom / Prénom / Genre / Groupe (gr1/gr2) / Adaptation / Place
+     - Onglets = classes (Supabase / année active)
+     - Bouton PP par classe (persistant Supabase : classes.is_pp)
+     - Liste élèves (1 ligne) : Nom / Prénom / Genre / Groupe / Adaptation / Place
      - Groupe : obligatoire (radio), écriture immédiate Supabase
      - Adaptation : écriture immédiate Supabase (eleves.adaptations)
      - Place : écriture immédiate Supabase (eleves.place) + remplacement automatique (règle A)
      - Bouton Synchroniser : relecture Supabase + preuve visuelle (syncState + horodatage)
      - Clic sur nom : modale élève HG
          * Onglets T1/T2/T3
-         * Compétences HG I/F/S/TS enregistrées en Supabase (agoram.competences_hg)
+         * Compétences HG I/F/S/TS (Supabase, dernière valeur uniquement, modifiable)
    NOTE IMPORT :
      - getEleves/getClasses importés mais non utilisés ici (historique).
    ======================================================= */
@@ -57,16 +58,11 @@ let elevesClasse = []; // [{id, nom, prenom, genre, groupe, adaptations, place, 
 let syncState = "unknown"; // "unknown" | "ok" | "dirty" | "error"
 let lastSyncAt = null;     // Date | null
 
-/* -------------------------------------------------------
-   BLOC 3 — STORES (lecture/écriture)
-------------------------------------------------------- */
-
-function getEventsStore() {
-  return window.AG_EVENTS || { assiduite: [], comportement: [], participation: [] };
-}
+// cache des classes pour l'année active : [{id, nom, is_pp}]
+let classesMeta = [];
 
 /* -------------------------------------------------------
-   BLOC 3B — SUPABASE (accès)
+   BLOC 3 — SUPABASE (accès)
 ------------------------------------------------------- */
 
 function requireSupabase() {
@@ -88,7 +84,7 @@ export function initClassesHG(nomClasse) {
 }
 
 function ensureClasseActive(classes) {
-  if (!classeActive && classes.length) initClassesHG(classes[0]);
+  if (!classeActive && classes.length) initClassesHG(classes[0].nom ?? classes[0]);
 }
 
 /* -------------------------------------------------------
@@ -107,19 +103,25 @@ async function getActiveAnneeId() {
   return data ? data.id : null;
 }
 
-async function getClassesSupabase() {
+/* === AG_CLASSeshg_CLASSES_META_V1 === */
+async function getClassesSupabaseMeta() {
   const sb = sbAgoram();
   const anneeId = await getActiveAnneeId();
   if (!anneeId) return [];
 
   const { data, error } = await sb
     .from("classes")
-    .select("nom")
+    .select("id, nom, is_pp")
     .eq("annee_id", anneeId)
     .order("nom");
 
   if (error) throw new Error(`Impossible de lire 'classes'. ${error.message}`);
-  return (data || []).map(c => c.nom);
+
+  return (data || []).map(c => ({
+    id: c.id,
+    nom: c.nom,
+    is_pp: !!c.is_pp
+  }));
 }
 
 async function getClasseIdByNom(nomClasse) {
@@ -138,7 +140,6 @@ async function getClasseIdByNom(nomClasse) {
     if (data?.id) return data.id;
   }
 
-  // fallback si aucune année active trouvée
   const { data, error } = await sb
     .from("classes")
     .select("id")
@@ -180,10 +181,10 @@ async function loadClasseFromSupabase(nomClasse) {
 ------------------------------------------------------- */
 
 export async function renderClassesHG() {
-  const classes = await getClassesSupabase();
-  ensureClasseActive(classes);
+  classesMeta = await getClassesSupabaseMeta();
+  ensureClasseActive(classesMeta);
 
-  if (!classes.length) {
+  if (!classesMeta.length) {
     return `
       <div class="page page-classeshg">
         <h1>Classes HG</h1>
@@ -201,12 +202,10 @@ export async function renderClassesHG() {
     `;
   }
 
-  // charge la classe active si nécessaire
   if (elevesClasse.length === 0) {
     await loadClasseFromSupabase(classeActive);
   }
 
-  // init sync au premier rendu réel
   if (syncState === "unknown") {
     syncState = "ok";
     lastSyncAt = new Date();
@@ -216,10 +215,15 @@ export async function renderClassesHG() {
     <div class="page page-classeshg">
 
       <div class="classes-tabs" id="classesTabs">
-        ${classes.map(c => `
-          <button class="tab ${c === classeActive ? "active" : ""}" data-classe="${c}">
-            ${escapeHtml(c)}
-          </button>
+        ${classesMeta.map(c => `
+          <div class="tab-wrap ${c.nom === classeActive ? "active" : ""}">
+            <button class="tab ${c.nom === classeActive ? "active" : ""}" data-classe="${escapeAttr(c.nom)}">
+              ${escapeHtml(c.nom)}
+            </button>
+            <button class="btn-pp ${c.is_pp ? "active" : ""}" data-pp-id="${escapeAttr(c.id)}" data-pp-nom="${escapeAttr(c.nom)}" title="Classe PP">
+              PP
+            </button>
+          </div>
         `).join("")}
       </div>
 
@@ -258,22 +262,22 @@ function renderEleveRow(eleve) {
   const groupeActuel = eleve.groupe || "";
 
   return `
-    <div class="eleve-row${groupeActuel ? "" : " missing-groupe"}" data-id="${eleve.id}">
+    <div class="eleve-row${groupeActuel ? "" : " missing-groupe"}" data-id="${escapeAttr(eleve.id)}">
       <div class="eleve-ident">
-        <button class="eleve-open" data-open="${eleve.id}">
+        <button class="eleve-open" data-open="${escapeAttr(eleve.id)}">
           ${escapeHtml(eleve.nom)} ${escapeHtml(eleve.prenom)}
         </button>
       </div>
 
       <div class="eleve-options">
 
-        <div class="opt opt-groupe" data-eid="${eleve.id}">
+        <div class="opt opt-groupe" data-eid="${escapeAttr(eleve.id)}">
           <label>
-            <input type="radio" name="grp-${eleve.id}" value="gr 1" ${groupeActuel === "gr 1" ? "checked" : ""}>
+            <input type="radio" name="grp-${escapeAttr(eleve.id)}" value="gr 1" ${groupeActuel === "gr 1" ? "checked" : ""}>
             gr 1
           </label>
           <label>
-            <input type="radio" name="grp-${eleve.id}" value="gr 2" ${groupeActuel === "gr 2" ? "checked" : ""}>
+            <input type="radio" name="grp-${escapeAttr(eleve.id)}" value="gr 2" ${groupeActuel === "gr 2" ? "checked" : ""}>
             gr 2
           </label>
         </div>
@@ -284,7 +288,7 @@ function renderEleveRow(eleve) {
 
         <label class="opt">
           Adaptation
-          <select class="opt-adapt" data-adapt="${eleve.id}">
+          <select class="opt-adapt" data-adapt="${escapeAttr(eleve.id)}">
             ${ADAPTATIONS.map(a => {
               const lab = a === "" ? "—" : a;
               return `<option value="${escapeAttr(a)}" ${adaptActuelle === a ? "selected" : ""}>${escapeHtml(lab)}</option>`;
@@ -294,7 +298,7 @@ function renderEleveRow(eleve) {
 
         <label class="opt">
           Place
-          <select class="opt-place" data-place="${eleve.id}">
+          <select class="opt-place" data-place="${escapeAttr(eleve.id)}">
             <option value="">—</option>
             ${renderPlaceOptions(placeActuelle)}
           </select>
@@ -349,6 +353,34 @@ export function bindClassesHGEvents() {
       syncState = "ok";
       lastSyncAt = new Date();
       await rerender();
+    });
+  });
+
+  // Bouton PP : toggle Supabase classes.is_pp
+  document.querySelectorAll("#classesTabs .btn-pp").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      const classeId = btn.dataset.ppId;
+      const current = btn.classList.contains("active");
+      const want = !current;
+
+      try {
+        const sb = sbAgoram();
+        const { error } = await sb
+          .from("classes")
+          .update({ is_pp: want })
+          .eq("id", classeId);
+
+        if (error) throw new Error(error.message);
+
+        syncState = "dirty";
+        await rerender();
+      } catch (err) {
+        console.error(err);
+        syncState = "error";
+        await rerender();
+      }
     });
   });
 
@@ -444,6 +476,7 @@ export function bindClassesHGEvents() {
 
 /* -------------------------------------------------------
    BLOC 9 — MODALE PROFIL ÉLÈVE (Compétences HG)
+   Stockage : dernière valeur uniquement (modifiable)
 ------------------------------------------------------- */
 
 function ouvrirProfilEleve(eleve) {
@@ -472,7 +505,6 @@ function ouvrirProfilEleve(eleve) {
     document.getElementById("modal").innerHTML = "";
   };
 
-  // rendu initial + binds onglets
   renderProfilBody(eleve, trimestreDefaut).catch(console.error);
 
   document.querySelectorAll("#triTabs .tri").forEach(btn => {
@@ -482,30 +514,6 @@ function ouvrirProfilEleve(eleve) {
       renderProfilBody(eleve, btn.dataset.tri).catch(console.error);
     });
   });
-}
-
-async function getOrCreateCompetencesRow(eleveId, anneeId, periode) {
-  const sb = sbAgoram();
-
-  const { data: existing, error: e1 } = await sb
-    .from("competences_hg")
-    .select("id")
-    .eq("eleve_id", eleveId)
-    .eq("annee_id", anneeId)
-    .eq("periode", periode)
-    .maybeSingle();
-
-  if (e1) throw new Error(`Lecture competences_hg impossible. ${e1.message}`);
-  if (existing?.id) return existing.id;
-
-  const { data: inserted, error: e2 } = await sb
-    .from("competences_hg")
-    .insert([{ eleve_id: eleveId, annee_id: anneeId, periode }])
-    .select("id")
-    .maybeSingle();
-
-  if (e2) throw new Error(`Création competences_hg impossible. ${e2.message}`);
-  return inserted.id;
 }
 
 async function readCompetences(eleveId, anneeId, periode) {
@@ -523,6 +531,11 @@ async function readCompetences(eleveId, anneeId, periode) {
   return data || null;
 }
 
+/* === AG_CLASSeshg_COMP_WRITE_UPSERT_V1 ===
+   Dernière valeur uniquement :
+   - on upsert sur (eleve_id, annee_id, periode)
+   - on modifie la colonne de la compétence
+*/
 async function writeCompetence(eleveId, periode, competenceLabel, val) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
@@ -530,16 +543,17 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
   const col = COMP_COL[competenceLabel];
   if (!col) throw new Error(`Colonne inconnue pour compétence: ${competenceLabel}`);
 
-  const rowId = await getOrCreateCompetencesRow(eleveId, anneeId, periode);
-
   const sb = sbAgoram();
-  const payload = {};
-  payload[col] = val;
+  const payload = {
+    eleve_id: eleveId,
+    annee_id: anneeId,
+    periode: periode,
+    [col]: val
+  };
 
   const { error } = await sb
     .from("competences_hg")
-    .update(payload)
-    .eq("id", rowId);
+    .upsert([payload], { onConflict: "eleve_id,annee_id,periode" });
 
   if (error) throw new Error(`Écriture compétence impossible. ${error.message}`);
 }
@@ -588,10 +602,10 @@ function renderCompetenceRow(eleveId, tri, label, current) {
       <div class="comp-btns">
         ${IFST.map(v => `
           <button class="btn-comp ${v === current ? "active" : ""}"
-                  data-eleveid="${eleveId}"
-                  data-tri="${tri}"
+                  data-eleveid="${escapeAttr(eleveId)}"
+                  data-tri="${escapeAttr(tri)}"
                   data-label="${escapeAttr(label)}"
-                  data-val="${v}">
+                  data-val="${escapeAttr(v)}">
             ${v}
           </button>
         `).join("")}
@@ -618,7 +632,7 @@ async function rerender() {
 
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
   }[m]));
 }
 
@@ -632,4 +646,26 @@ function escapeAttr(s) {
 
 export function getElevesClasseHG() {
   return elevesClasse;
+}
+
+/* -------------------------------------------------------
+   BLOC 15 — POUR LA PAGE PP : classes cochées PP
+   Usage (dans page PP) :
+     const classesPP = await getPPClasses();
+------------------------------------------------------- */
+
+export async function getPPClasses() {
+  const sb = sbAgoram();
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) return [];
+
+  const { data, error } = await sb
+    .from("classes")
+    .select("nom")
+    .eq("annee_id", anneeId)
+    .eq("is_pp", true)
+    .order("nom");
+
+  if (error) throw new Error(`Lecture classes PP impossible. ${error.message}`);
+  return (data || []).map(x => x.nom);
 }
