@@ -445,7 +445,7 @@ button:active,
     0 0 8px rgba(46,204,113,0.6),
     0 0 16px rgba(46,204,113,0.35);
 }
-``
+
 
 /* =====================================================
    GLOBAL — MODALES
@@ -605,6 +605,13 @@ button:active,
   align-items: center;
   gap: 6px;
 }
+
+.page-classeshg .pp-toggle{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .page-classeshg .classes-tabs .tab.active{
   border-color: rgba(240,168,64,0.60);
   background: rgba(240,168,64,0.08);
