@@ -426,9 +426,41 @@ if (syncBtn) {
     });
   });
 
-  // place : affectations (remplacement automatique) + relecture
+// place : eleves.place (remplacement automatique) + relecture
   document.querySelectorAll(".opt-place").forEach(sel => {
     sel.addEventListener("change", async () => {
+      const id = sel.dataset.place;
+      const eleve = elevesClasse.find(e => String(e.id) === String(id));
+      if (!eleve) return;
+
+      const sb = sbAgoram();
+      const newNumero = sel.value ? Number(sel.value) : null;
+
+      // Règle A : si la place est déjà occupée dans la même classe, on libère l'autre élève
+      if (newNumero !== null) {
+        const { error: errFree } = await sb
+          .from("eleves")
+          .update({ place: null })
+          .eq("classe_id", eleve.classe_id)
+          .eq("place", newNumero)
+          .neq("id", eleve.id);
+
+        if (errFree) throw new Error(`Libération place impossible. ${errFree.message}`);
+      }
+
+      // Affecter la place à cet élève (ou null)
+      const { error: errSet } = await sb
+        .from("eleves")
+        .update({ place: newNumero })
+        .eq("id", eleve.id);
+
+      if (errSet) throw new Error(`Écriture place impossible. ${errSet.message}`);
+
+      syncState = "dirty";
+      await rerender();
+    });
+  });
+  /* === AG_CLASSeshg_PLACE_EVENT_SIMPLE_V1 === */
       const id = sel.dataset.place;
       const eleve = elevesClasse.find(e => String(e.id) === String(id));
       if (!eleve) return;
