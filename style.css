@@ -1,12 +1,12 @@
 /* =====================================================
    AGORAMOSAÏQUE — style.css
-   Thème : Art Déco Futuriste · Mosaïque Foundation
-   Organisation :
-     1) GLOBAL : identité, typographie, fond, bandeau, boutons, modales
-     2) PAGES : styles scopés par page
-   Règle absolue :
-     - Tout ce qui est spécifique à une page est préfixé par .page-xxx
+   Thème : Mosaïque Foundation · Art Déco Futuriste
+   Typographie :
+     - Bandeau / h1-h3 : Cinzel (géométrique, Porsche-like)
+     - Corps / interface : Poiret One
    ===================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Poiret+One&display=swap');
 
 
 /* =====================================================
@@ -14,26 +14,26 @@
    ===================================================== */
 
 :root{
-  --header-h: 70px;
+  --header-h: 76px;
   --app-pad: 16px;
 
-  --bleu-fond: #03060f;
-  --bleu-fond-alt: #07102a;
+  --bleu-fond:     #020710;
+  --bleu-fond-alt: #06112a;
 
-  --texte-clair: #e8ecf4;
-  --texte-doux: #8fa0bf;
+  --texte-clair: #eaeef8;
+  --texte-doux:  #7a92b8;
 
-  --accent-chaud: #f0a840;
-  --accent-froid: #4a90d9;
-  --accent-bronze: #c87830;
+  --accent-or:     #e8a030;
+  --accent-or-vif: #f5c060;
+  --accent-rouge:  #c03020;
+  --accent-bleu:   #2a6acc;
+  --accent-bronze: #b06818;
 
-  --cadre-bg: rgba(255,255,255,0.03);
-  --cadre-border: rgba(240,168,64,0.18);
+  --cadre-bg:     rgba(240,160,48,0.04);
+  --cadre-border: rgba(240,160,48,0.22);
 
-  --shadow-soft: 0 0 12px rgba(240,168,64,0.22);
-
-  --deco-line: rgba(240,168,64,0.35);
-  --deco-angle: 4deg;
+  --shadow-or:   0 0 14px rgba(232,160,48,0.28);
+  --shadow-soft: 0 2px 18px rgba(0,0,0,0.60);
 }
 
 *{ box-sizing: border-box; }
@@ -41,186 +41,204 @@
 
 /* =====================================================
    GLOBAL — TYPOGRAPHIE & FOND
+   Fond : cosmos Foundation — rouge, bleu, or, grain
    ===================================================== */
 
 body{
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-               Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-family: 'Poiret One', system-ui, sans-serif;
   color: var(--texte-clair);
+  letter-spacing: 0.03em;
 
   background:
-    radial-gradient(900px 520px at 22% 32%, rgba(240,168,64,0.18), transparent 70%),
-    radial-gradient(1100px 650px at 78% 68%, rgba(74,144,217,0.22), transparent 70%),
-    radial-gradient(800px 500px at 55% 15%, rgba(120,60,200,0.10), transparent 70%),
-    linear-gradient(160deg, var(--bleu-fond) 0%, var(--bleu-fond-alt) 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(60deg,  rgba(232,160,48,0.035) 0,rgba(232,160,48,0.035) 1px, transparent 1px, transparent 28px),
+    repeating-linear-gradient(-60deg, rgba(42,106,204,0.030) 0,rgba(42,106,204,0.030) 1px, transparent 1px, transparent 28px),
+    radial-gradient(1100px 600px at 18% 28%, rgba(192,48,32,0.18), transparent 65%),
+    radial-gradient(900px  500px at 80% 72%, rgba(42,106,204,0.20), transparent 65%),
+    radial-gradient(700px  400px at 50% 45%, rgba(232,160,48,0.10), transparent 70%),
+    linear-gradient(155deg, var(--bleu-fond) 0%, var(--bleu-fond-alt) 55%, #08183a 100%);
 
-  background-size: 200% 200%;
-  animation: fond-mouvant 24s ease-in-out infinite;
+  background-size:
+    200px 200px, 100% 100%, 100% 100%,
+    200% 200%, 200% 200%, 200% 200%, 100% 100%;
+
+  animation: fond-mouvant 28s ease-in-out infinite;
 }
 
 @keyframes fond-mouvant{
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 60%; }
-  100% { background-position: 0% 50%; }
+  0%   { background-position: 0 0,0 0,0 0, 0% 40%,100% 60%,50% 0%,0 0; }
+  33%  { background-position: 0 0,0 0,0 0, 15% 55%,85% 45%,60% 20%,0 0; }
+  66%  { background-position: 0 0,0 0,0 0, 5% 70%,95% 30%,40% 40%,0 0; }
+  100% { background-position: 0 0,0 0,0 0, 0% 40%,100% 60%,50% 0%,0 0; }
 }
 
 
 /* =====================================================
-   GLOBAL — BANDEAU ART DÉCO FOUNDATION
+   GLOBAL — BANDEAU MOSAÏQUE FOUNDATION
+   3 couches : halos colorés + trame losange + tesselles
    ===================================================== */
 
 .ag-header{
   position: sticky;
   top: 0;
   z-index: 9999;
-
   height: var(--header-h);
   padding: 0 28px;
-
   display: flex;
   align-items: center;
   gap: 24px;
-
-  background: linear-gradient(180deg, #060b1c 0%, #0a1428 100%);
-  border-bottom: 1px solid rgba(240,168,64,0.40);
-  box-shadow: 0 1px 0 rgba(240,168,64,0.12), 0 4px 24px rgba(0,0,0,0.55);
+  background: #030a1a;
+  border-bottom: 1.5px solid rgba(232,160,48,0.60);
+  box-shadow:
+    0 1px 0   rgba(232,160,48,0.18),
+    0 6px 40px rgba(0,0,0,0.80),
+    inset 0 -1px 0 rgba(192,48,32,0.28);
   overflow: hidden;
 }
 
-.ag-header > *{
-  position: relative;
-  z-index: 2;
-}
+.ag-header > *{ position: relative; z-index: 3; }
 
+/* COUCHE 1 — halos chauds/froids (volutes Foundation) */
 .ag-header::before{
   content: "";
   position: absolute;
-  inset: -40%;
+  inset: -50%;
   pointer-events: none;
   z-index: 0;
-
   background:
-    radial-gradient(600px 200px at 18% 60%, rgba(240,160,48,0.55), transparent 60%),
-    radial-gradient(700px 180px at 75% 45%, rgba(74,144,217,0.30), transparent 60%),
+    radial-gradient(500px 160px at 12% 65%, rgba(200,40,24,0.72), transparent 55%),
+    radial-gradient(600px 140px at 44% 40%, rgba(32,90,180,0.58), transparent 55%),
+    radial-gradient(500px 160px at 82% 55%, rgba(232,160,48,0.52), transparent 55%),
     conic-gradient(
-      from 200deg at 25% 55%,
-      rgba(240,160,48,0.45),
-      rgba(200,100,30,0.35),
-      rgba(74,144,217,0.20),
-      rgba(240,160,48,0.45)
+      from 185deg at 38% 60%,
+      rgba(200,40,24,0.42),
+      rgba(232,160,48,0.36),
+      rgba(32,90,180,0.30),
+      rgba(120,48,200,0.18),
+      rgba(200,40,24,0.42)
     );
-
-  filter: blur(20px) saturate(1.5) contrast(1.1);
-  opacity: 0.90;
-  transform-origin: 28% 55%;
-  animation: bandeau-volute 22s ease-in-out infinite;
+  filter: blur(18px) saturate(1.9) contrast(1.18);
+  opacity: 0.94;
+  transform-origin: 38% 55%;
+  animation: bandeau-volute 26s ease-in-out infinite;
 }
 
+/* COUCHE 2 — mosaïque géométrique (5 sous-couches) */
 .ag-header::after{
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 1;
-
+  z-index: 2;
   background:
     repeating-linear-gradient(
-      45deg,
-      rgba(240,168,64,0.065) 0,
-      rgba(240,168,64,0.065) 1px,
-      transparent 1px,
-      transparent 14px
+      50deg,
+      rgba(232,160,48,0.11) 0, rgba(232,160,48,0.11) 1px,
+      transparent 1px, transparent 11px
     ),
     repeating-linear-gradient(
-      -45deg,
-      rgba(240,168,64,0.045) 0,
-      rgba(240,168,64,0.045) 1px,
-      transparent 1px,
-      transparent 14px
+      -50deg,
+      rgba(232,160,48,0.07) 0, rgba(232,160,48,0.07) 1px,
+      transparent 1px, transparent 11px
     ),
     repeating-radial-gradient(
-      circle at 20px 16px,
-      rgba(255,220,120,0.07) 0 1.5px,
-      transparent 1.5px 12px
-    );
-
-  opacity: 0.85;
-  animation: bandeau-mosaique 32s linear infinite;
+      circle at 16px 12px,
+      rgba(245,192,96,0.13) 0 1.5px,
+      transparent 1.5px 10px
+    ),
+    repeating-linear-gradient(90deg, rgba(42,106,204,0.05) 0 1px, transparent 1px 18px),
+    repeating-linear-gradient(0deg,  rgba(42,106,204,0.05) 0 1px, transparent 1px 18px);
+  opacity: 0.92;
+  animation:
+    bmosa-a 16s linear infinite,
+    bmosa-b 26s linear infinite reverse,
+    bmosa-c 11s linear infinite;
 }
 
 @keyframes bandeau-volute{
-  0%   { transform: rotate(-3deg) translateX(-1%) translateY(0%); }
-  50%  { transform: rotate(3deg)  translateX(2%)  translateY(-1.5%); }
-  100% { transform: rotate(-3deg) translateX(-1%) translateY(0%); }
+  0%   { transform: rotate(-2.5deg) translateX(-1%)   translateY(0%);  }
+  40%  { transform: rotate( 2deg)   translateX( 2.5%) translateY(-1%); }
+  70%  { transform: rotate(-1deg)   translateX( 1%)   translateY(1%);  }
+  100% { transform: rotate(-2.5deg) translateX(-1%)   translateY(0%);  }
 }
 
-@keyframes bandeau-mosaique{
-  0%   { background-position: 0px 0px, 0px 0px, 0px 0px; }
-  100% { background-position: 280px 0px, -280px 0px, 240px 120px; }
+@keyframes bmosa-a{
+  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+  to   { background-position: 220px 0, 0 0, 0 0, 0 0, 0 0; }
+}
+@keyframes bmosa-b{
+  from { background-position: 0 0, 0 0, 220px 110px, 0 0, 0 0; }
+  to   { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+}
+@keyframes bmosa-c{
+  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+  to   { background-position: 0 0, 0 0, 0 0, 36px 0, 0 36px; }
 }
 
 
 /* =====================================================
    GLOBAL — MARQUE
+   Cinzel : géométrique Porsche-like
    ===================================================== */
 
 .ag-brand{
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-.ag-brand img{ height: 40px; }
+.ag-brand img{ height: 42px; }
 
 .ag-brand h1{
   margin: 0;
-  font-size: 1.1rem;
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.20em;
   text-transform: uppercase;
-  color: var(--accent-chaud);
+  color: var(--accent-or-vif);
   text-shadow:
-    0 0 10px rgba(240,168,64,0.55),
-    0 0 24px rgba(240,168,64,0.25);
+    0 0  8px rgba(245,192,96,0.72),
+    0 0 22px rgba(232,160,48,0.44),
+    0 0 48px rgba(192,48,32,0.22);
 }
 
 
 /* =====================================================
-   GLOBAL — NAVIGATION (ONGLETS)
+   GLOBAL — NAVIGATION ONGLETS
+   Cinzel + coin biseauté
    ===================================================== */
 
 .ag-tabs{
   margin-left: auto;
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ag-tabs button{
-  background: transparent;
-  border: 1px solid transparent;
-  border-bottom: 1px solid rgba(240,168,64,0.25);
-
-  color: var(--texte-doux);
-  padding: 6px 14px;
-  letter-spacing: 0.04em;
-  font-size: 0.88rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.70rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid rgba(232,160,48,0.22);
+  color: var(--texte-doux);
+  padding: 8px 14px 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
-
+  transition: all 0.22s ease;
   clip-path: polygon(4px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 4px);
 }
 
 .ag-tabs button:hover{
-  color: var(--accent-chaud);
-  border-color: rgba(240,168,64,0.55);
-  border-bottom-color: var(--accent-chaud);
-  background: rgba(240,168,64,0.06);
+  color: var(--accent-or-vif);
+  border-bottom-color: var(--accent-or-vif);
+  background: rgba(232,160,48,0.07);
   box-shadow:
-    0 0 8px rgba(240,168,64,0.35),
-    0 0 18px rgba(240,168,64,0.18);
+    0 0  8px rgba(232,160,48,0.38),
+    0 0 20px rgba(232,160,48,0.16);
 }
 
 
@@ -244,33 +262,25 @@ body{
   z-index: 10000;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
   justify-content: center;
-  background: rgba(3,6,15,0.94);
+  background: rgba(2,7,16,0.96);
   background-image:
-    repeating-linear-gradient(
-      45deg,
-      rgba(240,168,64,0.04) 0, rgba(240,168,64,0.04) 1px,
-      transparent 1px, transparent 18px
-    );
+    repeating-linear-gradient(50deg,  rgba(232,160,48,0.05) 0,rgba(232,160,48,0.05) 1px, transparent 1px, transparent 20px),
+    repeating-linear-gradient(-50deg, rgba(42,106,204,0.04) 0,rgba(42,106,204,0.04) 1px, transparent 1px, transparent 20px);
 }
 
-#authScreen input{
-  width: 320px;
-  padding: 10px;
-}
+#authScreen input{ width: 320px; padding: 10px; }
 
 #authDot{
-  width: 10px;
-  height: 10px;
+  width: 10px; height: 10px;
   border-radius: 50%;
   background: #c0392b;
 }
-
 #authDot.ok{
   background: #1db87a;
-  box-shadow: 0 0 8px rgba(29,184,122,0.6);
+  box-shadow: 0 0 10px rgba(29,184,122,0.65);
 }
 
 
@@ -280,76 +290,74 @@ body{
 
 h1, h2, h3{
   margin: 0 0 12px 0;
+  font-family: 'Cinzel', serif;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--texte-clair);
 }
 
 h2{
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(240,168,64,0.25);
+  border-bottom: 1px solid rgba(232,160,48,0.28);
 }
 
-p{ color: var(--texte-doux); }
+p{
+  font-family: 'Poiret One', sans-serif;
+  color: var(--texte-doux);
+  letter-spacing: 0.04em;
+}
 
 
 /* =====================================================
-   GLOBAL — FORMULAIRES
+   GLOBAL — FORMULAIRES (héritage police)
    ===================================================== */
 
 input, select, textarea, button{
-  font-family: inherit;
+  font-family: 'Poiret One', system-ui, sans-serif;
 }
 
 
 /* =====================================================
-   GLOBAL — BOUTONS (STYLE PRINCIPAL APP)
+   GLOBAL — BOUTONS
+   Art déco : coins biseautés + halo or/rouge
    BALISE : AG_GLOBAL_BTN_V1
    ===================================================== */
 
 button,
 .btn{
-  background: transparent;
-  color: var(--texte-clair);
-
-  border: 1.5px solid rgba(240,168,64,0.55);
-  border-radius: 0;
-
-  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-
-  padding: 8px 18px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-family: 'Poiret One', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.10em;
   font-size: 0.875rem;
   text-transform: uppercase;
-
+  background: transparent;
+  color: var(--texte-clair);
+  border: 1.5px solid rgba(232,160,48,0.50);
+  border-radius: 0;
+  clip-path: polygon(7px 0%, 100% 0%, calc(100% - 7px) 100%, 0% 100%);
+  padding: 8px 18px;
   cursor: pointer;
-  transition:
-    box-shadow 0.25s ease,
-    border-color 0.25s ease,
-    background 0.25s ease,
-    transform 0.1s ease;
-
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.20s ease, transform 0.10s ease;
   outline: none;
 }
 
 button:hover,
 .btn:hover{
-  border-color: var(--accent-chaud);
-  background: rgba(240,168,64,0.08);
+  border-color: var(--accent-or-vif);
+  background: rgba(232,160,48,0.08);
   box-shadow:
-    0 0 8px rgba(240,168,64,0.45),
-    0 0 18px rgba(240,168,64,0.28),
-    0 0 34px rgba(240,168,64,0.12);
+    0 0  8px rgba(232,160,48,0.48),
+    0 0 20px rgba(232,160,48,0.26),
+    0 0 36px rgba(192,48,32,0.14);
 }
 
 button:active,
 .btn:active{
   transform: translateY(1px);
-  background: rgba(240,168,64,0.14);
+  background: rgba(232,160,48,0.14);
   box-shadow:
-    0 0 4px rgba(240,168,64,0.6),
-    0 0 10px rgba(240,168,64,0.5);
+    0 0  4px rgba(232,160,48,0.68),
+    0 0 12px rgba(232,160,48,0.52);
 }
 
 
@@ -360,7 +368,7 @@ button:active,
 #modal{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: rgba(0,0,0,0.68);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -370,28 +378,23 @@ button:active,
 #modal:empty{ display: none; }
 
 #modal > *{
-  background: #080e20;
-  border: 1px solid rgba(240,168,64,0.30);
-  border-top: 2px solid rgba(240,168,64,0.70);
-  padding: 20px;
+  background: #040c1c;
+  border: 1px solid rgba(232,160,48,0.32);
+  border-top: 2px solid rgba(232,160,48,0.78);
+  padding: 22px;
   border-radius: 0;
+  clip-path: polygon(14px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 14px);
   max-width: 600px;
   width: 100%;
-  box-shadow:
-    0 0 40px rgba(0,0,0,0.7),
-    0 0 20px rgba(240,168,64,0.08);
-  clip-path: polygon(14px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 14px);
+  box-shadow: 0 0 50px rgba(0,0,0,0.82), 0 0 24px rgba(232,160,48,0.08);
 }
 
 
 /* =====================================================
-   PAGE IMPORT / EXPORT
+   PAGE IMPORT
    ===================================================== */
 
-.page-import{
-  max-width: 800px;
-  margin: 0 auto;
-}
+.page-import{ max-width: 800px; margin: 0 auto; }
 
 
 /* =====================================================
@@ -410,7 +413,7 @@ button:active,
   gap: 10px;
   align-items: center;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(240,168,64,0.18);
+  border-bottom: 1px solid rgba(232,160,48,0.20);
 }
 
 .page-edt .edt-body{
@@ -441,10 +444,7 @@ button:active,
    PAGE CLASSES HG
    ===================================================== */
 
-.page-classeshg{
-  max-width: 1200px;
-  margin: 0 auto;
-}
+.page-classeshg{ max-width: 1200px; margin: 0 auto; }
 
 .page-classeshg .classes-tabs{
   display: flex;
@@ -453,80 +453,24 @@ button:active,
   margin-bottom: 12px;
 }
 
-/* wrappers (tab + PP) */
-.page-classeshg .tab-wrap{
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .page-classeshg .classes-tabs .tab{
+  font-family: 'Poiret One', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   background: rgba(0,0,0,0.30);
-  border: 1px solid rgba(240,168,64,0.18);
+  border: 1px solid rgba(232,160,48,0.22);
   color: var(--texte-clair);
-  padding: 6px 12px;
+  padding: 6px 14px;
   cursor: pointer;
-  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
   transition: all 0.2s ease;
 }
 
 .page-classeshg .classes-tabs .tab.active{
-  border-color: rgba(240,168,64,0.60);
-  background: rgba(240,168,64,0.08);
-  box-shadow: 0 0 10px rgba(240,168,64,0.22);
+  border-color: rgba(232,160,48,0.68);
+  background: rgba(232,160,48,0.09);
+  box-shadow: 0 0 12px rgba(232,160,48,0.28);
 }
-
-/* =====================================================
-   CLASSESHG — PP TOGGLE (aligné au style Art déco global)
-   - OFF : discret
-   - ON  : glow or (comme un bouton actif)
-   ===================================================== */
-
-.page-classeshg .pp-toggle{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 6px 14px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-
-  cursor: pointer;
-
-  border: 1.5px solid rgba(240,168,64,0.55);
-  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-
-  background: transparent;
-  color: var(--texte-doux);
-  opacity: 0.55;
-
-  transition:
-    box-shadow 0.25s ease,
-    border-color 0.25s ease,
-    background 0.25s ease,
-    opacity 0.2s,
-    color 0.2s;
-}
-
-.page-classeshg .pp-toggle:hover{
-  opacity: 0.8;
-}
-
-.page-classeshg .pp-toggle.active{
-  opacity: 1;
-  border-color: var(--accent-chaud);
-  background: rgba(240,168,64,0.08);
-  color: var(--accent-chaud);
-
-  box-shadow:
-    0 0 8px rgba(240,168,64,0.45),
-    0 0 18px rgba(240,168,64,0.28),
-    0 0 34px rgba(240,168,64,0.12);
-}
-
-/* === AG_CLASSeshg_PP_TOGGLE_FINAL === */
 
 .page-classeshg .liste-eleves{
   max-height: 320px;
@@ -539,61 +483,6 @@ button:active,
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 8px;
-}
-
-/* Ligne rouge si groupe manquant */
-.page-classeshg .eleve-row.missing-groupe{
-  border: 1px solid rgba(220,50,50,0.75);
-  background: rgba(180,30,30,0.12);
-}
-
-.page-classeshg .eleve-row.missing-groupe .eleve-open{
-  color: rgba(255,160,160,1);
-}
-
-/* 1 élève = 1 ligne */
-.page-classeshg .eleve-row{
-  display: grid;
-  grid-template-columns: 1fr 140px 60px 180px 120px;
-  gap: 10px;
-  align-items: center;
-  padding: 6px 10px;
-  margin-bottom: 6px;
-  border-left: 2px solid transparent;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.page-classeshg .eleve-row:hover{
-  background: rgba(240,168,64,0.05);
-  border-left-color: rgba(240,168,64,0.40);
-}
-
-.page-classeshg .eleve-ident{
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.page-classeshg .eleve-open{
-  width: 100%;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.page-classeshg .eleve-options{
-  display: contents;
-}
-
-.page-classeshg .opt{
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.page-classeshg .opt select{
-  width: 100%;
 }
 
 
@@ -616,7 +505,7 @@ button:active,
   gap: 16px;
   flex-wrap: wrap;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(240,168,64,0.14);
+  border-bottom: 1px solid rgba(232,160,48,0.16);
 }
 
 .page-salle .salle-contexte{ flex: 1; }
@@ -630,7 +519,7 @@ button:active,
 .page-salle .salle-contenu select,
 .page-salle .salle-contenu input{
   background: rgba(0,0,0,0.45);
-  border: 1px solid rgba(240,168,64,0.22);
+  border: 1px solid rgba(232,160,48,0.25);
   color: var(--texte-clair);
   padding: 4px 8px;
 }
@@ -645,20 +534,11 @@ button:active,
   gap: 20px;
 }
 
-.page-salle .colonne{
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 12px;
-}
-
+.page-salle .colonne{ display: flex; flex-direction: column-reverse; gap: 12px; }
 .page-salle .allee{ width: 30px; }
+.page-salle .rangee{ display: flex; gap: 6px; }
 
-.page-salle .rangee{
-  display: flex;
-  gap: 6px;
-}
-
-/* Tables */
+/* Table — tesselle mosaïque */
 .page-salle .table{
   width: 90px;
   height: 70px;
@@ -667,183 +547,208 @@ button:active,
   align-items: center;
   justify-content: center;
   position: relative;
-
-  clip-path: polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px);
+  border-radius: 0;
+  clip-path: polygon(5px 0%, 100% 0%, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0% 100%, 0% 5px);
+  font-family: 'Poiret One', sans-serif;
   font-size: 0.75rem;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.15s;
+  transition: transform 0.12s ease, box-shadow 0.15s ease;
 }
 
 .page-salle .table:hover{
-  transform: translateY(-3px);
+  transform: translateY(-3px) scale(1.03);
   box-shadow:
-    0 0 10px rgba(240,168,64,0.40),
-    0 0 20px rgba(240,168,64,0.18);
+    0 0 12px rgba(232,160,48,0.52),
+    0 0 26px rgba(232,160,48,0.24);
+  z-index: 2;
 }
 
 .page-salle .numero{
   position: absolute;
   top: 3px;
   right: 5px;
-  font-size: 0.6rem;
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
   opacity: 0.65;
-  letter-spacing: 0.04em;
 }
 
-.page-salle .nom{ font-weight: 600; letter-spacing: 0.02em; }
+.page-salle .nom{ font-weight: 400; letter-spacing: 0.04em; }
 .page-salle .nom.vide{ opacity: 0.28; }
 
-.page-salle .table.vert{ background: #1b5e20; border: 1px solid rgba(76,175,80,0.45); }
-.page-salle .table.violet{ background: #4a148c; border: 1px solid rgba(156,39,176,0.45); }
-.page-salle .table.jaune{ background: #f9a825; color: #1a1000; border: 1px solid rgba(255,214,0,0.45); }
-.page-salle .table.bleu{ background: #0d47a1; border: 1px solid rgba(33,150,243,0.40); }
-.page-salle .table.rouge{ background: #b71c1c; border: 1px solid rgba(244,67,54,0.45); }
-.page-salle .table.noir{ background: #1a1a1a; border: 1px solid rgba(255,255,255,0.14); }
+/* Couleurs tables (INCHANGÉES) */
+.page-salle .table.vert  { background:#1a5218; border:1px solid rgba(76,175,80,0.50);   box-shadow:inset 0 0 12px rgba(76,175,80,0.12); }
+.page-salle .table.violet{ background:#3d0e78; border:1px solid rgba(156,39,176,0.50);  box-shadow:inset 0 0 12px rgba(120,48,200,0.14);}
+.page-salle .table.jaune { background:#e09820; color:#18100a; border:1px solid rgba(240,200,60,0.55); }
+.page-salle .table.bleu  { background:#0c3880; border:1px solid rgba(42,106,204,0.55);  box-shadow:inset 0 0 12px rgba(42,106,204,0.15);}
+.page-salle .table.rouge { background:#8c1410; border:1px solid rgba(200,40,32,0.55);   box-shadow:inset 0 0 12px rgba(192,48,32,0.18);}
+.page-salle .table.noir  { background:#141414; border:1px solid rgba(255,255,255,0.12); }
 
 /* Adaptations */
 .page-salle .adaptation-dot{
-  position: absolute;
-  bottom: 4px;
-  left: 4px;
-  width: 10px;
-  height: 10px;
+  position: absolute; bottom: 4px; left: 4px;
+  width: 10px; height: 10px;
   border-radius: 50%;
-  box-shadow: 0 0 4px currentColor;
+  box-shadow: 0 0 5px currentColor;
 }
+.page-salle .adapt-pps      { background:#ef5350; }
+.page-salle .adapt-pap      { background:#ffd740; }
+.page-salle .adapt-ppre     { background:#42a5f5; }
+.page-salle .adapt-vert-fonce{ background:#2e7d32; }
+.page-salle .adapt-vert-clair{ background:#81c784; }
 
-.page-salle .adapt-pps{ background: #ef5350; }
-.page-salle .adapt-pap{ background: #ffd740; }
-.page-salle .adapt-ppre{ background: #42a5f5; }
-.page-salle .adapt-vert-fonce{ background: #2e7d32; }
-.page-salle .adapt-vert-clair{ background: #81c784; }
-
-/* Modales Salle */
+/* Modales salle */
 .page-salle .fiche-eleve,
 .page-salle .participation{
-  background: #060d1e;
-  border: 1px solid rgba(240,168,64,0.28);
-  border-top: 2px solid rgba(240,168,64,0.65);
+  background: #030a18;
+  border: 1px solid rgba(232,160,48,0.30);
+  border-top: 2px solid rgba(232,160,48,0.72);
   padding: 18px;
   clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
 }
 
-.page-salle .fiche-head{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.page-salle .fiche-head{ display:flex; justify-content:space-between; align-items:center; }
+.page-salle .fiche-bloc{ margin-top:10px; display:flex; flex-direction:column; gap:6px; }
+.page-salle textarea{ background:rgba(0,0,0,0.40); color:#fff; border:1px solid rgba(232,160,48,0.22); }
+
+.page-salle .part-row{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.page-salle .part-btns button{ margin-right:4px; }
+
+.page-salle .btn-part.active{
+  background: rgba(232,160,48,0.18);
+  color: var(--accent-or-vif);
+  border-color: var(--accent-or-vif);
+  box-shadow: 0 0 10px rgba(232,160,48,0.45);
 }
 
-.page-salle .fiche-bloc{
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+
+/* =====================================================
+   PAGE BULLETINS / PP / ARCHIVES
+   ===================================================== */
+
+.page-bulletins{ max-width: 900px;  margin: 0 auto; }
+.page-pp        { max-width: 1000px; margin: 0 auto; }
+.page-archives  { max-width: 1000px; margin: 0 auto; }
+
+
+/* =====================================================
+   PAGE IMPORT — FILE INPUT
+   BALISE : AG_IMPORT_FILE_V1
+   ===================================================== */
+
+.page-importexport input[type="file"]{
+  color: var(--texte-doux);
+  margin-top: 8px;
+  position: relative;
+  z-index: 2;
 }
 
-.page-salle textarea{
-  background: rgba(0,0,0,0.40);
-  color: #fff;
-  border: 1px solid rgba(240,168,64,0.22);
-}
-
-/* Participation : ligne */
-.page-salle .part-row{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-/* Participation : conteneur boutons */
-.page-salle .part-btns{
-  display: flex;
-  gap: 6px;
-}
-
-/* Participation : base bouton (Art déco) */
-.page-salle .btn-part{
+.page-importexport input[type="file"]::file-selector-button{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.875rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
   background: transparent;
   color: var(--texte-clair);
-  border: 1.5px solid rgba(240,168,64,0.45);
-
-  padding: 6px 12px;
-  min-width: 44px;
-
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-
-  cursor: pointer;
+  border: 1.5px solid rgba(232,160,48,0.55);
+  border-radius: 0;
   clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
-
-  transition:
-    background 0.2s,
-    border-color 0.2s,
-    box-shadow 0.2s,
-    transform 0.08s;
+  padding: 8px 16px;
+  margin-right: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.1s ease;
 }
 
-/* Actif : couleur métier (seul le bouton actif est coloré) */
-.page-salle .btn-part.active.part-perturbateur{
-  border-color: rgba(244,67,54,0.85);
-  background: rgba(244,67,54,0.18);
-  box-shadow: 0 0 8px rgba(244,67,54,0.55), 0 0 18px rgba(244,67,54,0.25);
+.page-importexport input[type="file"]::file-selector-button:hover{
+  border-color: var(--accent-or-vif);
+  box-shadow: 0 0 8px rgba(232,160,48,0.52), 0 0 18px rgba(232,160,48,0.28);
 }
 
-.page-salle .btn-part.active.part-passif{
-  border-color: rgba(255,214,0,0.85);
-  background: rgba(255,214,0,0.18);
-  color: #1a1000;
-  box-shadow: 0 0 8px rgba(255,214,0,0.55), 0 0 18px rgba(255,214,0,0.25);
-}
-
-.page-salle .btn-part.active.part-implique{
-  border-color: rgba(33,150,243,0.85);
-  background: rgba(33,150,243,0.18);
-  box-shadow: 0 0 8px rgba(33,150,243,0.55), 0 0 18px rgba(33,150,243,0.25);
-}
-
-.page-salle .btn-part.active.part-moteur{
-  border-color: rgba(76,175,80,0.85);
-  background: rgba(76,175,80,0.18);
-  box-shadow: 0 0 8px rgba(76,175,80,0.55), 0 0 18px rgba(76,175,80,0.25);
+.page-importexport input[type="file"]::file-selector-button:active{
+  transform: translateY(1px);
+  box-shadow: 0 0 4px rgba(232,160,48,0.68), 0 0 10px rgba(232,160,48,0.55);
 }
 
 
 /* =====================================================
-   PAGE BULLETINS HG
+   PAGE IMPORT — BOUTONS
+   BALISE : AG_IMPORT_BTN_OR_V1
    ===================================================== */
 
-.page-bulletins{
-  max-width: 900px;
-  margin: 0 auto;
+.page-importexport .btn{
+  background: transparent;
+  color: var(--texte-clair);
+  border: 1.5px solid rgba(232,160,48,0.55);
+  border-radius: 0;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  padding: 10px 22px;
+  font-weight: 400;
+  font-size: 0.875rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  cursor: pointer;
+  position: relative;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.1s ease;
+}
+
+.page-importexport .btn:hover{
+  border-color: var(--accent-or-vif);
+  background: rgba(232,160,48,0.07);
+  box-shadow: 0 0 8px rgba(232,160,48,0.52), 0 0 20px rgba(232,160,48,0.28), 0 0 36px rgba(192,48,32,0.14);
+}
+
+.page-importexport .btn:active{
+  transform: translateY(1px);
+  box-shadow: 0 0 4px rgba(232,160,48,0.68), 0 0 12px rgba(232,160,48,0.55);
 }
 
 
 /* =====================================================
-   PAGE PP
+   GLOBAL — CARD
+   Tesselle mosaïque + liseré animé
+   BALISE : AG_CARD_V2_SAFE
    ===================================================== */
 
-.page-pp{
-  max-width: 1000px;
-  margin: 0 auto;
+.card{
+  position: relative;
+  z-index: 0;
+  background: rgba(3,8,22,0.62);
+  border-radius: 0;
+  clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px);
+  padding: 14px;
+  box-shadow: var(--shadow-soft), var(--shadow-or);
+}
+
+.card::before{
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(232,160,48,0.92) 30%,
+    rgba(200,96,24,0.72) 55%,
+    rgba(245,192,96,0.92) 78%,
+    transparent 100%
+  );
+  background-size: 240% 100%;
+  animation: ag-card-glow 4s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+}
+
+@keyframes ag-card-glow{
+  0%  { background-position:  240% 0; }
+  100%{ background-position: -240% 0; }
 }
 
 
 /* =====================================================
-   PAGE ARCHIVES
-   ===================================================== */
-
-.page-archives{
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-
-/* =====================================================
-   PAGES — INPUT STYLE
-   (conserve ton comportement existant)
+   PAGES — INPUTS
+   BALISE : AG_FORM_V2_SAFE
    ===================================================== */
 
 .page-importexport input,
@@ -859,9 +764,11 @@ button:active,
 .page-edt textarea,
 .page-edt select{
   appearance: none;
-  background: rgba(3,6,18,0.55);
+  font-family: 'Poiret One', sans-serif;
+  letter-spacing: 0.06em;
+  background: rgba(2,6,18,0.62);
   color: var(--texte-clair);
-  border: 1px solid rgba(240,168,64,0.22);
+  border: 1px solid rgba(232,160,48,0.22);
   border-radius: 0;
   padding: 6px 10px;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -875,14 +782,15 @@ button:active,
 .page-salle textarea:focus,
 .page-bulletins textarea:focus,
 .page-edt textarea:focus{
-  border-color: var(--accent-chaud);
-  box-shadow: 0 0 6px rgba(240,168,64,0.35);
+  border-color: var(--accent-or);
+  box-shadow: 0 0 8px rgba(232,160,48,0.40);
   outline: none;
 }
 
 
 /* =====================================================
    PAGES — SELECT CUSTOM
+   BALISE : AG_SELECT_V2_SAFE
    ===================================================== */
 
 .page-importexport select,
@@ -890,23 +798,23 @@ button:active,
 .page-bulletins select,
 .page-edt select{
   background:
-    rgba(3,6,18,0.55)
-    url("data:image/svg+xml,%3Csvg fill='%23f0a840' height='18' viewBox='0 0 20 20' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 5 5-5z'/%3E%3C/svg%3E")
+    rgba(2,6,18,0.62)
+    url("data:image/svg+xml,%3Csvg fill='%23e8a030' height='18' viewBox='0 0 20 20' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 5 5-5z'/%3E%3C/svg%3E")
     no-repeat right 6px center;
-
   padding-right: 28px;
 }
 
 
 /* =====================================================
-   GLOBAL — CHECKBOX STYLE
+   GLOBAL — CHECKBOX
+   BALISE : AG_CHECKBOX_V2_SAFE
    ===================================================== */
 
 input[type="checkbox"]{
   appearance: none;
   width: 16px;
   height: 16px;
-  border: 1.5px solid rgba(240,168,64,0.45);
+  border: 1.5px solid rgba(232,160,48,0.45);
   border-radius: 0;
   position: relative;
   cursor: pointer;
@@ -914,9 +822,9 @@ input[type="checkbox"]{
 }
 
 input[type="checkbox"]:checked{
-  background: var(--accent-chaud);
-  border-color: var(--accent-chaud);
-  box-shadow: 0 0 6px rgba(240,168,64,0.45);
+  background: var(--accent-or);
+  border-color: var(--accent-or);
+  box-shadow: 0 0 7px rgba(232,160,48,0.52);
 }
 
 input[type="checkbox"]:checked::after{
@@ -933,58 +841,134 @@ input[type="checkbox"]:checked::after{
 
 
 /* =====================================================
-   GLOBAL — RADIO STYLE (aligné checkbox Art déco)
+   PAGE EDT — STRUCTURE VISUELLE
+   BALISE : AG_EDT_VISUAL_V2_SAFE
    ===================================================== */
 
-input[type="radio"]{
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid rgba(240,168,64,0.45);
-  border-radius: 50%;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
+.page-edt .topbar{ margin-bottom: 12px; }
 
-input[type="radio"]:checked{
-  border-color: var(--accent-chaud);
-  background: rgba(240,168,64,0.12);
-
-  box-shadow:
-    0 0 6px rgba(240,168,64,0.55),
-    0 0 14px rgba(240,168,64,0.35),
-    0 0 28px rgba(240,168,64,0.18);
-}
-
-input[type="radio"]:checked::after{
-  content: "";
-  position: absolute;
-  inset: 3px;
-  background: var(--accent-chaud);
-  border-radius: 50%;
-
-  box-shadow:
-    0 0 6px rgba(240,168,64,0.7),
-    0 0 10px rgba(240,168,64,0.5);
+.page-edt .edt-leftpanel,
+.page-edt .edt-rightpanel{
+  background: rgba(2,7,18,0.58);
+  border: 1px solid rgba(232,160,48,0.16);
+  border-top: 1px solid rgba(232,160,48,0.36);
+  padding: 10px;
 }
 
 
 /* =====================================================
-   SÉCURITÉ — TEXTAREA GLOBAL
+   PAGE EDT — SCROLL
+   BALISE : AG_EDT_SCROLL_V2_SAFE
+   ===================================================== */
+
+.page-edt .edt-leftpanel::-webkit-scrollbar{ width: 4px; }
+.page-edt .edt-leftpanel::-webkit-scrollbar-track{ background: rgba(232,160,48,0.04); }
+.page-edt .edt-leftpanel::-webkit-scrollbar-thumb{ background: rgba(232,160,48,0.55); border-radius: 0; }
+
+
+/* =====================================================
+   TEXTAREA GLOBAL
+   BALISE : AG_TEXTAREA_SAFE
    ===================================================== */
 
 textarea{
-  background: rgba(3,6,18,0.50);
+  background: rgba(2,6,18,0.58);
   color: var(--texte-clair);
-  border: 1px solid rgba(240,168,64,0.22);
+  border: 1px solid rgba(232,160,48,0.22);
   border-radius: 0;
   padding: 6px 10px;
-  font-family: inherit;
+  font-family: 'Poiret One', sans-serif;
+  letter-spacing: 0.05em;
 }
 
 textarea:focus{
-  border-color: var(--accent-chaud);
-  box-shadow: 0 0 6px rgba(240,168,64,0.35);
+  border-color: var(--accent-or);
+  box-shadow: 0 0 7px rgba(232,160,48,0.40);
   outline: none;
 }
+
+
+/* =====================================================
+   PAGE EDT — SCROLL FIX
+   BALISE : AG_EDT_SCROLL_FIX_V1
+   ===================================================== */
+
+.page-edt .edt-leftpanel{ max-height: calc(100vh - 160px); }
+
+
+/* =====================================================
+   PAGE EDT — SEMAINES EN LIGNES
+   BALISE : AG_EDT_SPAN_FIX_V1
+   ===================================================== */
+
+.page-edt .edt-leftpanel span{
+  display: block;
+  width: 100%;
+  font-family: 'Poiret One', sans-serif;
+  letter-spacing: 0.06em;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-left: 2px solid rgba(232,160,48,0.30);
+  transition: background 0.15s, border-color 0.15s;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.page-edt .edt-leftpanel span:hover{
+  background: rgba(232,160,48,0.06);
+  border-left-color: var(--accent-or-vif);
+}
+
+
+/* =====================================================
+   PAGE CLASSES HG — LIGNE ROUGE GROUPE MANQUANT
+   BALISE : AG_CLASSeshg_MISSING_GROUP_RED_V1
+   ===================================================== */
+
+.page-classeshg .eleve-row.missing-groupe{
+  border: 1px solid rgba(200,40,32,0.75);
+  background: rgba(160,24,18,0.14);
+}
+
+.page-classeshg .eleve-row.missing-groupe .eleve-open{
+  color: rgba(255,150,150,1);
+}
+
+
+/* =====================================================
+   PAGE CLASSES HG — 1 ÉLÈVE = 1 LIGNE
+   BALISE : AG_CLASSeshg_ONE_LINE_V1
+   ===================================================== */
+
+.page-classeshg .eleve-row{
+  display: grid;
+  grid-template-columns: 1fr 150px 220px 160px;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.page-classeshg .eleve-row:hover{
+  background: rgba(232,160,48,0.05);
+  border-left-color: rgba(232,160,48,0.48);
+}
+
+.page-classeshg .eleve-ident{ display:flex; align-items:center; min-width:0; }
+
+.page-classeshg .eleve-open{
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Poiret One', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.page-classeshg .eleve-options{ display: contents; }
+
+.page-classeshg .opt{ display:flex; gap:6px; align-items:center; }
+.page-classeshg .opt select{ width: 100%; }
