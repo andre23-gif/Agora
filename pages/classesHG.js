@@ -301,9 +301,16 @@ function renderEleveRow(eleve) {
       <div class="eleve-options">
 
         <div class="opt opt-groupe" data-eid="${eleve.id}">
-          <button type="button" class="grp-btn ${groupeActuel === "gr 1" ? "active" : ""}" data-grp="gr 1">gr 1</button>
-          <button type="button" class="grp-btn ${groupeActuel === "gr 2" ? "active" : ""}" data-grp="gr 2">gr 2</button>
-        </div>
+  <label>
+    <input type="radio" name="grp-${eleve.id}" value="gr 1" ${groupeActuel === "gr 1" ? "checked" : ""}>
+    gr 1
+  </label>
+  <label>
+    <input type="radio" name="grp-${eleve.id}" value="gr 2" ${groupeActuel === "gr 2" ? "checked" : ""}>
+    gr 2
+  </label>
+</div>
+/* === AG_CLASSeshg_RADIO_GROUP_V1 === */
 
         <label class="opt">
           Adaptation
@@ -385,25 +392,26 @@ if (syncBtn) {
   document.querySelectorAll(".opt-groupe").forEach(zone => {
     const eleveId = zone.dataset.eid;
 
-    zone.querySelectorAll(".grp-btn").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const grp = btn.dataset.grp; // "gr 1" ou "gr 2"
-        const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
-        if (!eleve) return;
+    zone.querySelectorAll("input[type=radio]").forEach(input => {
+  input.addEventListener("change", async () => {
+    const grp = input.value;
 
-        const sb = sbAgoram();
-        const { error } = await sb
-          .from("eleves")
-          .update({ groupe: grp })
-          .eq("id", eleve.id);
+    const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
+    if (!eleve) return;
 
-        if (error) throw new Error(`Écriture groupe impossible. ${error.message}`);
+    const sb = sbAgoram();
+    const { error } = await sb
+      .from("eleves")
+      .update({ groupe: grp })
+      .eq("id", eleve.id);
 
-        await loadClasseFromSupabase(classeActive);
-        await rerender();
-      });
-    });
+    if (error) throw new Error(`Écriture groupe impossible. ${error.message}`);
+
+    await rerender();
   });
+});
+/* === AG_CLASSeshg_RADIO_EVENT_V1 === */
+
 
   // adaptation : écriture immédiate + relecture
   document.querySelectorAll(".opt-adapt").forEach(sel => {
