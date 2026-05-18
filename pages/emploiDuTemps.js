@@ -64,6 +64,10 @@ let contexte = {
   trimestre: "T1",   // T1 / T2 / T3
   semestre: "S1"     // S1 / S2
 };
+/* === AG_EDT_SYNC_STATE_V1 === */
+let syncState = "unknown";   // "ok" | "dirty" | "error" | "unknown"
+let lastSyncAt = null;
+/* === AG_EDT_SYNC_STATE_END === */
 
 /* ======================================================
    BLOC 2B — SUPABASE (classes pour modale EDT)
@@ -126,6 +130,27 @@ async function getClassesAvecGroupesSupabase() {
 
   return out;
 }
+/* === AG_EDT_DB_LOAD_V1 === */
+async function loadEDTSemaine(isoLundi){
+  const sb = sbAgoram();
+
+  const { data, error } = await sb
+    .from("edt")
+    .select("*")
+    .eq("iso_lundi", isoLundi);
+
+  if (error) throw new Error(error.message);
+
+  if (data) {
+    edtParSemaine[isoLundi] = data.map(x => ({
+      jour: x.jour,
+      creneau: x.creneau,
+      classe: x.classe,
+      groupe: x.groupe
+    }));
+  }
+}
+/* === AG_EDT_DB_LOAD_END === */
 
 /* ======================================================
    BLOC 3 — OUTILS DATE (ISO week)
@@ -358,6 +383,21 @@ export function renderEmploiDuTemps() {
         <span>S</span>
         ${choix("semestre", ["S1","S2"], contexte.semestre)}
 
+<span id="edtSyncState">
+  ${
+    syncState === "ok" ? "🟢 Sync OK" :
+    syncState === "dirty" ? "🟠 Modifié" :
+    syncState === "error" ? "🔴 Erreur" :
+    "⚪ —"
+  }
+</span>
+
+<span id="edtSyncTime">
+  ${lastSyncAt ? lastSyncAt.toLocaleTimeString("fr-FR") : ""}
+</span>
+/* === AG_EDT_SYNC_DISPLAY_V1 === */
+
+
         <button id="valider">Valider</button>
       </div>
 
@@ -398,7 +438,13 @@ export function renderEmploiDuTemps() {
                   ${JOURS.map(j => {
                     if (cr.code === "PM") return `<td class="edt-off">—</td>`;
 
-                    const e = edtModele.find(l => l.jour === j && l.creneau === cr.code);
+                    /* === AG_EDT_SOURCE_SELECTION_V1 === */
+/* priorité : semaine enregistrée → sinon modèle */
+const iso = sem.isoLundi;
+const source = edtParSemaine[iso] || edtModele;
+
+const e = source.find(l => l.jour === j && l.creneau === cr.code);
+/* === AG_EDT_SOURCE_SELECTION_END === */
                     const txt = e ? (e.groupe ? `${e.classe} ${e.groupe}` : e.classe) : "&nbsp;";
 
                     return `<td class="edt-cell" data-j="${j}" data-c="${cr.code}">${txt}</td>`;
@@ -450,10 +496,15 @@ export function bindEmploiDuTempsEvents() {
     refresh();
   };
 
-  document.getElementById("weekSelect").onchange = e => {
-    semaineRefIndex = Number(e.target.value);
-    refresh();
-  };
+  document.getElementById("weekSelect").onchange = async e => {
+  semaineRefIndex = Number(e.target.value);
+
+  const sem = semaines[semaineRefIndex];
+  await loadEDTSemaine(sem.isoLundi);
+
+  refresh();
+};
+/* === AG_EDT_LOAD_ON_SELECT_V1 === */
 
   // Changement d'année scolaire -> regénération calendrier
   document.getElementById("anneeSelect").onchange = e => {
@@ -483,16 +534,82 @@ document.querySelectorAll(".edt-cell").forEach(td => {
     };
   });
 
-  // Valider : applique le modèle aux semaines cochées
-  document.getElementById("valider").onclick = () => {
-    semainesCibles.forEach(iso => {
-      edtParSemaine[iso] = edtModele.map(x => ({ ...x, ...contexte }));
-    });
-    semainesCibles.clear();
-    refresh();
-  };
-}
+/* ======================================================
+   AG_EDT_SAVE_SUPABASE_COMPLETE_V1
+   Remplace entièrement le bouton "Valider"
+   ====================================================== */
 
+document.getElementById("valider").onclick = async () => {
+
+  const sb = sbAgoram();
+
+  try {
+
+    const anneeId = await getActiveAnneeId();
+    if (!anneeId) throw new Error("Aucune année active");
+
+    for (const iso of semainesCibles) {
+
+      /* === 1. Construire le payload depuis le modèle === */
+      const payload = edtModele.map(x => ({
+        iso_lundi: iso,
+        annee_id: anneeId,
+        jour: x.jour,
+        creneau: x.creneau,
+        classe: x.classe,
+        groupe: x.groupe,
+        type: contexte.type,
+        trimestre: contexte.trimestre,
+        semestre: contexte.semestre
+      }));
+
+      /* === 2. Supprimer ancienne semaine (sécurité cohérence) === */
+      const { error: delErr } = await sb
+        .from("edt")
+        .delete()
+        .eq("iso_lundi", iso)
+        .eq("annee_id", anneeId);
+
+      if (delErr) throw new Error(delErr.message);
+
+      /* === 3. Insérer nouvelle semaine === */
+      if (payload.length > 0) {
+        const { error: insErr } = await sb
+          .from("edt")
+          .insert(payload);
+
+        if (insErr) throw new Error(insErr.message);
+      }
+
+      /* === 4. Mise à jour locale immédiate === */
+      edtParSemaine[iso] = payload.map(x => ({
+        jour: x.jour,
+        creneau: x.creneau,
+        classe: x.classe,
+        groupe: x.groupe
+      }));
+    }
+
+    /* === 5. Nettoyage et refresh === */
+    semainesCibles.clear();
+
+    syncState = "ok";
+    lastSyncAt = new Date();
+
+    refresh();
+
+  } catch (err) {
+
+    console.error(err);
+
+    syncState = "error";
+    refresh();
+  }
+
+};
+/* ======================================================
+   AG_EDT_SAVE_SUPABASE_COMPLETE_END
+   ====================================================== */
 
 /* ======================================================
    BLOC 9 — MODALE : choix classe/groupe sur une case
