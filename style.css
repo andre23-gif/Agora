@@ -409,21 +409,14 @@ button:active,
   gap:12px;
   margin-top: 12px;
 }
-
 .page-edt .edt-leftpanel{
   width: 260px;
   overflow-y: auto;
   padding-right: 6px;
-
-  display: flex;
-  flex-direction: column;
-
-  scroll-snap-type: y mandatory;
-
   max-height: calc(100vh - 160px);
 }
-/* === AG_EDT_SCROLL_FINAL_V1 === */
-``
+/* === AG_EDT_RESET_FINAL_V1 === */
+
 
 .page-edt .edt-rightpanel{
   flex:1;
@@ -1002,7 +995,4 @@ textarea:focus{
    BALISE : AG_EDT_FORCE_COLUMN_V1
    ===================================================== */
 
-.page-edt .edt-leftpanel{
-  display: flex;
-  flex-direction: column;
-}
+
