@@ -218,7 +218,8 @@ async function loadClasseFromSupabase(nomClasse) {
   // 3) élèves de la classe
   const { data: eleves, error: errEleves } = await sb
     .from("eleves")
-    .select("id, prenom, nom, genre, adaptations, classe_id")
+    .select("id, prenom, nom, genre, groupe, adaptations, classe_id")
+/* === AG_CLASSeshg_SELECT_GROUPE_V1 === */
     .eq("classe_id", classeId);
 
   if (errEleves) throw new Error(`Impossible de lire 'eleves'. ${errEleves.message}`);
@@ -324,11 +325,10 @@ function renderEleveRow(eleve) {
   const placeActuelle = (typeof eleve.place === "number") ? eleve.place : "";
 const groupeActuel = eleve.groupe || "";
 /* === AG_CLASSeshg_GROUPE_REQUIRED_V1 === */
-``
+
   return `
     <div class="eleve-row${groupeActuel ? "" : " missing-groupe"}" data-id="${eleve.id}">
-/* === AG_CLASSeshg_ROW_RED_IF_NO_GROUP_V1 === */
-.id}">
+
       <div class="eleve-ident">
         <button class="eleve-open" data-open="${eleve.id}">
           ${eleve.nom} ${eleve.prenom}
@@ -336,6 +336,11 @@ const groupeActuel = eleve.groupe || "";
       </div>
 
       <div class="eleve-options">
+<div class="opt opt-groupe" data-eid="${eleve.id}">
+  <button type="button" class="grp-btn ${groupeActuel === "gr 1" ? "active" : ""}" data-grp="gr 1">gr 1</button>
+  <button type="button" class="grp-btn ${groupeActuel === "gr 2" ? "active" : ""}" data-grp="gr 2">gr 2</button>
+</div>
+/* === AG_CLASSeshg
 
         <label class="opt">
           Adaptation
@@ -406,6 +411,33 @@ export function bindClassesHGEvents() {
     });
   });
 
+// === AG_CLASSeshg_GROUP_WRITE_V1 ===
+document.querySelectorAll(".opt-groupe").forEach(zone => {
+  zone.querySelectorAll(".grp-btn").forEach(btn => {
+    btn.addEventListener const eleveId = zone.dataset.eid;    btn.addEventListener("click", async () => {
+      const grp = btn.dataset.grp; // "gr 1" ou "gr 2"
+
+      const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
+      if (!eleve) return;
+
+      const sb = sbAgoram();
+      const { error } = await sb
+        .from("eleves")
+        .update({ groupe: grp })
+        .eq("id", eleve.id);
+
+      if (error) {
+        await rerender();
+        throw new Error(`Écriture groupe impossible. ${error.message}`);
+      }
+
+      eleve.groupe = grp;
+      await rerender();
+    });
+  });
+});
+
+   
   // Adaptation -> update Supabase.eleves.adaptations
   document.querySelectorAll(".opt-adapt").forEach(sel => {
     sel.addEventListener("change", async () => {
