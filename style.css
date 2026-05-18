@@ -414,8 +414,10 @@ button:active,
   overflow-y: auto;
   padding-right: 6px;
   max-height: calc(100vh - 160px);
+
+  scroll-snap-type: y proximity;
 }
-/* === AG_EDT_RESET_FINAL_V1 === */
+/* === AG_EDT_SCROLL_LIGHT_V1 === */
 
 
 .page-edt .edt-rightpanel{
