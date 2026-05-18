@@ -323,8 +323,7 @@ export async function renderClassesHG() {
 function renderEleveRow(eleve) {
   const adaptActuelle = (eleve.adaptations && eleve.adaptations.length) ? eleve.adaptations[0] : "";
   const placeActuelle = (typeof eleve.place === "number") ? eleve.place : "";
-const groupeActuel = eleve.groupe || "";
-/* === AG_CLASSeshg_GROUPE_REQUIRED_V1 === */
+  const groupeActuel = eleve.groupe || "";
 
   return `
     <div class="eleve-row${groupeActuel ? "" : " missing-groupe"}" data-id="${eleve.id}">
@@ -336,11 +335,11 @@ const groupeActuel = eleve.groupe || "";
       </div>
 
       <div class="eleve-options">
-<div class="opt opt-groupe" data-eid="${eleve.id}">
-  <button type="button" class="grp-btn ${groupeActuel === "gr 1" ? "active" : ""}" data-grp="gr 1">gr 1</button>
-  <button type="button" class="grp-btn ${groupeActuel === "gr 2" ? "active" : ""}" data-grp="gr 2">gr 2</button>
-</div>
-/* === AG_CLASSeshg
+
+        <div class="opt opt-groupe" data-eid="${eleve.id}">
+          <button type="button" class="grp-btn ${groupeActuel === "gr 1" ? "active" : ""}" data-grp="gr 1">gr 1</button>
+          <button type="button" class="grp-btn ${groupeActuel === "gr 2" ? "active" : ""}" data-grp="gr 2">gr 2</button>
+        </div>
 
         <label class="opt">
           Adaptation
@@ -413,8 +412,10 @@ export function bindClassesHGEvents() {
 
 // === AG_CLASSeshg_GROUP_WRITE_V1 ===
 document.querySelectorAll(".opt-groupe").forEach(zone => {
+  const eleveId = zone.dataset.eid;
+
   zone.querySelectorAll(".grp-btn").forEach(btn => {
-    btn.addEventListener const eleveId = zone.dataset.eid;    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", async () => {
       const grp = btn.dataset.grp; // "gr 1" ou "gr 2"
 
       const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
