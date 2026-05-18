@@ -181,6 +181,7 @@ async function loadClasseFromSupabase(nomClasse) {
 ------------------------------------------------------- */
 
 export async function renderClassesHG() {
+
   classesMeta = await getClassesSupabaseMeta();
   ensureClasseActive(classesMeta);
 
@@ -188,7 +189,7 @@ export async function renderClassesHG() {
     return `
       <div class="page page-classeshg">
         <h1>Classes HG</h1>
-        <p>Aucune classe disponible. Importe d’abord des élèves dans Import/Export.</p>
+        <p>Aucune classe disponible. Importe d’abord des élèves.</p>
       </div>
     `;
   }
@@ -217,19 +218,22 @@ export async function renderClassesHG() {
       <div class="classes-tabs" id="classesTabs">
         ${classesMeta.map(c => `
           <div class="tab-wrap ${c.nom === classeActive ? "active" : ""}">
-            <button class="tab ${c.nom === classeActive ? "active" : ""}" data-classe="${escapeAttr(c.nom)}">
+
+            <button class="tab ${c.nom === classeActive ? "active" : ""}"
+                    data-classe="${escapeAttr(c.nom)}">
               ${escapeHtml(c.nom)}
             </button>
-            
-<div class="pp-toggle ${c.is_pp ? "active" : ""}" data-pp-id="${escapeAttr(c.id)}" title="Classe PP">
-  PP
-</div>
 
+            <div class="pp-toggle ${c.is_pp ? "active" : ""}"
+                 data-pp-id="${escapeAttr(c.id)}"
+                 title="Classe PP">
               PP
-            </button>
+            </div>
+
           </div>
         `).join("")}
       </div>
+      <!-- === AG_CLASSeshg_TABS_BLOCK_FINAL === -->
 
       <h1>Classe ${escapeHtml(classeActive)}</h1>
 
@@ -255,7 +259,6 @@ export async function renderClassesHG() {
     </div>
   `;
 }
-
 /* -------------------------------------------------------
    BLOC 6 — RENDU ÉLÈVE (ligne cockpit)
 ------------------------------------------------------- */
