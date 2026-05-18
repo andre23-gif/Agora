@@ -169,11 +169,14 @@ async function getClassesSupabase() {
   const { data, error } = await sb
     .from("classes")
     .select("nom")
-    .eq("annee_id", anneeId(`Impossible de lire 'classes'. ${error.message}`);    .eq("annee_id", anneeId)
+    .eq("annee_id", anneeId)
+    .order("nom");
+
+  if (error) throw new Error(`Impossible de lire 'classes'. ${error.message}`);
 
   return (data || []).map(c => c.nom);
 }
-/* === AG_CLASSeshg_GET_CLASSES_SUPABASE_V1 === */
+/* === AG_CLASSeshg_GET_CLASSES_SUPABASE_V2 === */
 
 async function getClasseIdByNom(nomClasse) {
   const sb = sbAgoram();
