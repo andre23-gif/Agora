@@ -985,11 +985,13 @@ textarea:focus{
 
   padding: 6px 8px;
   margin-bottom: 4px;
-
   border-radius: 6px;
-}
-/* === AG_EDT_SPAN_RESET_V1 === */
 
+  /* Snap sur chaque semaine */
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+/* === AG_EDT_SCROLL_SNAP_ITEM_V1 === */
 /* =====================================================
    PAGE EDT — FORCER LISTE VERTICALE
    BALISE : AG_EDT_FORCE_COLUMN_V1
