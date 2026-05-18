@@ -2,26 +2,7 @@ import { getEleves, getClasses } from "./importExport.js";
 
 /* =======================================================
    PAGE : Classes HG
-   RÔLE MÉTIER :
-     - Cockpit de classe HG : navigation par onglets (1 onglet = 1 classe importée)
-     - Paramétrage élève (ligne) : adaptation (unique) + place (facultative)
-     - AU CLIC sur l’onglet de classe : recharge depuis SUPABASE (source de vérité)
-     - Écriture immédiate Supabase sur changement adaptation/place
-     - Profil élève (modale) inchangé :
-         * Assiduité (lecture seule : saisie uniquement en Salle)
-         * Comportement (lecture seule : événements Salle)
-         * Compétences HG (I/F/S/TS) éditables par trimestre
-         * Participation (calculée)
-   LIT :
-     - Import : getEleves(), getClasses() (sert seulement à fabriquer les onglets)
-     - Supabase : classes, annees(active), eleves, places, affectations
-     - Events (optionnel) : window.AG_EVENTS (assiduité/participation/comportement)
-   ÉCRIT :
-     - Supabase : eleves.adaptations ; affectations(eleve_id, place_id)
-     - Mémoire : elevesClasse (cache d’affichage)
-     - Store compétences : window.AG_COMP_HG
    ======================================================= */
-
 
 /* -------------------------------------------------------
    BLOC 1 — RÉFÉRENTIEL COMPÉTENCES HG
@@ -38,22 +19,34 @@ const COMPETENCES_HG = [
   "Usages numériques",
 ];
 
-const COMPETENCE_PARTICIPATION = "Participation";
 const TRIMESTRES = ["T1", "T2", "T3"];
 const ADAPTATIONS = ["", "PPS", "PAP", "PPRE", "Adaptations", "Adaptations partielles"];
 
+// Mapping compétences -> colonnes Supabase agoram.competences_hg
+const COMP_COL = {
+  "Lecture document / consignes": "lecture_document",
+  "Rédaction / Présentation": "redaction",
+  "Lecture image": "lecture_image",
+  "Analyse": "analyse_competence",
+  "Culture générale": "culture_generale",
+  "Apprentissage connaissances": "apprentissage_connaissances",
+  "Langage cartographique": "langage_cartographique",
+  "Usages numériques": "usages_numeriques",
+};
+
+const IFST = ["I", "F", "S", "TS"];
 
 /* -------------------------------------------------------
    BLOC 2 — ÉTAT LOCAL DE PAGE
 ------------------------------------------------------- */
 
 let classeActive = null;
-let elevesClasse = [];
+let elevesClasse = []; // [{id, nom, prenom, groupe, adaptations, place(numero)}]
 
-// caches places (chargés depuis Supabase)
-let placeIdToNumero = new Map();   // place_id -> numero (1..30)
-let numeroToPlaceId = new Map();   // numero -> place_id
-
+// cache places pour la classe active : numero -> place_id
+let numeroToPlaceId = new Map();
+// cache inverse pour affichage : place_id -> numero
+let placeIdToNumero = new Map();
 
 /* -------------------------------------------------------
    BLOC 3 — STORES (lecture/écriture)
@@ -63,15 +56,8 @@ function getEventsStore() {
   return window.AG_EVENTS || { assiduite: [], comportement: [], participation: [] };
 }
 
-function getCompStore() {
-  if (!window.AG_COMP_HG) window.AG_COMP_HG = {};
-  return window.AG_COMP_HG;
-}
-
-
 /* -------------------------------------------------------
    BLOC 3B — SUPABASE (accès)
-   Hypothèse minimale : window.sb existe déjà dans ton app
 ------------------------------------------------------- */
 
 function requireSupabase() {
@@ -83,70 +69,22 @@ function sbAgoram() {
   return requireSupabase().schema("agoram");
 }
 
-
 /* -------------------------------------------------------
    BLOC 4 — INITIALISATION / SÉLECTION CLASSE
 ------------------------------------------------------- */
 
 export function initClassesHG(nomClasse) {
   classeActive = nomClasse;
-  elevesClasse = []; // le vrai contenu viendra de Supabase au clic
+  elevesClasse = [];
 }
 
 function ensureClasseActive(classes) {
-  if (!classeActive && classes.length) {
-    initClassesHG(classes[0]);
-  }
+  if (!classeActive && classes.length) initClassesHG(classes[0]);
 }
-/* === AG_CLASSeshg_ENSURE_ACTIVE_V1 === */
-
 
 /* -------------------------------------------------------
-   BLOC 4B — CHARGEMENT SUPABASE (classe -> élèves + places)
-   Objectif :
-     - Au clic sur l’onglet classe, recharger elevesClasse depuis Supabase
-     - Charger places + affectations pour remplir eleve.place (numero)
+   BLOC 4B — CHARGEMENTS SUPABASE
 ------------------------------------------------------- */
-
-async function loadPlacesFromSupabase() {
-  const sb = sbAgoram();
-
-  // On prend tout (*) pour éviter de dépendre d’un nom de colonne supposé.
-  const { data: rows, error } = await sb.from("places").select("*");
-  if (error) throw new Error(`Impossible de lire 'places'. ${error.message}`);
-
-  placeIdToNumero = new Map();
-  numeroToPlaceId = new Map();
-
-  if (!rows || !rows.length) return;
-
-  // Détection robuste du champ "numero" (1..30) dans la table places
-  const sample = rows[0];
-  const keys = Object.keys(sample);
-
-  // Cherche un champ numérique entre 1 et 30
-  let numeroKey = null;
-  for (const k of keys) {
-    const v = sample[k];
-    if (typeof v === "number" && v >= 1 && v <= 30) {
-      numeroKey = k;
-      break;
-    }
-  }
-
-  if (!numeroKey) {
-    throw new Error("Table 'places' : impossible d’identifier la colonne numérique (1..30).");
-  }
-
-  rows.forEach(r => {
-    const pid = r.id;
-    const num = r[numeroKey];
-    if (pid && typeof num === "number") {
-      placeIdToNumero.set(pid, num);
-      numeroToPlaceId.set(num, pid);
-    }
-  });
-}
 
 async function getActiveAnneeId() {
   const sb = sbAgoram();
@@ -162,7 +100,6 @@ async function getActiveAnneeId() {
 
 async function getClassesSupabase() {
   const sb = sbAgoram();
-
   const anneeId = await getActiveAnneeId();
   if (!anneeId) return [];
 
@@ -173,10 +110,8 @@ async function getClassesSupabase() {
     .order("nom");
 
   if (error) throw new Error(`Impossible de lire 'classes'. ${error.message}`);
-
   return (data || []).map(c => c.nom);
 }
-/* === AG_CLASSeshg_GET_CLASSES_SUPABASE_V2 === */
 
 async function getClasseIdByNom(nomClasse) {
   const sb = sbAgoram();
@@ -194,7 +129,6 @@ async function getClasseIdByNom(nomClasse) {
     if (data?.id) return data.id;
   }
 
-  // fallback si aucune année active trouvée
   const { data, error } = await sb
     .from("classes")
     .select("id")
@@ -206,20 +140,38 @@ async function getClasseIdByNom(nomClasse) {
   return data.id;
 }
 
+async function loadPlacesForClasse(classeId) {
+  const sb = sbAgoram();
+
+  // places sont liées à la classe (agoram.places.classe_id)
+  const { data, error } = await sb
+    .from("places")
+    .select("id, numero")
+    .eq("classe_id", classeId);
+
+  if (error) throw new Error(`Impossible de lire 'places'. ${error.message}`);
+
+  numeroToPlaceId = new Map();
+  placeIdToNumero = new Map();
+
+  (data || []).forEach(p => {
+    numeroToPlaceId.set(p.numero, p.id);
+    placeIdToNumero.set(p.id, p.numero);
+  });
+}
+
 async function loadClasseFromSupabase(nomClasse) {
   const sb = sbAgoram();
 
-  // 1) places (pour traduire place_id -> numero)
-  await loadPlacesFromSupabase();
-
-  // 2) classe_id
   const classeId = await getClasseIdByNom(nomClasse);
 
-  // 3) élèves de la classe
+  // places pour cette classe
+  await loadPlacesForClasse(classeId);
+
+  // élèves
   const { data: eleves, error: errEleves } = await sb
     .from("eleves")
     .select("id, prenom, nom, genre, groupe, adaptations, classe_id")
-/* === AG_CLASSeshg_SELECT_GROUPE_V1 === */
     .eq("classe_id", classeId);
 
   if (errEleves) throw new Error(`Impossible de lire 'eleves'. ${errEleves.message}`);
@@ -230,7 +182,7 @@ async function loadClasseFromSupabase(nomClasse) {
     return (a.prenom || "").localeCompare(b.prenom || "", "fr");
   });
 
-  // 4) affectations pour ces élèves
+  // affectations -> places
   const ids = list.map(e => e.id);
   let aff = [];
   if (ids.length) {
@@ -249,13 +201,11 @@ async function loadClasseFromSupabase(nomClasse) {
     if (num) eleveIdToNumero.set(a.eleve_id, num);
   });
 
-  // 5) enrichir la vue locale
   elevesClasse = list.map(e => ({
     ...e,
-    place: eleveIdToNumero.get(e.id) ?? null, // numero 1..30 ou null
+    place: eleveIdToNumero.get(e.id) ?? null,
   }));
 }
-
 
 /* -------------------------------------------------------
    BLOC 5 — RENDU PRINCIPAL
@@ -264,11 +214,6 @@ async function loadClasseFromSupabase(nomClasse) {
 export async function renderClassesHG() {
   const classes = await getClassesSupabase();
   ensureClasseActive(classes);
-
-  // ✅ AJOUT
-  if (classeActive && elevesClasse.length === 0) {
-    await loadClasseFromSupabase(classeActive);
-  }
 
   if (!classes.length) {
     return `
@@ -288,10 +233,14 @@ export async function renderClassesHG() {
     `;
   }
 
+  // charge la classe active si nécessaire
+  if (classeActive && elevesClasse.length === 0) {
+    await loadClasseFromSupabase(classeActive);
+  }
+
   return `
     <div class="page page-classeshg">
 
-      <!-- (1) Onglets classes -->
       <div class="classes-tabs" id="classesTabs">
         ${classes.map(c => `
           <button class="tab ${c === classeActive ? "active" : ""}" data-classe="${c}">
@@ -300,21 +249,17 @@ export async function renderClassesHG() {
         `).join("")}
       </div>
 
-      <!-- (2) Classe active -->
       <h1>Classe ${classeActive}</h1>
 
-      <!-- (3) Liste élèves + 2 menus -->
       <div class="liste-eleves">
         ${elevesClasse.map(renderEleveRow).join("")}
       </div>
 
-      <!-- (4) Modale -->
       <div id="modal"></div>
 
     </div>
   `;
 }
-
 
 /* -------------------------------------------------------
    BLOC 6 — RENDU ÉLÈVE (ligne cockpit)
@@ -327,7 +272,6 @@ function renderEleveRow(eleve) {
 
   return `
     <div class="eleve-row${groupeActuel ? "" : " missing-groupe"}" data-id="${eleve.id}">
-
       <div class="eleve-ident">
         <button class="eleve-open" data-open="${eleve.id}">
           ${eleve.nom} ${eleve.prenom}
@@ -364,7 +308,6 @@ function renderEleveRow(eleve) {
   `;
 }
 
-
 /* -------------------------------------------------------
    BLOC 7 — OPTIONS PLACES (Table 1..30)
 ------------------------------------------------------- */
@@ -378,30 +321,21 @@ function renderPlaceOptions(current) {
   }).join("");
 }
 
-
 /* -------------------------------------------------------
-   BLOC 8 — BIND EVENTS (interaction page)
+   BLOC 8 — BIND EVENTS
 ------------------------------------------------------- */
 
 export function bindClassesHGEvents() {
-  // Onglets classes -> charge depuis Supabase
+  // onglets classe
   document.querySelectorAll("#classesTabs .tab").forEach(btn => {
     btn.addEventListener("click", async () => {
       initClassesHG(btn.dataset.classe);
-
       await loadClasseFromSupabase(classeActive);
-      rerender();
+      await rerender();
     });
   });
 
-  // Auto-chargement initial (classe active au premier affichage)
-  if (classeActive && elevesClasse.length === 0) {
-    loadClasseFromSupabase(classeActive)
-      .then(() => rerender())
-      .catch(e => { console.error(e); });
-  }
-
-  // Ouvrir profil élève
+  // modale élève
   document.querySelectorAll(".eleve-open").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.open;
@@ -410,36 +344,31 @@ export function bindClassesHGEvents() {
     });
   });
 
-// === AG_CLASSeshg_GROUP_WRITE_V1 ===
-document.querySelectorAll(".opt-groupe").forEach(zone => {
-  const eleveId = zone.dataset.eid;
+  // groupe : écriture immédiate + relecture (source de vérité)
+  document.querySelectorAll(".opt-groupe").forEach(zone => {
+    const eleveId = zone.dataset.eid;
 
-  zone.querySelectorAll(".grp-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const grp = btn.dataset.grp; // "gr 1" ou "gr 2"
+    zone.querySelectorAll(".grp-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const grp = btn.dataset.grp; // "gr 1" ou "gr 2"
+        const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
+        if (!eleve) return;
 
-      const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
-      if (!eleve) return;
+        const sb = sbAgoram();
+        const { error } = await sb
+          .from("eleves")
+          .update({ groupe: grp })
+          .eq("id", eleve.id);
 
-      const sb = sbAgoram();
-      const { error } = await sb
-        .from("eleves")
-        .update({ groupe: grp })
-        .eq("id", eleve.id);
+        if (error) throw new Error(`Écriture groupe impossible. ${error.message}`);
 
-      if (error) {
+        await loadClasseFromSupabase(classeActive);
         await rerender();
-        throw new Error(`Écriture groupe impossible. ${error.message}`);
-      }
-
-      eleve.groupe = grp;
-      await rerender();
+      });
     });
   });
-});
 
-   
-  // Adaptation -> update Supabase.eleves.adaptations
+  // adaptation : écriture immédiate + relecture
   document.querySelectorAll(".opt-adapt").forEach(sel => {
     sel.addEventListener("change", async () => {
       const id = sel.dataset.adapt;
@@ -447,25 +376,20 @@ document.querySelectorAll(".opt-groupe").forEach(zone => {
       if (!eleve) return;
 
       const newAdaptations = sel.value ? [sel.value] : [];
-
       const sb = sbAgoram();
       const { error } = await sb
         .from("eleves")
         .update({ adaptations: newAdaptations })
         .eq("id", eleve.id);
 
-      if (error) {
-        // on reste cohérent : pas de mise à jour locale si DB échoue
-        rerender();
-        throw new Error(`Écriture adaptation impossible. ${error.message}`);
-      }
+      if (error) throw new Error(`Écriture adaptation impossible. ${error.message}`);
 
-      eleve.adaptations = newAdaptations;
-      rerender();
+      await loadClasseFromSupabase(classeActive);
+      await rerender();
     });
   });
 
-  // Place -> update Supabase via agoram.affectations (remplacement automatique)
+  // place : affectations (remplacement automatique) + relecture
   document.querySelectorAll(".opt-place").forEach(sel => {
     sel.addEventListener("change", async () => {
       const id = sel.dataset.place;
@@ -475,87 +399,55 @@ document.querySelectorAll(".opt-groupe").forEach(zone => {
       const sb = sbAgoram();
       const newNumero = sel.value ? Number(sel.value) : null;
 
-      // suppression (place vide)
+      // supprimer affectation si place vide
       if (newNumero === null) {
         const { error } = await sb
           .from("affectations")
           .delete()
           .eq("eleve_id", eleve.id);
 
-        if (error) {
-          rerender();
-          throw new Error(`Suppression affectation impossible. ${error.message}`);
-        }
+        if (error) throw new Error(`Suppression affectation impossible. ${error.message}`);
 
-        eleve.place = null;
-        rerender();
+        await loadClasseFromSupabase(classeActive);
+        await rerender();
         return;
       }
 
-      // numero -> place_id
       const placeId = numeroToPlaceId.get(newNumero);
-      if (!placeId) {
-        rerender();
-        throw new Error(`Place inconnue en base pour le numéro ${newNumero}.`);
-      }
+      if (!placeId) throw new Error(`Place inconnue en base pour le numéro ${newNumero}.`);
 
-      // Règle A : remplacement automatique
-      // 1) libérer la place (si occupée)
+      // remplacement auto : libérer la place puis libérer l'élève
       const { error: errFreePlace } = await sb
         .from("affectations")
         .delete()
         .eq("place_id", placeId);
 
-      if (errFreePlace) {
-        rerender();
-        throw new Error(`Libération place impossible. ${errFreePlace.message}`);
-      }
+      if (errFreePlace) throw new Error(`Libération place impossible. ${errFreePlace.message}`);
 
-      // 2) libérer l’élève (s’il avait déjà une place)
       const { error: errFreeEleve } = await sb
         .from("affectations")
         .delete()
         .eq("eleve_id", eleve.id);
 
-      if (errFreeEleve) {
-        rerender();
-        throw new Error(`Libération élève impossible. ${errFreeEleve.message}`);
-      }
+      if (errFreeEleve) throw new Error(`Libération élève impossible. ${errFreeEleve.message}`);
 
-      // 3) créer la nouvelle affectation
       const { error: errIns } = await sb
         .from("affectations")
         .insert([{ eleve_id: eleve.id, place_id: placeId }]);
 
-      if (errIns) {
-        rerender();
-        throw new Error(`Création affectation impossible. ${errIns.message}`);
-      }
+      if (errIns) throw new Error(`Création affectation impossible. ${errIns.message}`);
 
-      // mettre à jour la vue locale (libérer l’occupant local aussi)
-      elevesClasse.forEach(e => { if (e.place === newNumero) e.place = null; });
-      eleve.place = newNumero;
-
-      rerender();
+      await loadClasseFromSupabase(classeActive);
+      await rerender();
     });
   });
 }
 
-
 /* -------------------------------------------------------
-   BLOC 9 — MODALE PROFIL ÉLÈVE
-   (inchangé dans son principe)
+   BLOC 9 — MODALE PROFIL ÉLÈVE (Compétences HG enregistrées en Supabase)
 ------------------------------------------------------- */
 
 function ouvrirProfilEleve(eleve) {
-  const events = getEventsStore();
-  const compStore = getCompStore();
-
-  if (!compStore[eleve.id]) compStore[eleve.id] = {};
-  TRIMESTRES.forEach(t => {
-    if (!compStore[eleve.id][t]) compStore[eleve.id][t] = {};
-  });
-
   const trimestreDefaut = "T1";
 
   document.getElementById("modal").innerHTML = `
@@ -592,73 +484,100 @@ function ouvrirProfilEleve(eleve) {
   });
 }
 
-function renderProfilBody(eleve, tri) {
-  const events = getEventsStore();
-  const compStore = getCompStore();
+async function getOrCreateCompetencesRow(eleveId, anneeId, periode) {
+  const sb = sbAgoram();
 
-  const filterTri = (arr) =>
-    arr.filter(e => e.eleveId === eleve.id).filter(e => !e.trimestre || e.trimestre === tri);
+  // chercher une ligne existante
+  const { data: existing, error: e1 } = await sb
+    .from("competences_hg")
+    .select("id")
+    .eq("eleve_id", eleveId)
+    .eq("annee_id", anneeId)
+    .eq("periode", periode)
+    .maybeSingle();
 
-  const ass = filterTri(events.assiduite);
-  const comp = filterTri(events.comportement);
-  const part = filterTri(events.participation);
+  if (e1) throw new Error(`Lecture competences_hg impossible. ${e1.message}`);
+  if (existing?.id) return existing.id;
 
-  const participationIFST = syntheseParticipationIFST(part);
-  const evals = compStore[eleve.id][tri];
+  // créer une ligne vide
+  const { data: inserted, error: e2 } = await sb
+    .from("competences_hg")
+    .insert([{ eleve_id: eleveId, annee_id: anneeId, periode }])
+    .select("id")
+    .maybeSingle();
+
+  if (e2) throw new Error(`Création competences_hg impossible. ${e2.message}`);
+  return inserted.id;
+}
+
+async function readCompetences(eleveId, anneeId, periode) {
+  const sb = sbAgoram();
+
+  const { data, error } = await sb
+    .from("competences_hg")
+    .select("*")
+    .eq("eleve_id", eleveId)
+    .eq("annee_id", anneeId)
+    .eq("periode", periode)
+    .maybeSingle();
+
+  if (error) throw new Error(`Lecture competences_hg impossible. ${error.message}`);
+  return data || null;
+}
+
+async function writeCompetence(eleveId, periode, competenceLabel, val) {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) throw new Error("Aucune année active.");
+
+  const col = COMP_COL[competenceLabel];
+  if (!col) throw new Error(`Colonne inconnue pour compétence: ${competenceLabel}`);
+
+  const rowId = await getOrCreateCompetencesRow(eleveId, anneeId, periode);
+
+  const sb = sbAgoram();
+  const payload = {};
+  payload[col] = val;
+
+  const { error } = await sb
+    .from("competences_hg")
+    .update(payload)
+    .eq("id", rowId);
+
+  if (error) throw new Error(`Écriture compétence impossible. ${error.message}`);
+}
+
+async function renderProfilBody(eleve, tri) {
+  const anneeId = await getActiveAnneeId();
+  const row = anneeId ? await readCompetences(eleve.id, anneeId, tri) : null;
+
+  // valeurs actuelles (par défaut I)
+  const current = {};
+  COMPETENCES_HG.forEach(label => {
+    const col = COMP_COL[label];
+    current[label] = row && row[col] ? row[col] : "I";
+  });
 
   document.getElementById("profilBody").innerHTML = `
     <div class="bloc">
-      <h3>Assiduité (lecture)</h3>
-      ${ass.length ? `
-        <div class="liste-mini">
-          ${ass
-            .slice()
-            .sort((a,b) => (a.date||"").localeCompare(b.date||""))
-            .map(x => `<div class="mini-ligne">${x.date ?? "—"} · ${x.creneau ?? "—"} · ${x.type ?? "—"}</div>`)
-            .join("")}
-        </div>
-      ` : `<div class="hint">Aucune donnée enregistrée.</div>`}
-    </div>
-
-    <div class="bloc">
-      <h3>Comportement (lecture)</h3>
-      ${comp.length ? `
-        <div class="liste-mini">
-          ${comp
-            .slice()
-            .sort((a,b) => (a.date||"").localeCompare(b.date||""))
-            .map(x => `<div class="mini-ligne">${x.date ?? "—"} · ${x.creneau ?? "—"} · ${escapeHtml(x.texte ?? "")}</div>`)
-            .join("")}
-        </div>
-      ` : `<div class="hint">Aucune donnée enregistrée.</div>`}
-    </div>
-
-    <div class="bloc">
-      <h3>Participation (calculée)</h3>
-      <div class="hint">Niveau : <b>${participationIFST}</b></div>
-    </div>
-
-    <div class="bloc">
       <h3>Compétences HG (I / F / S / TS)</h3>
       <div class="competences">
-        ${COMPETENCES_HG.map(label => renderCompetenceRow(eleve.id, tri, label, evals[label] ?? "I")).join("")}
+        ${COMPETENCES_HG.map(label => renderCompetenceRow(eleve.id, tri, label, current[label])).join("")}
       </div>
     </div>
   `;
 
+  // bind boutons IFST
   document.querySelectorAll(".btn-comp").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const eleveId = btn.dataset.eleveid;
-      const tri = btn.dataset.tri;
+      const periode = btn.dataset.tri;
       const label = btn.dataset.label;
       const val = btn.dataset.val;
 
-      const store = getCompStore();
-      if (!store[eleveId]) store[eleveId] = {};
-      if (!store[eleveId][tri]) store[eleveId][tri] = {};
-      store[eleveId][tri][label] = val;
+      await writeCompetence(eleveId, periode, label, val);
 
-      document.querySelectorAll(`.comp-row[data-label="${cssAttr(label)}"] .btn-comp`).forEach(b => {
+      // MAJ visuelle locale
+      document.querySelectorAll(`.comp-row[data-label="${escapeAttr(label)}"] .btn-comp`).forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
     });
@@ -666,16 +585,15 @@ function renderProfilBody(eleve, tri) {
 }
 
 function renderCompetenceRow(eleveId, tri, label, current) {
-  const vals = ["I","F","S","TS"];
   return `
     <div class="comp-row" data-label="${escapeAttr(label)}">
       <div class="comp-label">${escapeHtml(label)}</div>
       <div class="comp-btns">
-        ${vals.map(v => `
+        ${IFST.map(v => `
           <button class="btn-comp ${v === current ? "active" : ""}"
                   data-eleveid="${eleveId}"
                   data-tri="${tri}"
-                  data-label="${escapeAttr(label)}"
+                  data-label="${label}"
                   data-val="${v}">
             ${v}
           </button>
@@ -685,27 +603,6 @@ function renderCompetenceRow(eleveId, tri, label, current) {
   `;
 }
 
-function syntheseParticipationIFST(events) {
-  if (!events || !events.length) return "—";
-  const score = (v) => {
-    switch (v) {
-      case "perturbateur": return 0;
-      case "passif": return 1;
-      case "participe": return 2;
-      case "moteur": return 3;
-      default: return 1;
-    }
-  };
-  const total = events.reduce((acc, e) => acc + score(e.valeur), 0);
-  const avg = total / events.length;
-  const flo = Math.floor(avg);
-  if (flo === 0) return "I";
-  if (flo === 1) return "F";
-  if (flo === 2) return "S";
-  return "TS";
-}
-
-
 /* -------------------------------------------------------
    BLOC 12 — RERENDER PAGE
 ------------------------------------------------------- */
@@ -714,8 +611,6 @@ async function rerender() {
   document.getElementById("app").innerHTML = await renderClassesHG();
   bindClassesHGEvents();
 }
-/* === AG_CLASSeshg_RERENDER_ASYNC_V1 === */
-
 
 /* -------------------------------------------------------
    BLOC 13 — UTILITAIRES
@@ -723,18 +618,13 @@ async function rerender() {
 
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
   }[m]));
 }
 
 function escapeAttr(s) {
   return escapeHtml(s).replace(/"/g, "&quot;");
 }
-
-function cssAttr(s) {
-  return s;
-}
-
 
 /* -------------------------------------------------------
    BLOC 14 — ACCÈS MÉTIER (lecture)
