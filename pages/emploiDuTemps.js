@@ -332,17 +332,21 @@ function setAnneeScolaire(nouvelleAnnee) {
 export function renderEmploiDuTemps() {
   if (semaines.length === 0) initEmploiDuTemps();
 
-/* === AG_EDT_INITIAL_LOAD_V1 === */
-const sem = semaines[semaineRefIndex];
+  /* === AG_EDT_RENDER_START_PATCH_V1 === */
 
-if (!edtParSemaine[sem.isoLundi]) {
-  // ⚠️ non await (render est synchrone)
-  loadEDTSemaine(sem.isoLundi).then(() => refresh());
-}
-/* === AG_EDT_INITIAL_LOAD_END === */
-   
   const sem = semaines[semaineRefIndex];
-  const annee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
+
+  // charge la semaine SI non en mémoire
+  if (!edtParSemaine[sem.isoLundi]) {
+    loadEDTSemaine(sem.isoLundi)
+      .catch(console.error)
+      .then(() => refresh());
+  }
+
+  const annee = window.appAnneeCourante ||
+    `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
+
+  /* === AG_EDT_RENDER_START_PATCH_END === */
 
   // Suggestions d’années scolaires (simple) : année courante, -1, +1
   const { start, end } = getAnneeScolaireCourante();
@@ -625,7 +629,6 @@ document.getElementById("valider").onclick = async () => {
 async function ouvrirModal(j, c) {
   const classes = await getClassesAvecGroupesSupabase();
   /* === AG_EDT_MODAL_CLASSES_SUPABASE_V1 === */
-``
 
   document.getElementById("modal").innerHTML = `
     <div style="background:white; padding:10px; border:1px solid black">
