@@ -224,11 +224,15 @@ export async function renderClassesHG() {
               ${escapeHtml(c.nom)}
             </button>
 
-            <div class="pp-toggle ${c.is_pp ? "active" : ""}"
-                 data-pp-id="${escapeAttr(c.id)}"
-                 title="Classe PP">
-              PP
-            </div>
+           <button
+  type="button"
+  class="tab pp-toggle ${c.is_pp ? "active" : ""}"
+  data-pp-id="${escapeAttr(c.id)}"
+  aria-pressed="${c.is_pp ? "true" : "false"}"
+  title="Classe PP"
+>
+  PP
+</button>
 
           </div>
         `).join("")}
@@ -352,19 +356,24 @@ export function bindClassesHGEvents() {
     };
   }
 
-  // Onglets classe
-  document.querySelectorAll("#classesTabs .tab").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      initClassesHG(btn.dataset.classe);
-      await loadClasseFromSupabase(classeActive);
-      syncState = "ok";
-      lastSyncAt = new Date();
-      await rerender();
-    });
+// Onglets classe (uniquement ceux qui ont data-classe)
+document.querySelectorAll('#classesTabs .tab[data-classe]').forEach(btn => {
+  btn.addEventListener("click", async () => {
+    initClassesHG(btn.dataset.classe);
+    await loadClasseFromSupabase(classeActive);
+    syncState = "ok";
+    lastSyncAt = new Date();
+    await rerender();
   });
+});
 
-  // Bouton PP : toggle Supabase classes.is_pp
- document.querySelectorAll("#classesTabs .pp-toggle").forEach(el => {
+
+/* === AG_CLASSeshg_PP_TOGGLE_EVENT_V2_BEGIN ===
+   Toggle PP par classe : écrit classes.is_pp (Supabase)
+   État visuel : .active + aria-pressed
+   ===================================================== */
+
+document.querySelectorAll("#classesTabs .pp-toggle").forEach(el => {
   el.addEventListener("click", async (e) => {
     e.stopPropagation();
 
@@ -381,6 +390,9 @@ export function bindClassesHGEvents() {
 
       if (error) throw new Error(error.message);
 
+      // feedback immédiat
+      el.setAttribute("aria-pressed", String(!isActive));
+
       syncState = "dirty";
       await rerender();
 
@@ -391,9 +403,9 @@ export function bindClassesHGEvents() {
     }
   });
 });
-/* === AG_PP_TOGGLE_EVENT_PATCH_V1 === */
 
-
+/* === AG_CLASSeshg_PP_TOGGLE_EVENT_V2_END ======================= */
+   
   // Modale élève
   document.querySelectorAll(".eleve-open").forEach(btn => {
     btn.addEventListener("click", () => {
