@@ -521,7 +521,7 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
     });
   });
 }
-
+*/
 /* -------------------------------------------------------
    BLOC 9 — MODALE PROFIL ÉLÈVE (Compétences HG)
    Stockage : dernière valeur uniquement (modifiable)
