@@ -564,17 +564,33 @@ if (!semaineActive.iso_lundi) {
 
         <div class="edt-leftpanel">
           <div class="edt-weeklist">
-            ${semaines.map((s, i) => {
-              const iso = s.isoLundi;
-              const checked = semainesCibles.has(iso) ? "checked" : "";
-              const st = weekStatusIndex.get(String(iso));
-              const hasData = st ? !!st.has_data : false;
-              const dot = hasData ? "🟦" : "⬜";
+           ${semaines.map((s, i) => {
+  const iso = s.isoLundi;
+  const checked = semainesCibles.has(iso) ? "checked" : "";
+  const st = weekStatusIndex.get(String(iso));
+  const hasData = st ? !!st.has_data : false;
+  const dot = hasData ? "🟦" : "⬜";
 
-              return `
-                <div class="edt-weekrow ${
-              `;
-            }).join("")}
+  return `
+    <div class="edt-weekrow ${i === semaineRefIndex ? "active" : ""}">
+
+      <input 
+        type="checkbox" 
+        class="edt-weekcheck" 
+        data-iso="${iso}" 
+        ${checked}
+      >
+
+      <span 
+        class="edt-weekbtn"
+        data-week-index="${i}"
+      >
+        ${dot} ${escapeHtml(weekLabel(s))}
+      </span>
+
+    </div>
+  `;
+}).join("")}
           </div>
         </div>
 
