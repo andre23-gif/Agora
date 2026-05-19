@@ -492,7 +492,7 @@ export async function renderEmploiDuTemps() {
   // Charger semaine active si pas encore
   const sem = semaines[semaineRefIndex];
  
-if (!semaineActive.iso_lundi) {
+if (!semaineActive.iso_lundi || semaineActive.iso_lundi !== sem.isoLundi) {
   try { 
     await loadWeek(sem.isoLundi); 
   } catch (e) { 
