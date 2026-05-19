@@ -539,7 +539,13 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
 function ouvrirProfilEleve(eleve) {
   const trimestreDefaut = "T1";
 
-  document.getElementById("modal").innerHTML = `
+  const modal = document.getElementById("modal");
+  if (!modal) {
+    console.error("Bloc modale absent : <div id='modal'></div> introuvable.");
+    return;
+  }
+
+  modal.innerHTML = `
     <div class="modal profil-eleve" role="dialog" aria-modal="true">
 
       <div class="modal-head">
@@ -559,11 +565,13 @@ function ouvrirProfilEleve(eleve) {
   `;
 
   document.getElementById("closeProfil").onclick = () => {
-    document.getElementById("modal").innerHTML = "";
+    modal.innerHTML = "";
   };
 
+  // rendu initial
   renderProfilBody(eleve, trimestreDefaut).catch(console.error);
 
+  // onglets trimestre
   document.querySelectorAll("#triTabs .tri").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#triTabs .tri").forEach(b => b.classList.remove("active"));
@@ -588,11 +596,6 @@ async function readCompetences(eleveId, anneeId, periode) {
   return data || null;
 }
 
-/* === AG_CLASSeshg_COMP_WRITE_UPSERT_V1 ===
-   Dernière valeur uniquement :
-   - on upsert sur (eleve_id, annee_id, periode)
-   - on modifie la colonne de la compétence
-*/
 async function writeCompetence(eleveId, periode, competenceLabel, val) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
@@ -625,7 +628,10 @@ async function renderProfilBody(eleve, tri) {
     current[label] = (row && row[col]) ? row[col] : "I";
   });
 
-  document.getElementById("profilBody").innerHTML = `
+  const body = document.getElementById("profilBody");
+  if (!body) return;
+
+  body.innerHTML = `
     <div class="bloc">
       <h3>Compétences HG (I / F / S / TS)</h3>
       <div class="competences">
@@ -634,6 +640,7 @@ async function renderProfilBody(eleve, tri) {
     </div>
   `;
 
+  // bind des boutons IFST
   document.querySelectorAll(".btn-comp").forEach(btn => {
     btn.addEventListener("click", async () => {
       const eleveId = btn.dataset.eleveid;
@@ -643,6 +650,7 @@ async function renderProfilBody(eleve, tri) {
 
       await writeCompetence(eleveId, periode, label, val);
 
+      // update visuel de la ligne
       document.querySelectorAll(`.comp-row[data-label="${escapeAttr(label)}"] .btn-comp`).forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
@@ -652,13 +660,13 @@ async function renderProfilBody(eleve, tri) {
   });
 }
 
-function renderCompetenceRow(eleveId, tri, label, current) {
+function renderCompetenceRow(eleveId, tri, label, currentVal) {
   return `
     <div class="comp-row" data-label="${escapeAttr(label)}">
       <div class="comp-label">${escapeHtml(label)}</div>
       <div class="comp-btns">
         ${IFST.map(v => `
-          <button class="btn-comp ${v === current ? "active" : ""}"
+          <button class="btn-comp ${v === currentVal ? "active" : ""}"
                   data-eleveid="${escapeAttr(eleveId)}"
                   data-tri="${escapeAttr(tri)}"
                   data-label="${escapeAttr(label)}"
