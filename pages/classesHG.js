@@ -21,15 +21,18 @@ import { getEleves, getClasses } from "./importExport.js";
 ------------------------------------------------------- */
 
 const COMPETENCES_HG = [
-  "Lecture document / consignes",
-  "Rédaction / Présentation",
+  "Lecture document",
+  "Lecture consignes",
+  "Rédaction de texte",
+  "Présentation de document",
   "Lecture image",
   "Analyse",
   "Culture générale",
   "Apprentissage connaissances",
   "Langage cartographique",
-  "Usages numériques",
+  "Usages numériques"
 ];
+
 
 const TRIMESTRES = ["T1", "T2", "T3"];
 const ADAPTATIONS = ["", "PPS", "PAP", "PPRE", "Adaptations", "Adaptations partielles"];
@@ -650,6 +653,7 @@ async function renderProfilBody(eleve, tri) {
       const val = btn.dataset.val;
 
       await writeCompetence(eleveId, periode, label, val);
+       current[label] = val;
 
       // update visuel de la ligne
       document.querySelectorAll(`.comp-row[data-label="${escapeAttr(label)}"] .btn-comp`).forEach(b => {
@@ -664,18 +668,26 @@ async function renderProfilBody(eleve, tri) {
 function renderCompetenceRow(eleveId, tri, label, currentVal) {
   return `
     <div class="comp-row" data-label="${escapeAttr(label)}">
-      <div class="comp-label">${escapeHtml(label)}</div>
+
+      <div class="comp-label">
+        ${escapeHtml(label)}
+      </div>
+
       <div class="comp-btns">
         ${IFST.map(v => `
           <button class="btn-comp ${v === currentVal ? "active" : ""}"
                   data-eleveid="${escapeAttr(eleveId)}"
                   data-tri="${escapeAttr(tri)}"
                   data-label="${escapeAttr(label)}"
-                  data-val="${escapeAttr(v)}">
+                  data-val="${v}">
             ${v}
           </button>
         `).join("")}
       </div>
+
+    </div>
+  `;
+}
     </div>
   `;
 }
