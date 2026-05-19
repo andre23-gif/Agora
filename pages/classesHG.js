@@ -614,6 +614,34 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
   if (error) throw new Error(`Écriture compétence impossible. ${error.message}`);
 }
 
+/* -------------------------------------------------------
+   BLOC 10 — RENDU LIGNE COMPÉTENCE
+   (hors de renderProfilBody — portée module)
+------------------------------------------------------- */
+
+function renderCompetenceRow(eleveId, tri, label, currentVal) {
+  return `
+    <div class="comp-row" data-label="${escapeAttr(label)}">
+      <div class="comp-label">${escapeHtml(label)}</div>
+      <div class="comp-btns">
+        ${IFST.map(v => `
+          <button class="btn-comp ${v === currentVal ? "active" : ""}"
+                  data-eleveid="${escapeAttr(eleveId)}"
+                  data-tri="${escapeAttr(tri)}"
+                  data-label="${escapeAttr(label)}"
+                  data-val="${v}">
+            ${v}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+/* -------------------------------------------------------
+   BLOC 11 — RENDU CORPS PROFIL ÉLÈVE
+------------------------------------------------------- */
+
 async function renderProfilBody(eleve, tri) {
   const anneeId = await getActiveAnneeId();
   const row = anneeId ? await readCompetences(eleve.id, anneeId, tri) : null;
@@ -629,62 +657,38 @@ async function renderProfilBody(eleve, tri) {
 
   body.innerHTML = `
     <div class="bloc">
-      <h3>Compétences HG </h3>
+      <h3>Compétences HG</h3>
       <div class="competences">
-        ${COMPETENCES_HG.map(label => renderCompetenceRow(eleve.id, tri, label, current[label])).join("")}
+        ${COMPETENCES_HG.map(label =>
+          renderCompetenceRow(eleve.id, tri, label, current[label])
+        ).join("")}
       </div>
     </div>
   `;
 
- // bind des boutons IFST (persist visuel stable)
-document.querySelectorAll(".btn-comp").forEach(btn => {
-  btn.addEventListener("click", async () => {
-    const eleveId = btn.dataset.eleveid;
-    const periode = btn.dataset.tri;
-    const label = btn.dataset.label;
-    const val = btn.dataset.val;
+  // Bind boutons IFST
+  document.querySelectorAll(".btn-comp").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const eleveId = btn.dataset.eleveid;
+      const periode = btn.dataset.tri;
+      const label   = btn.dataset.label;
+      const val     = btn.dataset.val;
 
-    await writeCompetence(eleveId, periode, label, val);
+      await writeCompetence(eleveId, periode, label, val);
 
-    // ✅ mémorise la valeur courante en mémoire (utile tant que la modale est ouverte)
-    current[label] = val;
+      current[label] = val;
 
-    // ✅ update visuel ROBUSTE : uniquement dans la ligne du bouton cliqué
-    const row = btn.closest(".comp-row");
-    if (row) {
-      row.querySelectorAll(".btn-comp").forEach(b => {
-        b.classList.toggle("active", b.dataset.val === val);
-      });
-    }
+      const row = btn.closest(".comp-row");
+      if (row) {
+        row.querySelectorAll(".btn-comp").forEach(b => {
+          b.classList.toggle("active", b.dataset.val === val);
+        });
+      }
 
-    syncState = "dirty";
+      syncState = "dirty";
+    });
   });
-});
-
-function renderCompetenceRow(eleveId, tri, label, currentVal) {
-  return `
-    <div class="comp-row" data-label="${escapeAttr(label)}">
-
-      <div class="comp-label">
-        ${escapeHtml(label)}
-      </div>
-
-      <div class="comp-btns">
-        ${IFST.map(v => `
-          <button class="btn-comp ${v === currentVal ? "active" : ""}"
-                  data-eleveid="${escapeAttr(eleveId)}"
-                  data-tri="${escapeAttr(tri)}"
-                  data-label="${escapeAttr(label)}"
-                  data-val="${v}">
-            ${v}
-          </button>
-        `).join("")}
-      </div>
-
-    </div>
-  `;
-}
-
+} // ← fermeture correcte de renderProfilBody
 
 /* -------------------------------------------------------
    BLOC 12 — RERENDER PAGE
@@ -697,7 +701,6 @@ async function rerender() {
   document.getElementById("app").innerHTML = await renderClassesHG();
   bindClassesHGEvents();
 }
-
 /* -------------------------------------------------------
    BLOC 13 — UTILITAIRES
 ------------------------------------------------------- */
