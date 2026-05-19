@@ -215,28 +215,24 @@ export async function renderClassesHG() {
   return `
     <div class="page page-classeshg">
 
-      <div class="classes-tabs" id="classesTabs">
-        ${classesMeta.map(c => `
-          <div class="tab-wrap ${c.nom === classeActive ? "active" : ""}">
+     ${classesMeta.map(c => `
+  <div class="tab-wrap ${c.nom === classeActive ? "active" : ""}">
+    <button class="tab ${c.nom === classeActive ? "active" : ""}"
+            data-classe="${escapeAttr(c.nom)}">
+      ${escapeHtml(c.nom)}
+    </button>
 
-            <button class="tab ${c.nom === classeActive ? "active" : ""}"
-                    data-classe="${escapeAttr(c.nom)}">
-              ${escapeHtml(c.nom)}
-            </button>
-
-           <button
-  type="button"
-  class="tab pp-toggle ${c.is_pp ? "active" : ""}"
-  data-pp-id="${escapeAttr(c.id)}"
-  aria-pressed="${c.is_pp ? "true" : "false"}"
-  title="Classe PP"
->
-  PP
-</button>
-
-          </div>
-        `).join("")}
-      </div>
+    <label class="pp-radio" data-pp-id="${escapeAttr(c.id)}" title="Classe suivie en PP">
+      <input
+        type="radio"
+        name="pp-classe"
+        value="${escapeAttr(c.id)}"
+        ${c.is_pp ? "checked" : ""}
+      >
+      PP
+    </label>
+  </div>
+`).join("")}
       <!-- === AG_CLASSeshg_TABS_BLOCK_FINAL === -->
 
       <h1>Classe ${escapeHtml(classeActive)}</h1>
@@ -367,31 +363,41 @@ document.querySelectorAll('#classesTabs .tab[data-classe]').forEach(btn => {
   });
 });
 
+/* === AG_CLASSeshg_PP_RADIO_V1_BEGIN =========================
+   PP par classe = radio (comme gr1/gr2)
+   Écrit Supabase : classes.is_pp
+   =========================================================== */
 
-/* === AG_CLASSeshg_PP_TOGGLE_EVENT_V2_BEGIN ===
-   Toggle PP par classe : écrit classes.is_pp (Supabase)
-   État visuel : .active + aria-pressed
-   ===================================================== */
+document.querySelectorAll("#classesTabs .pp-radio input[type='radio']").forEach(r => {
+  r.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
 
-document.querySelectorAll("#classesTabs .pp-toggle").forEach(el => {
-  el.addEventListener("click", async (e) => {
+  r.addEventListener("change", async (e) => {
     e.stopPropagation();
 
-    const classeId = el.dataset.ppId;
-    const isActive = el.classList.contains("active");
+    const classeId = r.value;
 
     try {
       const sb = sbAgoram();
+      const anneeId = await getActiveAnneeId();
+      if (!anneeId) throw new Error("Aucune année active.");
 
-      const { error } = await sb
+      // 1) Reset toutes les classes de l'année
+      const { error: errReset } = await sb
         .from("classes")
-        .update({ is_pp: !isActive })
+        .update({ is_pp: false })
+        .eq("annee_id", anneeId);
+
+      if (errReset) throw new Error(errReset.message);
+
+      // 2) Activer la classe choisie
+      const { error: errSet } = await sb
+        .from("classes")
+        .update({ is_pp: true })
         .eq("id", classeId);
 
-      if (error) throw new Error(error.message);
-
-      // feedback immédiat
-      el.setAttribute("aria-pressed", String(!isActive));
+      if (errSet) throw new Error(errSet.message);
 
       syncState = "dirty";
       await rerender();
@@ -404,8 +410,8 @@ document.querySelectorAll("#classesTabs .pp-toggle").forEach(el => {
   });
 });
 
-/* === AG_CLASSeshg_PP_TOGGLE_EVENT_V2_END ======================= */
-   
+/* === AG_CLASSeshg_PP_RADIO_V1_END =========================== */
+  
   // Modale élève
   document.querySelectorAll(".eleve-open").forEach(btn => {
     btn.addEventListener("click", () => {
