@@ -94,7 +94,7 @@
     // Import des pages (toutes via le même mécanisme fiable)
     // =====================================================
     let renderSalle, bindSalleEvents;
-    let renderClassesHG;
+    let renderClassesHG, bindClassesHGEvents;
     let renderBulletinsHG, bindBulletinsHGEvents;
     let renderPP, bindPPEvents;
     let renderEmploiDuTemps, bindEmploiDuTempsEvents;
@@ -103,7 +103,7 @@
 
     try {
       ({ renderSalle, bindSalleEvents } = await importPage("./pages/salle.js"));
-      ({ renderClassesHG } = await importPage("./pages/classesHG.js"));
+     ({ renderClassesHG, bindClassesHGEvents } = await importPage("./pages/classesHG.js"));
       ({ renderBulletinsHG, bindBulletinsHGEvents } = await importPage("./pages/bulletinsHG.js"));
       ({ renderPP, bindPPEvents } = await importPage("./pages/pp.js"));
       ({ renderEmploiDuTemps, bindEmploiDuTempsEvents } = await importPage("./pages/emploiDuTemps.js"));
