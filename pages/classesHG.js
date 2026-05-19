@@ -42,8 +42,8 @@ const IFST = ["I", "F", "S", "TS"];
 const COMP_COL = {
   "Lecture document": "lecture_document",
    "Lecture consignes": "lecture_consignes",
-  "Rédaction de texte": "redaction_de_texte ",
-   "Présentation de document": " presentation_de_document ",
+  "Rédaction de texte": "redaction_de_texte",
+   "Présentation de document": " presentation_de_document",
   "Lecture image": "lecture_image",
   "Analyse": "analyse_competence",
   "Culture générale": "culture_generale",
