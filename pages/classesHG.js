@@ -415,15 +415,22 @@ document.querySelectorAll("#classesTabs .pp-radio input[type='radio']").forEach(
 
 /* === AG_CLASSeshg_PP_RADIO_V1_END =========================== */
   
-  // Modale élève
-  document.querySelectorAll(".eleve-open").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.open;
-      const eleve = elevesClasse.find(e => String(e.id) === String(id));
-      if (eleve) ouvrirProfilEleve(eleve);
-    });
-  });
+/* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_BEGIN ====================
+   Clic nom -> ouvre modale profil élève HG
+   ============================================================ */
 
+document.querySelectorAll(".eleve-open").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const id = btn.dataset.open;
+    const eleve = elevesClasse.find(x => String(x.id) === String(id));
+    if (eleve) ouvrirProfilEleve(eleve);
+  });
+});
+
+/* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_END ====================== */
   // Groupe : écriture immédiate
   document.querySelectorAll(".opt-groupe").forEach(zone => {
     const eleveId = zone.dataset.eid;
