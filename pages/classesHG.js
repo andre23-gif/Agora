@@ -414,7 +414,26 @@ document.querySelectorAll("#classesTabs .pp-radio input[type='radio']").forEach(
 });
 
 /* === AG_CLASSeshg_PP_RADIO_V1_END =========================== */
-  
+
+// ✅ Clic nom élève → ouvrir modale
+document.querySelectorAll(".eleve-open").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const id = btn.dataset.open;
+    const eleve = elevesClasse.find(x => String(x.id) === String(id));
+
+    if (eleve) {
+      console.log("OUVERTURE MODALE", eleve); // debug
+      ouvrirProfilEleve(eleve);
+    } else {
+      console.error("Eleve introuvable", id);
+    }
+  });
+});
+
+   
 /* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_BEGIN ====================
    Clic nom -> ouvre modale profil élève HG
    ============================================================ */
