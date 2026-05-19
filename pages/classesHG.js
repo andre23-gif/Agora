@@ -440,20 +440,7 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
    
 /* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_BEGIN ====================
    Clic nom -> ouvre modale profil élève HG
-   ============================================================ */
 
-document.querySelectorAll(".eleve-open").forEach(btn => {
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const id = btn.dataset.open;
-    const eleve = elevesClasse.find(x => String(x.id) === String(id));
-    if (eleve) ouvrirProfilEleve(eleve);
-  });
-});
-
-/* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_END ====================== */
   // Groupe : écriture immédiate
   document.querySelectorAll(".opt-groupe").forEach(zone => {
     const eleveId = zone.dataset.eid;
@@ -637,7 +624,7 @@ async function renderProfilBody(eleve, tri) {
 
   body.innerHTML = `
     <div class="bloc">
-      <h3>Compétences HG (I / F / S / TS)</h3>
+      <h3>Compétences HG </h3>
       <div class="competences">
         ${COMPETENCES_HG.map(label => renderCompetenceRow(eleve.id, tri, label, current[label])).join("")}
       </div>
@@ -688,9 +675,7 @@ function renderCompetenceRow(eleveId, tri, label, currentVal) {
     </div>
   `;
 }
-    </div>
-  `;
-}
+
 
 /* -------------------------------------------------------
    BLOC 12 — RERENDER PAGE
