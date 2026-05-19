@@ -3,14 +3,16 @@
    ============================ */
 
 const COMPETENCES_HG = [
-  "Lecture document / consignes",
-  "Rédaction / présentation",
+  "Lecture document",
+  "Lecture consignes",
+  "Rédaction de texte",
+  "Présentation de document",
   "Lecture image",
   "Analyse",
   "Culture générale",
-  "Apprentissage des connaissances",
+  "Apprentissage connaissances",
   "Langage cartographique",
-  "Usages numériques",
+  "Usages numériques"
 ];
 
 const NIVEAUX = ["I", "F", "S", "TS"];
