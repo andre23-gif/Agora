@@ -1,5 +1,5 @@
 import { getEleves, getClasses } from "./importExport.js";
-
+import { ouvrirProfilEleve } from "./profilEleveHG.js";
 /* =======================================================
    PAGE : Classes HG
    RÔLE MÉTIER :
