@@ -215,24 +215,27 @@ export async function renderClassesHG() {
   return `
     <div class="page page-classeshg">
 
-     ${classesMeta.map(c => `
-  <div class="tab-wrap ${c.nom === classeActive ? "active" : ""}">
-    <button class="tab ${c.nom === classeActive ? "active" : ""}"
-            data-classe="${escapeAttr(c.nom)}">
-      ${escapeHtml(c.nom)}
-    </button>
+   <div class="classes-tabs" id="classesTabs">
+  ${classesMeta.map(c => `
+    <div class="tab-wrap ${c.nom === classeActive ? "active" : ""}">
+      <button class="tab ${c.nom === classeActive ? "active" : ""}"
+              data-classe="${escapeAttr(c.nom)}">
+        ${escapeHtml(c.nom)}
+      </button>
 
-    <label class="pp-radio" data-pp-id="${escapeAttr(c.id)}" title="Classe suivie en PP">
-      <input
-        type="radio"
-        name="pp-classe"
-        value="${escapeAttr(c.id)}"
-        ${c.is_pp ? "checked" : ""}
-      >
-      PP
-    </label>
-  </div>
-`).join("")}
+      <label class="pp-radio" data-pp-id="${escapeAttr(c.id)}" title="Classe suivie en PP">
+        <input
+          type="radio"
+          name="pp-classe"
+          value="${escapeAttr(c.id)}"
+          ${c.is_pp ? "checked" : ""}
+        >
+        PP
+      </label>
+    </div>
+  `).join("")}
+</div>
+
       <!-- === AG_CLASSeshg_TABS_BLOCK_FINAL === -->
 
       <h1>Classe ${escapeHtml(classeActive)}</h1>
