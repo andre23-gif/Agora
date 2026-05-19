@@ -636,26 +636,30 @@ async function renderProfilBody(eleve, tri) {
     </div>
   `;
 
-  // bind des boutons IFST
-  document.querySelectorAll(".btn-comp").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const eleveId = btn.dataset.eleveid;
-      const periode = btn.dataset.tri;
-      const label = btn.dataset.label;
-      const val = btn.dataset.val;
+ // bind des boutons IFST (persist visuel stable)
+document.querySelectorAll(".btn-comp").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const eleveId = btn.dataset.eleveid;
+    const periode = btn.dataset.tri;
+    const label = btn.dataset.label;
+    const val = btn.dataset.val;
 
-      await writeCompetence(eleveId, periode, label, val);
-       current[label] = val;
+    await writeCompetence(eleveId, periode, label, val);
 
-      // update visuel de la ligne
-      document.querySelectorAll(`.comp-row[data-label="${escapeAttr(label)}"] .btn-comp`).forEach(b => {
+    // ✅ mémorise la valeur courante en mémoire (utile tant que la modale est ouverte)
+    current[label] = val;
+
+    // ✅ update visuel ROBUSTE : uniquement dans la ligne du bouton cliqué
+    const row = btn.closest(".comp-row");
+    if (row) {
+      row.querySelectorAll(".btn-comp").forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
+    }
 
-      syncState = "dirty";
-    });
+    syncState = "dirty";
   });
-}
+});
 
 function renderCompetenceRow(eleveId, tri, label, currentVal) {
   return `
