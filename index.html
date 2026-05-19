@@ -183,8 +183,10 @@
     document.getElementById("navSalle").onclick = () =>
       afficher(renderSalle, bindSalleEvents);
 
-    document.getElementById("navClassesHG").onclick = () =>
-      afficher(renderClassesHG);
+    import { renderClassesHG, bindClassesHGEvents } from "./pages/classesHG.js";
+
+document.getElementById("navClassesHG").onclick = () =>
+  afficher(renderClassesHG, bindClassesHGEvents);
 
     document.getElementById("navBulletinsHG").onclick = () =>
       afficher(renderBulletinsHG, bindBulletinsHGEvents);
