@@ -440,8 +440,11 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
 });
 
    
-/* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_BEGIN ==================== */
+
+/* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_BEGIN ====================
    Clic nom -> ouvre modale profil élève HG
+*/
+
 
   // Groupe : écriture immédiate
   document.querySelectorAll(".opt-groupe").forEach(zone => {
