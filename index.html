@@ -85,11 +85,13 @@
     const BASE_URL = new URL("./", import.meta.url);
 
     // Helper d'import robuste : construit toujours l'URL correcte + ajoute ?v=
-   async function importPage(relPath) {
-  const u = new URL(`./${relPath}`, window.location.origin + "/Agora/");
+  
+async function importPage(relPath) {
+  const u = new URL(relPath, BASE_URL);
   u.searchParams.set("v", V);
   return import(u.href);
 }
+
 
     // Import des pages (toutes via le même mécanisme fiable)
     // =====================================================
