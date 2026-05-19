@@ -40,10 +40,10 @@ const IFST = ["I", "F", "S", "TS"];
 
 // Mapping compétences -> colonnes Supabase agoram.competences_hg
 const COMP_COL = {
-  "Lecture document ": "lecture_document",
-   "Lecture consignes ": "lecture_consignes",
-  "Rédaction de texte ": "redaction_de_texte ",
-   "Présentation de document ": " presentation_de_document ",
+  "Lecture document": "lecture_document",
+   "Lecture consignes": "lecture_consignes",
+  "Rédaction de texte": "redaction_de_texte ",
+   "Présentation de document": " presentation_de_document ",
   "Lecture image": "lecture_image",
   "Analyse": "analyse_competence",
   "Culture générale": "culture_generale",
@@ -440,7 +440,7 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
 });
 
    
-/* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_BEGIN ====================
+/* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_BEGIN ==================== */
    Clic nom -> ouvre modale profil élève HG
 
   // Groupe : écriture immédiate
@@ -523,7 +523,7 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
     });
   });
 }
-*/
+
 /* -------------------------------------------------------
    BLOC 9 — MODALE PROFIL ÉLÈVE (Compétences HG)
    Stockage : dernière valeur uniquement (modifiable)
