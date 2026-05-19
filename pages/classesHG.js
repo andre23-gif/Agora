@@ -338,6 +338,8 @@ function renderPlaceOptions(current) {
 
 export function bindClassesHGEvents() {
 
+console.log("✅ bindClassesHGEvents exécuté");
+   
   // Synchroniser : relecture Supabase + preuve
   const syncBtn = document.getElementById("syncBtn");
   if (syncBtn) {
