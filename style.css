@@ -34,6 +34,9 @@
 
   --shadow-or:   0 0 14px rgba(232,160,48,0.28);
   --shadow-soft: 0 2px 18px rgba(0,0,0,0.60);
+
+  /* Largeur panneau EDT — élargi pour 1 semaine = 1 ligne */
+  --edt-left-w: 300px;
 }
 
 *{ box-sizing: border-box; }
@@ -72,7 +75,7 @@ body{
   background-size: 200px 200px, 100% 100%, 100% 100%, 100% 100%;
 }
 
-/* Pseudo-couche pour les halos animés rapidement via pseudo-élément sur #app */
+/* Halos animés du fond — couche fixe derrière tout */
 body::before{
   content: "";
   position: fixed;
@@ -81,13 +84,9 @@ body::before{
   pointer-events: none;
 
   background:
-    /* Halo rouge — anime en diagonale */
     radial-gradient(900px 500px at 18% 28%, rgba(192,48,32,0.22), transparent 60%),
-    /* Halo bleu — anime en sens inverse */
     radial-gradient(800px 450px at 80% 72%, rgba(42,106,204,0.24), transparent 60%),
-    /* Halo or central — anime en oscillation */
     radial-gradient(600px 350px at 50% 45%, rgba(232,160,48,0.13), transparent 65%),
-    /* Halo or secondaire — rapide, petit rayon */
     radial-gradient(300px 200px at 35% 60%, rgba(245,192,96,0.16), transparent 55%);
 
   background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200%;
@@ -99,28 +98,21 @@ body::before{
     fond-eclat  5s  ease-in-out infinite alternate-reverse;
 }
 
-/* Halo rouge — déplacement diagonal lent mais perceptible */
 @keyframes fond-rouge{
   0%   { background-position: 0% 40%,   100% 60%, 50% 45%, 35% 60%; }
   50%  { background-position: 18% 55%,  100% 60%, 50% 45%, 35% 60%; }
   100% { background-position: 8% 72%,   100% 60%, 50% 45%, 35% 60%; }
 }
-
-/* Halo bleu — déplacement en miroir */
 @keyframes fond-bleu{
-  0%   { background-position: 0% 40%,  100% 72%, 50% 45%, 35% 60%; }
-  50%  { background-position: 0% 40%,  82%  48%, 50% 45%, 35% 60%; }
-  100% { background-position: 0% 40%,  95%  30%, 50% 45%, 35% 60%; }
+  0%   { background-position: 0% 40%, 100% 72%, 50% 45%, 35% 60%; }
+  50%  { background-position: 0% 40%, 82%  48%, 50% 45%, 35% 60%; }
+  100% { background-position: 0% 40%, 95%  30%, 50% 45%, 35% 60%; }
 }
-
-/* Halo or central — oscillation douce */
 @keyframes fond-or{
   0%   { background-position: 0% 40%, 100% 60%, 50%  40%, 35% 60%; }
   50%  { background-position: 0% 40%, 100% 60%, 62%  55%, 35% 60%; }
   100% { background-position: 0% 40%, 100% 60%, 44%  65%, 35% 60%; }
 }
-
-/* Eclat or secondaire — plus rapide, plus petit, crée le mouvement "vivant" */
 @keyframes fond-eclat{
   0%   { background-position: 0% 40%, 100% 60%, 50% 45%, 28% 52%; }
   33%  { background-position: 0% 40%, 100% 60%, 50% 45%, 55% 38%; }
@@ -131,10 +123,10 @@ body::before{
 
 /* =====================================================
    GLOBAL — BANDEAU MOSAÏQUE FOUNDATION
-   Effet : tesselles/pixels dorés qui partent de gauche,
-   traversent et se dissolvent vers la droite.
-   Bleu et rouge suivent en décalé.
-   5 couches indépendantes à vitesses différentes.
+   Effet : nuage de pixels or fins et denses autour
+   de la marque (gauche), qui se dispersent et
+   s'effacent progressivement vers la droite.
+   Le fond rouge/bleu émerge côté onglets → lisibilité.
    ===================================================== */
 
 .ag-header{
@@ -146,18 +138,32 @@ body::before{
   display: flex;
   align-items: center;
   gap: 24px;
-  background: #030a1a;
-  border-bottom: 1.5px solid rgba(232,160,48,0.60);
+
+  /*
+     Fond : sombre à gauche (pixels or sur fond neutre),
+     glissement rouge profond au centre,
+     bleu marine à droite (onglets bien contrastés).
+  */
+  background: linear-gradient(
+    to right,
+    #04091a  0%,
+    #04091a 18%,
+    #3a0c08  45%,
+    #071430  75%,
+    #040d24 100%
+  );
+
+  border-bottom: 1.5px solid rgba(232,160,48,0.55);
   box-shadow:
-    0 1px 0   rgba(232,160,48,0.18),
+    0 1px 0   rgba(232,160,48,0.15),
     0 6px 40px rgba(0,0,0,0.80),
-    inset 0 -1px 0 rgba(192,48,32,0.28);
+    inset 0 -1px 0 rgba(192,48,32,0.22);
   overflow: hidden;
 }
 
 .ag-header > *{ position: relative; z-index: 3; }
 
-/* ——— COUCHE 0 : fond de chauffe (halos statiques colorés) ——— */
+/* ——— COUCHE 1 : halos rouge/bleu de profondeur ——— */
 .ag-header::before{
   content: "";
   position: absolute;
@@ -166,28 +172,34 @@ body::before{
   z-index: 0;
 
   background:
-    /* Rouge vermillon gauche */
-    radial-gradient(380px 100% at -5% 50%, rgba(200,40,24,0.55), transparent 60%),
-    /* Bleu teal centre-gauche */
-    radial-gradient(420px 100% at 30% 50%, rgba(32,90,180,0.40), transparent 60%),
-    /* Or chaud droite */
-    radial-gradient(360px 100% at 105% 50%, rgba(232,160,48,0.45), transparent 60%);
+    /* Halo rouge vif — centre-gauche */
+    radial-gradient(55% 100% at 32% 50%, rgba(200,36,18,0.58), transparent 65%),
+    /* Halo bleu profond — droite */
+    radial-gradient(50% 100% at 88% 50%, rgba(18,52,160,0.65), transparent 60%),
+    /* Micro-lueur or — bord gauche, source des pixels */
+    radial-gradient(18% 100% at 2%  50%, rgba(232,160,48,0.32), transparent 70%);
 
-  filter: blur(12px) saturate(1.6);
-  opacity: 0.88;
-  animation: bandeau-fond-pulse 8s ease-in-out infinite alternate;
+  filter: blur(10px) saturate(1.6);
+  opacity: 0.90;
+  /* Légère respiration */
+  animation: bandeau-halo 10s ease-in-out infinite alternate;
 }
 
-@keyframes bandeau-fond-pulse{
-  0%  { opacity: 0.80; filter: blur(12px) saturate(1.5); }
-  50% { opacity: 0.95; filter: blur(10px) saturate(1.9); }
-  100%{ opacity: 0.85; filter: blur(14px) saturate(1.6); }
+@keyframes bandeau-halo{
+  0%  { opacity: 0.85; filter: blur(10px) saturate(1.5); }
+  50% { opacity: 0.96; filter: blur( 8px) saturate(1.85);}
+  100%{ opacity: 0.88; filter: blur(12px) saturate(1.55);}
 }
 
-/* ——— COUCHE 1 : pixels OR — vague principale gauche→droite ——— */
-/* Technique : repeating-radial-gradient crée les "pixels/points"
-   background-size très large (600%) + animation sur X = défilement
-   masque dégradé = apparition gauche / dissolution droite         */
+/* ——— COUCHE 2 : nuage de pixels or — dispersion gauche→droite ——— */
+/*
+   4 grilles de points (repeating-radial-gradient),
+   chacune de taille et vitesse différentes.
+   Le mask-image est le cœur de l'effet :
+     0%–20%  : pixels pleinement visibles  (autour de la marque)
+     20%–50% : dissolution rapide
+     50%–100%: quasi transparent           (onglets sur fond coloré pur)
+*/
 .ag-header::after{
   content: "";
   position: absolute;
@@ -195,102 +207,92 @@ body::before{
   pointer-events: none;
   z-index: 2;
 
-  /* 5 sous-couches superposées, chacune animée séparément */
   background:
-    /* — pixels or vif — petits, dense, rapides */
+    /* Couche A : pixels 1.5 px / tuile 9 px — très dense, très vifs */
     repeating-radial-gradient(
       circle at center,
-      rgba(245,192,96,0.90) 0 2px,
-      transparent 2px 14px
+      rgba(255,215,90,0.98) 0 1.5px,
+      transparent 1.5px 9px
     ),
-    /* — pixels or doux — moyens, espacés, vitesse moyenne */
+    /* Couche B : pixels 2 px / tuile 16 px — densité moyenne, or plus doux */
     repeating-radial-gradient(
       circle at center,
-      rgba(232,160,48,0.70) 0 2.5px,
-      transparent 2.5px 22px
+      rgba(232,160,48,0.82) 0 2px,
+      transparent 2px 16px
     ),
-    /* — pixels rouge — plus grands, lents, se mélangent */
+    /* Couche C : pixels 1 px / tuile 6 px — ultra-fins, scintillement rapide */
     repeating-radial-gradient(
       circle at center,
-      rgba(200,40,24,0.55) 0 2px,
-      transparent 2px 30px
+      rgba(255,235,140,0.72) 0 1px,
+      transparent 1px 6px
     ),
-    /* — pixels bleu — décalés en Y, vitesse intermédiaire */
+    /* Couche D : pixels 2.5 px / tuile 28 px — rares, lents, "gemmes" */
     repeating-radial-gradient(
       circle at center,
-      rgba(42,106,204,0.50) 0 2px,
-      transparent 2px 26px
-    ),
-    /* — éclats or larges — très espacés, très lents, "gemmes" */
-    repeating-radial-gradient(
-      circle at center,
-      rgba(255,220,120,0.65) 0 3px,
-      transparent 3px 48px
+      rgba(245,192,96,0.65) 0 2.5px,
+      transparent 2.5px 28px
     );
 
-  /* Tailles de tuile différentes pour chaque couche → décalage naturel */
   background-size:
-    14px  var(--header-h),
-    22px  var(--header-h),
-    30px  var(--header-h),
-    26px  var(--header-h),
-    48px  var(--header-h);
+     9px var(--header-h),
+    16px var(--header-h),
+     6px var(--header-h),
+    28px var(--header-h);
 
-  /* Masque : opaque à gauche, transparent à droite = dissolution */
+  /*
+     Masque de dispersion :
+     Gauche = dense et lumineux (marque)
+     Centre = dissolution rapide
+     Droite = transparent (onglets lisibles sur rouge/bleu)
+  */
   -webkit-mask-image: linear-gradient(
     to right,
-    rgba(0,0,0,0.0)  0%,
-    rgba(0,0,0,0.9) 12%,
-    rgba(0,0,0,0.9) 55%,
-    rgba(0,0,0,0.0) 100%
+    rgba(0,0,0,1.00)  0%,
+    rgba(0,0,0,1.00) 16%,
+    rgba(0,0,0,0.60) 30%,
+    rgba(0,0,0,0.22) 46%,
+    rgba(0,0,0,0.05) 60%,
+    rgba(0,0,0,0.00) 100%
   );
   mask-image: linear-gradient(
     to right,
-    rgba(0,0,0,0.0)  0%,
-    rgba(0,0,0,0.9) 12%,
-    rgba(0,0,0,0.9) 55%,
-    rgba(0,0,0,0.0) 100%
+    rgba(0,0,0,1.00)  0%,
+    rgba(0,0,0,1.00) 16%,
+    rgba(0,0,0,0.60) 30%,
+    rgba(0,0,0,0.22) 46%,
+    rgba(0,0,0,0.05) 60%,
+    rgba(0,0,0,0.00) 100%
   );
 
-  opacity: 0.85;
+  opacity: 0.92;
 
-  /* Chaque couche défile à sa propre vitesse sur l'axe X */
+  /* Défilement indépendant de chaque couche vers la droite */
   animation:
-    tess-or-vif   5s  linear infinite,
-    tess-or-doux  9s  linear infinite,
-    tess-rouge   14s  linear infinite,
-    tess-bleu    11s  linear infinite,
-    tess-gemme   20s  linear infinite;
+    px-a  4s linear infinite,
+    px-b  7s linear infinite,
+    px-c  3s linear infinite,
+    px-d 13s linear infinite;
 }
 
-/* Vague or vif — la plus rapide, donne l'impression de "scintillement" */
-@keyframes tess-or-vif{
-  from { background-position:    0 0,   0 0,  0 0,  0 0,  0 0; }
-  to   { background-position: -140px 0, 0 0,  0 0,  0 0,  0 0; }
+/* Couche A — très rapide, tuile 9 px */
+@keyframes px-a{
+  from { background-position:  0 0, 0 0, 0 0, 0 0; }
+  to   { background-position: 9px 0, 0 0, 0 0, 0 0; }
 }
-
-/* Vague or douce */
-@keyframes tess-or-doux{
-  from { background-position: 0 0,    0 0,    0 0, 0 0, 0 0; }
-  to   { background-position: 0 0, -220px 0,  0 0, 0 0, 0 0; }
+/* Couche B — vitesse moyenne, tuile 16 px */
+@keyframes px-b{
+  from { background-position: 0 0,   0 0, 0 0, 0 0; }
+  to   { background-position: 0 0, 16px 0, 0 0, 0 0; }
 }
-
-/* Vague rouge — décalée dans le temps (delay simulé par position initiale) */
-@keyframes tess-rouge{
-  from { background-position: 0 0, 0 0,    0 4px,  0 0, 0 0; }
-  to   { background-position: 0 0, 0 0, -300px 4px, 0 0, 0 0; }
+/* Couche C — la plus rapide, ultra-scintillante, tuile 6 px */
+@keyframes px-c{
+  from { background-position: 0 0, 0 0,  0 0, 0 0; }
+  to   { background-position: 0 0, 0 0, 6px 0, 0 0; }
 }
-
-/* Vague bleue — décalée en Y de moitié de tuile */
-@keyframes tess-bleu{
-  from { background-position: 0 0, 0 0, 0 0,    0 13px, 0 0; }
-  to   { background-position: 0 0, 0 0, 0 0, -260px 13px, 0 0; }
-}
-
-/* Gemmes — très lent, très rare, crée des "étoiles" qui traversent */
-@keyframes tess-gemme{
-  from { background-position: 0 0, 0 0, 0 0, 0 0,    0 0; }
-  to   { background-position: 0 0, 0 0, 0 0, 0 0, -480px 0; }
+/* Couche D — lente, gemmes traversantes, tuile 28 px */
+@keyframes px-d{
+  from { background-position: 0 0, 0 0, 0 0,   0 0; }
+  to   { background-position: 0 0, 0 0, 0 0, 28px 0; }
 }
 
 
@@ -324,7 +326,7 @@ body::before{
 
 /* =====================================================
    GLOBAL — NAVIGATION ONGLETS
-   Cinzel + coin biseauté
+   Cinzel + coin biseauté — lisibles sur fond bleu
    ===================================================== */
 
 .ag-tabs{
@@ -342,7 +344,7 @@ body::before{
   background: transparent;
   border: none;
   border-bottom: 1.5px solid rgba(232,160,48,0.22);
-  color: var(--texte-doux);
+  color: var(--texte-clair);   /* clair sur fond bleu foncé */
   padding: 8px 14px 6px;
   cursor: pointer;
   transition: all 0.22s ease;
@@ -352,7 +354,7 @@ body::before{
 .ag-tabs button:hover{
   color: var(--accent-or-vif);
   border-bottom-color: var(--accent-or-vif);
-  background: rgba(232,160,48,0.07);
+  background: rgba(232,160,48,0.08);
   box-shadow:
     0 0  8px rgba(232,160,48,0.38),
     0 0 20px rgba(232,160,48,0.16);
@@ -541,8 +543,16 @@ button:active,
   margin-top: 12px;
 }
 
+/*
+   Panneau gauche EDT élargi :
+   --edt-left-w = 300px par défaut
+   Objectif : chaque ligne "semaine" tient sur une seule ligne
+   sans débordement ni troncature.
+*/
 .page-edt .edt-leftpanel{
-  width: 260px;
+  width: var(--edt-left-w);
+  min-width: 260px;
+  max-width: 340px;
   overflow-y: auto;
   padding-right: 6px;
   max-height: calc(100vh - 160px);
@@ -846,7 +856,7 @@ button:active,
   background: linear-gradient(90deg,
     transparent 0%,
     rgba(232,160,48,0.92) 30%,
-    rgba(200,96,24,0.72) 55%,
+    rgba(200,96,24,0.72)  55%,
     rgba(245,192,96,0.92) 78%,
     transparent 100%
   );
@@ -1014,17 +1024,23 @@ textarea:focus{
 
 
 /* =====================================================
-   PAGE EDT — SEMAINES EN LIGNES
+   PAGE EDT — SEMAINES EN LIGNES (1 semaine = 1 ligne)
    BALISE : AG_EDT_SPAN_FIX_V1
+   Panneau élargi à --edt-left-w (300px) pour que
+   "Semaine 12 — 18/03 au 22/03" tienne sans coupure.
    ===================================================== */
 
 .page-edt .edt-leftpanel span{
   display: block;
   width: 100%;
+  white-space: nowrap;        /* ← empêche le retour à la ligne */
+  overflow: hidden;
+  text-overflow: ellipsis;    /* ← sécurité si label très long  */
   font-family: 'Poiret One', sans-serif;
   letter-spacing: 0.06em;
-  padding: 6px 10px;
-  margin-bottom: 4px;
+  font-size: 0.82rem;         /* ← légèrement réduit pour tenir sur 300px */
+  padding: 7px 10px;
+  margin-bottom: 3px;
   border-left: 2px solid rgba(232,160,48,0.30);
   transition: background 0.15s, border-color 0.15s;
   scroll-snap-align: start;
@@ -1096,8 +1112,7 @@ textarea:focus{
    BALISE : AG_EDT_UI_V3_IPAD_SAFE
    ===================================================== */
 
-/* ✅ 1. BOUTONS TYPE / TRIMESTRE / SEMESTRE = PASTILLES */
-
+/* 1. BOUTONS TYPE / TRIMESTRE / SEMESTRE = PASTILLES */
 .page-edt .edt-meta{
   border-radius: 999px;
   padding: 4px 10px;
@@ -1108,13 +1123,8 @@ textarea:focus{
   transition: all 0.15s ease;
 }
 
-/* ✅ état actif très visible */
 .page-edt .edt-meta[data-active="1"]{
-  background: linear-gradient(
-    160deg,
-    rgba(232,160,48,0.9),
-    rgba(192,48,32,0.6)
-  );
+  background: linear-gradient(160deg, rgba(232,160,48,0.9), rgba(192,48,32,0.6));
   color: #120800;
   border-color: rgba(245,192,96,1);
   font-weight: 600;
@@ -1123,31 +1133,7 @@ textarea:focus{
     0 0 20px rgba(232,160,48,0.25);
 }
 
-
-/* ✅ 2. PANNEAUX EDT (plus équilibrés) */
-
-.page-edt .edt-body{
-  display: flex;
-  gap: 10px;
-}
-
-/* Panneau semaines (gauche) */
-.page-edt .edt-leftpanel{
-  width: 220px;              /* ✅ réduit pour iPad */
-  min-width: 190px;
-  max-width: 240px;
-  overflow-y: auto;
-}
-
-/* Panneau grille */
-.page-edt .edt-rightpanel{
-  flex: 1;
-  overflow-x: hidden;        /* ✅ pas de scroll horizontal */
-}
-
-
-/* ✅ 3. LIGNES SEMAINES (plus propres) */
-
+/* 2. LIGNES SEMAINES */
 .page-edt .edt-weekrow{
   display: flex;
   align-items: center;
@@ -1161,18 +1147,15 @@ textarea:focus{
   border-left: 2px solid var(--accent-bleu);
 }
 
-
-/* ✅ 4. GRILLE EDT (lisibilité iPad) */
-
+/* 3. GRILLE EDT */
 .page-edt .edt-grid{
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
-/* cellules */
 .page-edt .edt-cell{
-  height: 72px;             /* ✅ tactile */
+  height: 72px;
   min-width: 110px;
   border: 1px solid rgba(232,160,48,0.20);
   text-align: center;
@@ -1187,35 +1170,27 @@ textarea:focus{
   background: rgba(232,160,48,0.08);
 }
 
-/* entêtes */
 .page-edt .edt-grid th{
   font-size: 13px;
   padding: 6px;
   background: rgba(0,0,0,0.45);
 }
 
+/* 4. TOPBAR ADAPTÉE */
+.page-edt .topbar select{ font-size: 13px; }
 
-/* ✅ 5. TOPBAR ADAPTÉE iPAD */
-
-.page-edt .topbar{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.page-edt .topbar select{
-  font-size: 13px;
-}
-
-
-/* ✅ 6. VERSION SPÉCIALE TABLETTE (iPad 9 ~810px) */
-
+/* 5. VERSION TABLETTE (iPad 9 ~810px) */
 @media (max-width: 900px){
 
+  :root{ --edt-left-w: 220px; }
+
   .page-edt .edt-leftpanel{
-    width: 180px;
-    min-width: 160px;
+    min-width: 200px;
+    max-width: 240px;
+  }
+
+  .page-edt .edt-leftpanel span{
+    font-size: 0.76rem;
   }
 
   .page-edt .edt-cell{
@@ -1223,13 +1198,10 @@ textarea:focus{
     font-size: 13px;
   }
 
-  .page-edt .topbar{
-    gap: 4px;
-  }
+  .page-edt .topbar{ gap: 4px; }
 
   .page-edt .edt-meta{
     padding: 3px 8px;
     font-size: 12px;
   }
 }
-``
