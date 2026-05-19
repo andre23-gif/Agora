@@ -667,16 +667,23 @@ export function bindEmploiDuTempsEvents() {
     await refresh();
   };
 
-  document.querySelectorAll(".edt-meta[data-k][data-v]").forEach(btn => {
-    btn.onclick = async () => {
-      const k = btn.dataset.k;
-      const v = btn.dataset.v;
+ document.querySelectorAll(".edt-meta[data-k][data-v]").forEach(btn => {
+  btn.onclick = async () => {
 
-      bufferEdition.meta = { ...bufferEdition.meta, v }; // ✅ modif buffer
-      syncState = "dirty";
-      await refresh();
+    const k = btn.dataset.k;
+    const v = btn.dataset.v;
+
+    // ✅ mettre à jour le buffer correctement
+    bufferEdition.meta = {
+      ...bufferEdition.meta,
+      [k]: v
     };
-  });
+
+    syncState = "dirty";
+    await refresh();
+  };
+});
+``
 
   /* === AG_EDT_WEEK_INTERACTIONS_V1_BEGIN ========================= */
 
