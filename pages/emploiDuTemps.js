@@ -572,12 +572,7 @@ if (!semaineActive.iso_lundi) {
               const dot = hasData ? "🟦" : "⬜";
 
               return `
-                <div class="edt-weekrow ${i === semaineRefIndex ? "active" : ""}" data-week-index="${i}">
-                  <input type="checkbox" class="edt-weekcheck" data-iso="${iso}" ${checked}>
-                  <button type="button" class="edt-weekbtn" data-week-index="${i}">
-                    ${dot} ${escapeHtml(weekLabel(s))}
-                  </button>
-                </div>
+                <div class="edt-weekrow ${
               `;
             }).join("")}
           </div>
@@ -648,31 +643,33 @@ export function bindEmploiDuTempsEvents() {
     await refresh();
   };
 
-  document.querySelectorAll(".edt-meta[data-k][data-v]").forEach(btn => {
-    btn.onclick = async () => {
-      const k = btn.dataset.k;
-      const v = btn.dataset.v;
+/* === AG_EDT_WEEK_INTERACTIONS_V1_BEGIN =========================
+   Règle métier :
+     - clic sur le libellé = sélectionner la semaine (affichage)
+     - clic checkbox = ajouter/enlever une cible (application)
+   ============================================================= */
 
-      semaineActive.meta = { ...semaineActive.meta, [k]: v };
-      syncState = "dirty";
-      semaineActive.status = (semaineActive.status === "empty") ? "dirty" : "dirty";
-      await refresh();
-    };
-  });
+document.querySelectorAll(".edt-weekbtn[data-week-index]").forEach(b => {
+  b.onclick = async (e) => {
+    e.stopPropagation();
+    semaineRefIndex = Number(b.dataset.weekIndex);
+    await refresh();
+  };
+});
 
-  document.querySelectorAll(".edt-weekbtn[data-week-index]").forEach(b => {
-    b.onclick = async () => {
-      semaineRefIndex = Number(b.dataset.weekIndex);
-      await refresh();
-    };
-  });
+/* === AG_EDT_WEEK_INTERACTIONS_V1_END =========================== */
 
-  document.querySelectorAll(".edt-weekcheck[data-iso]").forEach(cb => {
-    cb.onchange = () => {
-      cb.checked ? semainesCibles.add(cb.dataset.iso) : semainesCibles.delete(cb.dataset.iso);
-      syncState = (syncState === "error") ? "error" : syncState;
-    };
-  });
+ document.querySelectorAll(".edt-weekcheck[data-iso]").forEach(cb => {
+  cb.onclick = (e) => {
+    e.stopPropagation(); // ✅ évite déclencher sélection semaine
+
+    if (cb.checked) {
+      semainesCibles.add(cb.dataset.iso);
+    } else {
+      semainesCibles.delete(cb.dataset.iso);
+    }
+  };
+});
 
   document.querySelectorAll(".edt-cell[data-j][data-c]").forEach(td => {
     td.onclick = async () => {
