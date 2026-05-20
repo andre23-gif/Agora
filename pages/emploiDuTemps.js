@@ -91,10 +91,15 @@ async function ensureCalendar() {
   if (_calendarEnsuredOnce) return;
 
   const sb = sbAgoram();
-  const { data, error } = await sb
-    .from("semaines")
-    .select("libelle, date_lundi")
-    .order("date_lundi");
+   const currentYear = new Date().getFullYear();
+const startYear = new Date().getMonth() < 8 ? currentYear - 1 : currentYear;
+const annee = window.appAnneeCourante || `${startYear}-${startYear + 1}`;
+   
+ const { data, error } = await sb
+  .from("semaines")
+  .select("libelle, date_lundi, annee_scolaire")
+  .eq("annee_scolaire", annee)   // ✅ filtre année
+  .order("date_lundi");
 
   if (error) throw new Error(`Chargement semaines impossible: ${error.message}`);
 
@@ -104,12 +109,13 @@ async function ensureCalendar() {
     libelle: s.libelle
   }));
 
-  const now = getNowDateISO();
-  const idx = semaines.findIndex(s => s.isoLundi === now);
-  semaineRefIndex = idx >= 0 ? idx : 0;
+ semaineRefIndex = 0;
+
 
   _calendarEnsuredOnce = true;
-}/* ======================================================
+}
+
+/* ======================================================
 
    BLOC 6 — DATA : classes sélectionnables (pour modale)
 
@@ -693,11 +699,13 @@ function escapeHtml(s) {
 
 
 
+/* === AG_EDT_WEEK_LABEL_FINAL_V3_BEGIN ===================== */
+
 function weekLabel(s) {
-
-  return `S${String(s.weekNo).padStart(2,"0")} (${s.weekYear}) — ${formatFR(s.lundi)}`;
-
+  return `Semaine ${s.libelle} (${formatFR(s.lundi)})`;
 }
+
+/* === AG_EDT_WEEK_LABEL_FINAL_V3_END ======================= */
 
 
 
@@ -754,18 +762,8 @@ export async function renderEmploiDuTemps() {
   return `
     <section class="page page-edt">
       <div class="topbar">
-        <button id="prev">◀</button>
         <strong>${weekLabel(sem)}</strong>
-        <button id="next">▶</button>
-        <select id="weekSelect">
-          ${semaines.map((s, i) => `
-            <option value="${i}" ${i === semaineRefIndex ? "selected" : ""}>
-              ${weekLabel(s)}
-            </option>
-          `).join("")}
-        </select>
-
-        <span>Année</span>
+                <span>Année</span>
        <select id="anneeSelect">
           ${(() => {
             const currentYear = new Date().getFullYear();
@@ -927,55 +925,13 @@ export async function renderEmploiDuTemps() {
 
 export function bindEmploiDuTempsEvents() {
 
-  const prev = document.getElementById("prev");
-
-  const next = document.getElementById("next");
-
-  const weekSelect = document.getElementById("weekSelect");
-
-  const anneeSelect = document.getElementById("anneeSelect");
+const anneeSelect = document.getElementById("anneeSelect");
 
   const valider = document.getElementById("valider");
 
 
 
-  if (prev) prev.onclick = async () => {
-
-    syncState = "unknown";
-
-    semaineRefIndex = Math.max(0, semaineRefIndex - 1);
-
-    await refresh();
-
-  };
-
-
-
-  if (next) next.onclick = async () => {
-
-    syncState = "unknown";
-
-    semaineRefIndex = Math.min(semaines.length - 1, semaineRefIndex + 1);
-
-    await refresh();
-
-  };
-
-
-
-  if (weekSelect) weekSelect.onchange = async (e) => {
-
-    syncState = "unknown";
-
-    semaineRefIndex = Number(e.target.value);
-
-    await refresh();
-
-  };
-
-
-
-  if (anneeSelect) anneeSelect.onchange = async (e) => {
+   if (anneeSelect) anneeSelect.onchange = async (e) => {
 
     window.appAnneeCourante = e.target.value;
 
