@@ -538,23 +538,62 @@ async function readCompetences(eleveId, anneeId, periode) {
   return data || null;
 }
 
+/* === AG_HG_WRITE_COMPETENCE_SAFE_V1_BEGIN ========================= */
+
 async function writeCompetence(eleveId, periode, competenceLabel, val) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
+
   const col = COMP_COL[competenceLabel];
   if (!col) throw new Error(`Colonne inconnue pour compétence: ${competenceLabel}`);
+
   const sb = sbAgoram();
+
+  // 1) Lire la ligne existante (si elle existe)
+  const { data: existing, error: errSel } = await sb
+    .from("competences_hg")
+    .select("*")
+    .eq("eleve_id", eleveId)
+    .eq("annee_id", anneeId)
+    .eq("periode", periode)
+    .maybeSingle();
+
+  if (errSel) throw new Error(`Lecture competences_hg impossible. ${errSel.message}`);
+
+  // 2) Si la ligne existe -> UPDATE ciblé (pas d’insert partiel)
+  if (existing) {
+    const { error: errUp } = await sb
+      .from("competences_hg")
+      .update({ val })
+      .eq("eleve_id", eleveId)
+      .eq("annee_id", anneeId)
+      .eq("periode", periode);
+
+    if (errUp) throw new Error(`Écriture compétence impossible. ${errUp.message}`);
+    return;
+  }
+
+  // 3) Sinon -> INSERT complet avec défaut "I" pour toutes les compétences
   const payload = {
     eleve_id: eleveId,
     annee_id: anneeId,
-    periode:  periode,
-    [col]:    val
+    periode: periode,
   };
-  const { error } = await sb
+
+  // toutes les colonnes de compétences à "I" par défaut
+  Object.values(COMP_COL).forEach(cname => { payload[cname] = "I"; });
+
+  // puis on applique la valeur choisie
+  payload[col] = val;
+
+  const { error: errIns } = await sb
     .from("competences_hg")
-    .upsert([payload], { onConflict: "eleve_id,annee_id,periode" });
-  if (error) throw new Error(`Écriture compétence impossible. ${error.message}`);
+    .insert([payload]);
+
+  if (errIns) throw new Error(`Écriture compétence impossible. ${errIns.message}`);
 }
+
+/* === AG_HG_WRITE_COMPETENCE_SAFE_V1_END =========================== */
 
 /* -------------------------------------------------------
    BLOC 11 — RENDU LIGNE COMPÉTENCE
