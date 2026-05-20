@@ -88,12 +88,21 @@ function getNowDateISO() {
    ====================================================== */
 
 async function ensureCalendar() {
+   /* === AG_DEBUG_CALENDAR_BEGIN === */
+console.log("DEBUG ensureCalendar START");
+console.log("window.appAnneeCourante =", window.appAnneeCourante);
+/* === AG_DEBUG_CALENDAR_END === */
+``
   if (_calendarEnsuredOnce) return;
 
   const sb = sbAgoram();
    const currentYear = new Date().getFullYear();
 const startYear = new Date().getMonth() < 8 ? currentYear - 1 : currentYear;
 const annee = window.appAnneeCourante || `${startYear}-${startYear + 1}`;
+
+/* === AG_DEBUG_ANNEE_BEGIN === */
+console.log("ANNEE UTILISEE =", annee);
+/* === AG_DEBUG_ANNEE_END === */
    
  const { data, error } = await sb
   .from("semaines")
@@ -101,6 +110,11 @@ const annee = window.appAnneeCourante || `${startYear}-${startYear + 1}`;
   .eq("annee_scolaire", annee)   // ✅ filtre année
   .order("date_lundi");
 
+/* === AG_DEBUG_RESULT_BEGIN === */
+console.log("DATA =", data);
+console.log("NB SEMAINES =", data?.length);
+/* === AG_DEBUG_RESULT_END === */
+   
   if (error) throw new Error(`Chargement semaines impossible: ${error.message}`);
 
   semaines = data.map(s => ({
