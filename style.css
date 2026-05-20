@@ -191,134 +191,15 @@ body::before{
   100%{ opacity: 0.88; filter: blur(12px) saturate(1.55);}
 }
 
-/* ——— COUCHE 2 : nuage de pixels or — effet nébuleuse ——— */
-/*
-   Principe anti-grille :
-   - 8 couches de repeating-radial-gradient avec des tuiles
-     de tailles très différentes (3px à 41px) et des décalages
-     initiaux en X et Y tous différents → les grilles ne se
-     superposent jamais au même endroit, l'œil perd la régularité
-   - Un filtre blur(0.6px) sur l'ensemble fusionne légèrement
-     les points voisins → effet "nuage" plutôt que "grille"
-   - Le mask-image concentre la densité à gauche (marque)
-     et dissout vers la droite (onglets lisibles)
-*/
-.ag-header::after{
-  content: "";
+/* ——— COUCHE 2 : canvas particules (bandeau.js) ——— */
+#bandeauCanvas{
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  z-index: 2;
-
-  background:
-    /* A — 3px / tuile 7px  — très dense, départ X:0   Y:0   */
-    repeating-radial-gradient(circle at center,
-      rgba(255,220,80,0.95) 0 1.5px, transparent 1.5px 7px),
-    /* B — 2px / tuile 13px — dense,   départ X:5px  Y:3px  */
-    repeating-radial-gradient(circle at center,
-      rgba(232,160,48,0.85) 0 2px,   transparent 2px  13px),
-    /* C — 1px / tuile 5px  — fin,     départ X:2px  Y:1px  */
-    repeating-radial-gradient(circle at center,
-      rgba(255,240,140,0.70) 0 1px,  transparent 1px  5px),
-    /* D — 2px / tuile 19px — espacé,  départ X:9px  Y:6px  */
-    repeating-radial-gradient(circle at center,
-      rgba(245,192,96,0.75) 0 2px,   transparent 2px  19px),
-    /* E — 3px / tuile 29px — rare,    départ X:14px Y:11px */
-    repeating-radial-gradient(circle at center,
-      rgba(255,200,60,0.60) 0 2.5px, transparent 2.5px 29px),
-    /* F — 1px / tuile 11px — très fin,départ X:7px  Y:4px  */
-    repeating-radial-gradient(circle at center,
-      rgba(255,230,120,0.65) 0 1px,  transparent 1px  11px),
-    /* G — 2px / tuile 41px — gemmes,  départ X:21px Y:17px */
-    repeating-radial-gradient(circle at center,
-      rgba(255,215,90,0.55) 0 2px,   transparent 2px  41px),
-    /* H — 1px / tuile 8px  — micro,   départ X:4px  Y:2px  */
-    repeating-radial-gradient(circle at center,
-      rgba(232,160,48,0.50) 0 1px,   transparent 1px  8px);
-
-  /* Tailles de tuile — hauteur = pleine hauteur du bandeau */
-  background-size:
-     7px var(--header-h),
-    13px var(--header-h),
-     5px var(--header-h),
-    19px var(--header-h),
-    29px var(--header-h),
-    11px var(--header-h),
-    41px var(--header-h),
-     8px var(--header-h);
-
-  /*
-     Positions initiales décalées irrégulièrement —
-     chaque couche commence à un endroit différent →
-     les rangées de points ne se chevauchent pas.
-  */
-  background-position:
-     0px  0px,
-     5px  3px,
-     2px  1px,
-     9px  6px,
-    14px 11px,
-     7px  4px,
-    21px 17px,
-     4px  2px;
-
-  /* Blur léger : fusionne les points proches → "nuage" */
-  filter: blur(0.6px);
-
-  /*
-     Masque de dispersion gauche→droite :
-     dense à gauche (autour de la marque),
-     quasi invisible à droite (onglets sur fond coloré pur)
-  */
-  -webkit-mask-image: linear-gradient(
-    to right,
-    rgba(0,0,0,1.00)  0%,
-    rgba(0,0,0,1.00) 14%,
-    rgba(0,0,0,0.75) 24%,
-    rgba(0,0,0,0.40) 36%,
-    rgba(0,0,0,0.12) 50%,
-    rgba(0,0,0,0.00) 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    rgba(0,0,0,1.00)  0%,
-    rgba(0,0,0,1.00) 14%,
-    rgba(0,0,0,0.75) 24%,
-    rgba(0,0,0,0.40) 36%,
-    rgba(0,0,0,0.12) 50%,
-    rgba(0,0,0,0.00) 100%
-  );
-
-  opacity: 0.90;
-
-  /* 8 vitesses différentes → aucune couche ne se synchronise */
-  animation:
-    nx-a  4.1s linear infinite,
-    nx-b  6.7s linear infinite,
-    nx-c  2.9s linear infinite,
-    nx-d  9.3s linear infinite,
-    nx-e 14.7s linear infinite,
-    nx-f  5.3s linear infinite,
-    nx-g 19.1s linear infinite,
-    nx-h  3.7s linear infinite;
+  z-index: 1;
 }
-
-@keyframes nx-a{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
-                 to  {background-position:  7px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;} }
-@keyframes nx-b{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
-                 to  {background-position:  0px  0px,18px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;} }
-@keyframes nx-c{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
-                 to  {background-position:  0px  0px, 5px 3px, 7px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;} }
-@keyframes nx-d{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
-                 to  {background-position:  0px  0px, 5px 3px, 2px 1px,28px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;} }
-@keyframes nx-e{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
-                 to  {background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,43px 11px, 7px 4px,21px 17px, 4px 2px;} }
-@keyframes nx-f{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
-                 to  {background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px,18px 4px,21px 17px, 4px 2px;} }
-@keyframes nx-g{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
-                 to  {background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,62px 17px, 4px 2px;} }
-@keyframes nx-h{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
-                 to  {background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px,12px 2px;} }
 
 
 /* =====================================================
