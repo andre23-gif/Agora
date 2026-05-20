@@ -744,7 +744,14 @@ export async function renderEmploiDuTemps() {
     try { await loadWeekStatusIndex(); } catch (e) { console.error(e); }
   }
 
-  const sem = semaines[semaineRefIndex];
+  if (!semaines || semaines.length === 0) {
+  return `<div style="padding:20px">Aucune semaine disponible</div>`;
+}
+
+semaineRefIndex = Math.min(semaineRefIndex, semaines.length - 1);
+
+const sem = semaines[semaineRefIndex];
+
 
   if (syncState !== "dirty" && (!semaineActive.iso_lundi || semaineActive.iso_lundi !== sem.isoLundi)) {
     try {
