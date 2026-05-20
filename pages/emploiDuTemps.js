@@ -473,30 +473,10 @@ async function applyWeekToTargets(sourceIso, targetsIsoList) {
 }
 
 /* ======================================================
-   BLOC 11 — RENDU (UI)
+   BLOC 11 — RENDU (UI) — CORRIGÉ
    ====================================================== */
 
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
-  }[m]));
-}
-
-function weekLabel(s) {
-  return `S${String(s.weekNo).padStart(2,"0")} (${s.weekYear}) — ${formatFR(s.lundi)}`;
-}
-
-function cellText(jour, creneau) {
-  const key = `${jour}|${creneau}`;
-  const v = bufferEdition.grid.get(key); 
-  if (!v || !v.classe_id) return "&nbsp;";
-  const nom = escapeHtml(v.classe_nom || "—");
-  return v.groupe ? `${nom} ${escapeHtml(v.groupe)}` : nom;
-}
-
-function metaButton(k, v, active) {
-  return `<button class="edt-meta" data-k="${k}" data-v="${v}" ${active ? 'data-active="1"' : ""}>${v}</button>`;
-}
+// ... (garder escapeHtml, weekLabel, cellText, metaButton identiques)
 
 export async function renderEmploiDuTemps() {
   await ensureCalendar();
@@ -509,8 +489,9 @@ export async function renderEmploiDuTemps() {
 
   const sem = semaines[semaineRefIndex];
 
-  // Si on change de semaine, on recharge les données depuis Supabase pour cette nouvelle semaine
-  if (!semaineActive.iso_lundi || semaineActive.iso_lundi !== sem.isoLundi) {
+  // CORRECTION : Si la semaine affichée change, on FORCE le rechargement depuis Supabase
+  // pour écraser le buffer d'édition résiduel de la semaine précédente.
+  if (semaineActive.iso_lundi !== sem.isoLundi) {
     try {
       await loadWeek(sem.isoLundi);
     } catch (e) {
@@ -522,6 +503,9 @@ export async function renderEmploiDuTemps() {
   const meta = bufferEdition.meta; 
 
   return `
+    <!-- ... Reste de ton template HTML rigoureusement identique ... -->
+  `;
+}
     <section class="page page-edt">
 
       <div class="topbar">
@@ -653,18 +637,18 @@ export function bindEmploiDuTempsEvents() {
     await refresh();
   };
 
-  if (anneeSelect) anneeSelect.onchange = async (e) => {
+if (anneeSelect) anneeSelect.onchange = async (e) => {
     window.appAnneeCourante = e.target.value;
 
-    // Reset complet de l'état local pour forcer le recalcul de la nouvelle année
+    // Reset complet et propre de l'état local
     semaines = [];
     semaineRefIndex = -1; 
-    semaineActive.iso_lundi = null;
+    semaineActive.iso_lundi = null; // Impératif pour forcer loadWeek() au prochain render
     weekStatusIndex = new Map();
     semainesCibles.clear();
 
     bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
-    bufferEdition.grid = new Map();
+    bufferEdition.grid = new Map(); // On vide la grille pour éviter les fuites visuelles
 
     await refresh();
   };
