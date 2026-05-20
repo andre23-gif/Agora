@@ -12,10 +12,10 @@
 
   /* --- Configuration --- */
   const CFG = {
-    count:      180,    // nombre de particules simultanées
-    minR:       0.8,    // rayon min px
-    maxR:       2.4,    // rayon max px
-    minSpeed:   0.18,   // vitesse horizontale min px/frame
+    count:      380,    // nombre de particules simultanées
+    minR:       0.2,    // rayon min px
+    maxR:       1.8,    // rayon max px
+    minSpeed:   0.08,   // vitesse horizontale min px/frame
     maxSpeed:   0.72,   // vitesse horizontale max px/frame
     drift:      0.25,   // amplitude dérive verticale (px/frame max)
     spawnZone:  0.30,   // les particules naissent dans les 30% gauche
