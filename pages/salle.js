@@ -156,39 +156,83 @@ function getCreneauCourant() {
   return null;
 }
 
-function getContexteSeanceCourante() {
+/* === AG_SALLE_CONTEXTE_SUPABASE_V1_BEGIN ===================== */
+
+async function getContexteSeanceCourante() {
+
   const now = new Date();
   const isoLundi = toISODate(mondayOfWeek(now));
   const dateISO = todayKeyISO();
   const jour = getJourFR(now);
   const creneau = getCreneauCourant();
 
-  const edt = getEDT() || {};
-  const lignes = edt[isoLundi] || [];
+  if (!window.sb) {
+    return {
+      dateISO,
+      isoLundi,
+      jour,
+      creneau,
+      classe: null,
+      groupe: null
+    };
+  }
 
-  const match = lignes.find(x => x.jour === jour && x.creneau === creneau);
+  const sb = window.sb.schema("agoram");
 
-/* === AG_DEBUG_EDT_BEGIN === */
-console.log("DEBUG EDT lignes:", lignes);
-console.log("DEBUG recherche:", {
-  jour_recherche: jour,
-  creneau_recherche: creneau
-});
-console.log("DEBUG match:", match);
-/* === AG_DEBUG_EDT_END === */
+  try {
 
-  return {
-    dateISO,
-    isoLundi,
-    jour,
-    creneau,
-    classe: match ? match.classe : null,
-    groupe: match ? (match.groupe || null) : null,
-    type: match ? (match.type || null) : null,
-    trimestre: match ? (match.trimestre || null) : null,
-    semestre: match ? (match.semestre || null) : null,
-  };
+    const { data: cell, error: errCell } = await sb
+      .from("edt_cells")
+      .select("classe_id, groupe")
+      .eq("iso_lundi", isoLundi)
+      .eq("jour", jour)
+      .eq("creneau", creneau)
+      .maybeSingle();
+
+    if (errCell) throw errCell;
+
+    if (!cell || !cell.classe_id) {
+      return {
+        dateISO,
+        isoLundi,
+        jour,
+        creneau,
+        classe: null,
+        groupe: null
+      };
+    }
+
+    const { data: classeRow, error: errClasse } = await sb
+      .from("classes")
+      .select("nom")
+      .eq("id", cell.classe_id)
+      .maybeSingle();
+
+    if (errClasse) throw errClasse;
+
+    return {
+      dateISO,
+      isoLundi,
+      jour,
+      creneau,
+      classe: classeRow ? classeRow.nom : null,
+      groupe: cell.groupe || null
+    };
+
+  } catch (e) {
+    console.error("Contexte salle (Supabase):", e.message);
+    return {
+      dateISO,
+      isoLundi,
+      jour,
+      creneau,
+      classe: null,
+      groupe: null
+    };
+  }
 }
+
+/* === AG_SALLE_CONTEXTE_SUPABASE_V1_END ======================= */
 
 /* =======================================================
    AG_SALLE_SEANCE_ID_V1
@@ -298,8 +342,8 @@ function saveLastContent(classe, groupe, code) {
    BLOC 7 — INITIALISATION SALLE
 ------------------------------------------------------- */
 
-export function initSalle() {
-  contexte = getContexteSeanceCourante();
+export async function initSalle() {
+  contexte = await getContexteSeanceCourante
 
   const all = getEleves();
 
