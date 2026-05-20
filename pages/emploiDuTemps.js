@@ -473,10 +473,30 @@ async function applyWeekToTargets(sourceIso, targetsIsoList) {
 }
 
 /* ======================================================
-   BLOC 11 — RENDU (UI) — CORRIGÉ
+   BLOC 11 — RENDU (UI) — VERSION FINALE SÉCURISÉE
    ====================================================== */
 
-// ... (garder escapeHtml, weekLabel, cellText, metaButton identiques)
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  }[m]));
+}
+
+function weekLabel(s) {
+  return `S${String(s.weekNo).padStart(2,"0")} (${s.weekYear}) — ${formatFR(s.lundi)}`;
+}
+
+function cellText(jour, creneau) {
+  const key = `${jour}|${creneau}`;
+  const v = bufferEdition.grid.get(key); 
+  if (!v || !v.classe_id) return "&nbsp;";
+  const nom = escapeHtml(v.classe_nom || "—");
+  return v.groupe ? `${nom} ${escapeHtml(v.groupe)}` : nom;
+}
+
+function metaButton(k, v, active) {
+  return `<button class="edt-meta" data-k="${k}" data-v="${v}" ${active ? 'data-active="1"' : ""}>${v}</button>`;
+}
 
 export async function renderEmploiDuTemps() {
   await ensureCalendar();
@@ -489,8 +509,8 @@ export async function renderEmploiDuTemps() {
 
   const sem = semaines[semaineRefIndex];
 
-  // CORRECTION : Si la semaine affichée change, on FORCE le rechargement depuis Supabase
-  // pour écraser le buffer d'édition résiduel de la semaine précédente.
+  // CORRECTION SÉCURITÉ : Si la semaine affichée change, on FORCE le rechargement depuis Supabase
+  // pour écraser le buffer d'édition de la semaine précédente.
   if (semaineActive.iso_lundi !== sem.isoLundi) {
     try {
       await loadWeek(sem.isoLundi);
@@ -503,19 +523,11 @@ export async function renderEmploiDuTemps() {
   const meta = bufferEdition.meta; 
 
   return `
-    <!-- ... Reste de ton template HTML rigoureusement identique ... -->
-  `;
-}
     <section class="page page-edt">
 
       <div class="topbar">
-
         <button id="prev">◀</button>
-
-        <strong>
-          ${weekLabel(sem)}
-        </strong>
-
+        <strong>${weekLabel(sem)}</strong>
         <button id="next">▶</button>
 
         <select id="weekSelect">
@@ -554,12 +566,10 @@ export async function renderEmploiDuTemps() {
         </span>
 
         <span id="edtSyncTime">${lastSyncAt ? lastSyncAt.toLocaleTimeString("fr-FR") : ""}</span>
-
         <button id="valider">Valider</button>
       </div>
 
       <div class="edt-body">
-
         <div class="edt-leftpanel">
           <div class="edt-weeklist">
             ${semaines.map((s, i) => {
@@ -588,11 +598,9 @@ export async function renderEmploiDuTemps() {
                 <th></th>
                 ${JOURS.map(j => `<th>${capitalize(j)}</th>`).join("")}
               </tr>
-
               ${CRENEAUX.map(cr => `
                 <tr>
                   <th>${cr.code}<br><small>${cr.debut}-${cr.fin}</small></th>
-
                   ${JOURS.map(j => {
                     if (cr.code === "PM") return `<td class="edt-off">—</td>`;
                     return `<td class="edt-cell" data-j="${j}" data-c="${cr.code}">${cellText(j, cr.code)}</td>`;
@@ -602,17 +610,15 @@ export async function renderEmploiDuTemps() {
             </table>
           </div>
         </div>
-
       </div>
 
       <div id="modal"></div>
-
     </section>
   `;
 }
 
 /* ======================================================
-   BLOC 12 — EVENTS
+   BLOC 12 — EVENTS — VERSION FINALE SÉCURISÉE
    ====================================================== */
 
 export function bindEmploiDuTempsEvents() {
@@ -637,18 +643,18 @@ export function bindEmploiDuTempsEvents() {
     await refresh();
   };
 
-if (anneeSelect) anneeSelect.onchange = async (e) => {
+  if (anneeSelect) anneeSelect.onchange = async (e) => {
     window.appAnneeCourante = e.target.value;
 
-    // Reset complet et propre de l'état local
+    // Reset complet et propre de l'état local pour forcer le recalcul
     semaines = [];
     semaineRefIndex = -1; 
-    semaineActive.iso_lundi = null; // Impératif pour forcer loadWeek() au prochain render
+    semaineActive.iso_lundi = null; // FORCE loadWeek() à s'exécuter au prochain render
     weekStatusIndex = new Map();
     semainesCibles.clear();
 
     bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
-    bufferEdition.grid = new Map(); // On vide la grille pour éviter les fuites visuelles
+    bufferEdition.grid = new Map(); // Vide le buffer pour éviter les fuites visuelles entre années
 
     await refresh();
   };
@@ -657,12 +663,7 @@ if (anneeSelect) anneeSelect.onchange = async (e) => {
     btn.onclick = async () => {
       const k = btn.dataset.k;
       const v = btn.dataset.v;
-
-      bufferEdition.meta = {
-        ...bufferEdition.meta,
-        [k]: v
-      };
-
+      bufferEdition.meta = { ...bufferEdition.meta, [k]: v };
       syncState = "dirty";
       await refresh();
     };
@@ -693,7 +694,6 @@ if (anneeSelect) anneeSelect.onchange = async (e) => {
   if (valider) valider.onclick = async () => {
     try {
       syncState = "unknown";
-
       semaineActive.meta = { ...bufferEdition.meta };
       semaineActive.grid = new Map(
         Array.from(bufferEdition.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
@@ -713,7 +713,6 @@ if (anneeSelect) anneeSelect.onchange = async (e) => {
       syncState = "ok";
       lastSyncAt = new Date();
       await refresh();
-
     } catch (e) {
       console.error(e);
       syncState = "error";
@@ -728,7 +727,6 @@ if (anneeSelect) anneeSelect.onchange = async (e) => {
 
 async function ouvrirModal(jour, creneau) {
   const options = await getClassesOptions();
-
   const key = `${jour}|${creneau}`;
   const current = bufferEdition.grid.get(key) || { classe_id: null, groupe: null, classe_nom: null }; 
 
@@ -744,15 +742,9 @@ async function ouvrirModal(jour, creneau) {
         <strong>${escapeHtml(capitalize(jour))} — ${escapeHtml(creneau)}</strong>
         <button id="edtModalClose">✕</button>
       </div>
-
       <div style="height:10px"></div>
-
-      <select id="edtSel">
-        ${optHtml}
-      </select>
-
+      <select id="edtSel">${optHtml}</select>
       <div style="height:10px"></div>
-
       <div style="display:flex;gap:10px;">
         <button id="edtOk">OK</button>
         <button id="edtCancel">Annuler</button>
@@ -778,7 +770,6 @@ async function ouvrirModal(jour, creneau) {
         (String(o.groupe || "") === String(groupe || ""))
       );
       const nom = opt ? opt.label.replace(" gr 1","").replace(" gr 2","") : "—";
-
       bufferEdition.grid.set(key, { classe_id, classe_nom: nom, groupe });
     }
 
