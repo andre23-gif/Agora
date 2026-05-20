@@ -162,15 +162,17 @@ function getISOWeekInfo(date) {
 }
 
 function mondayOfISOWeek(weekYear, weekNo) {
+  // 1. Trouver le 4 janvier de l'année (base de la norme ISO 8601)
   const jan4 = new Date(Date.UTC(weekYear, 0, 4));
+  // 2. Trouver le jour de la semaine du 4 janvier (1=Lundi, ..., 7=Dimanche)
   const jan4Day = jan4.getUTCDay() || 7;
-  const mondayWeek1 = new Date(jan4);
-  mondayWeek1.setUTCDate(jan4.getUTCDate() - (jan4Day - 1));
+  // 3. Calculer le premier lundi de l'année
+  const monday = new Date(Date.UTC(weekYear, 0, 4 - jan4Day + 1));
+  // 4. Ajouter le nombre de semaines (offset)
+  monday.setUTCDate(monday.getUTCDate() + (weekNo - 1) * 7);
 
-  const monday = new Date(mondayWeek1);
-  monday.setUTCDate(mondayWeek1.getUTCDate() + (weekNo - 1) * 7);
-
-  return new Date(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate(), 0,0,0,0);
+  // 5. Retourner la date en heure locale, mais sans changer le jour
+  return new Date(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate());
 }
 
 function isoWeeksInYear(weekYear) {
