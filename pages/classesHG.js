@@ -561,17 +561,21 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
    (portée module — hors renderProfilBody)
 ------------------------------------------------------- */
 
+/* === AG_HG_COMP_BTN_TYPEBUTTON_V1_BEGIN ========================= */
+
 function renderCompetenceRow(eleveId, tri, label, currentVal) {
   return `
     <div class="comp-row" data-label="${escapeAttr(label)}">
       <div class="comp-label">${escapeHtml(label)}</div>
       <div class="comp-btns">
         ${IFST.map(v => `
-          <button class="btn-comp ${v === currentVal ? "active" : ""}"
-                  data-eleveid="${escapeAttr(String(eleveId))}"
-                  data-tri="${escapeAttr(tri)}"
-                  data-label="${escapeAttr(label)}"
-                  data-val="${v}">
+          <button
+            type="button"
+            class="btn-comp ${v === currentVal ? "active" : ""}"
+            data-eleveid="${escapeAttr(String(eleveId))}"
+            data-tri="${escapeAttr(tri)}"
+            data-label="${escapeAttr(label)}"
+            data-val="${v}">
             ${v}
           </button>
         `).join("")}
@@ -579,6 +583,8 @@ function renderCompetenceRow(eleveId, tri, label, currentVal) {
     </div>
   `;
 }
+
+/* === AG_HG_COMP_BTN_TYPEBUTTON_V1_END =========================== */
 
 /* -------------------------------------------------------
    BLOC 12 — RENDU CORPS PROFIL (bind IFST inclus)
