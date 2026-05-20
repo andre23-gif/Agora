@@ -191,14 +191,17 @@ body::before{
   100%{ opacity: 0.88; filter: blur(12px) saturate(1.55);}
 }
 
-/* ——— COUCHE 2 : nuage de pixels or — dispersion gauche→droite ——— */
+/* ——— COUCHE 2 : nuage de pixels or — effet nébuleuse ——— */
 /*
-   4 grilles de points (repeating-radial-gradient),
-   chacune de taille et vitesse différentes.
-   Le mask-image est le cœur de l'effet :
-     0%–20%  : pixels pleinement visibles  (autour de la marque)
-     20%–50% : dissolution rapide
-     50%–100%: quasi transparent           (onglets sur fond coloré pur)
+   Principe anti-grille :
+   - 8 couches de repeating-radial-gradient avec des tuiles
+     de tailles très différentes (3px à 41px) et des décalages
+     initiaux en X et Y tous différents → les grilles ne se
+     superposent jamais au même endroit, l'œil perd la régularité
+   - Un filtre blur(0.6px) sur l'ensemble fusionne légèrement
+     les points voisins → effet "nuage" plutôt que "grille"
+   - Le mask-image concentre la densité à gauche (marque)
+     et dissout vers la droite (onglets lisibles)
 */
 .ag-header::after{
   content: "";
@@ -208,92 +211,114 @@ body::before{
   z-index: 2;
 
   background:
-    /* Couche A : pixels 1.5 px / tuile 9 px — très dense, très vifs */
-    repeating-radial-gradient(
-      circle at center,
-      rgba(255,215,90,0.98) 0 1.5px,
-      transparent 1.5px 9px
-    ),
-    /* Couche B : pixels 2 px / tuile 16 px — densité moyenne, or plus doux */
-    repeating-radial-gradient(
-      circle at center,
-      rgba(232,160,48,0.82) 0 2px,
-      transparent 2px 16px
-    ),
-    /* Couche C : pixels 1 px / tuile 6 px — ultra-fins, scintillement rapide */
-    repeating-radial-gradient(
-      circle at center,
-      rgba(255,235,140,0.72) 0 1px,
-      transparent 1px 6px
-    ),
-    /* Couche D : pixels 2.5 px / tuile 28 px — rares, lents, "gemmes" */
-    repeating-radial-gradient(
-      circle at center,
-      rgba(245,192,96,0.65) 0 2.5px,
-      transparent 2.5px 28px
-    );
+    /* A — 3px / tuile 7px  — très dense, départ X:0   Y:0   */
+    repeating-radial-gradient(circle at center,
+      rgba(255,220,80,0.95) 0 1.5px, transparent 1.5px 7px),
+    /* B — 2px / tuile 13px — dense,   départ X:5px  Y:3px  */
+    repeating-radial-gradient(circle at center,
+      rgba(232,160,48,0.85) 0 2px,   transparent 2px  13px),
+    /* C — 1px / tuile 5px  — fin,     départ X:2px  Y:1px  */
+    repeating-radial-gradient(circle at center,
+      rgba(255,240,140,0.70) 0 1px,  transparent 1px  5px),
+    /* D — 2px / tuile 19px — espacé,  départ X:9px  Y:6px  */
+    repeating-radial-gradient(circle at center,
+      rgba(245,192,96,0.75) 0 2px,   transparent 2px  19px),
+    /* E — 3px / tuile 29px — rare,    départ X:14px Y:11px */
+    repeating-radial-gradient(circle at center,
+      rgba(255,200,60,0.60) 0 2.5px, transparent 2.5px 29px),
+    /* F — 1px / tuile 11px — très fin,départ X:7px  Y:4px  */
+    repeating-radial-gradient(circle at center,
+      rgba(255,230,120,0.65) 0 1px,  transparent 1px  11px),
+    /* G — 2px / tuile 41px — gemmes,  départ X:21px Y:17px */
+    repeating-radial-gradient(circle at center,
+      rgba(255,215,90,0.55) 0 2px,   transparent 2px  41px),
+    /* H — 1px / tuile 8px  — micro,   départ X:4px  Y:2px  */
+    repeating-radial-gradient(circle at center,
+      rgba(232,160,48,0.50) 0 1px,   transparent 1px  8px);
 
+  /* Tailles de tuile — hauteur = pleine hauteur du bandeau */
   background-size:
-     9px var(--header-h),
-    16px var(--header-h),
-     6px var(--header-h),
-    28px var(--header-h);
+     7px var(--header-h),
+    13px var(--header-h),
+     5px var(--header-h),
+    19px var(--header-h),
+    29px var(--header-h),
+    11px var(--header-h),
+    41px var(--header-h),
+     8px var(--header-h);
 
   /*
-     Masque de dispersion :
-     Gauche = dense et lumineux (marque)
-     Centre = dissolution rapide
-     Droite = transparent (onglets lisibles sur rouge/bleu)
+     Positions initiales décalées irrégulièrement —
+     chaque couche commence à un endroit différent →
+     les rangées de points ne se chevauchent pas.
+  */
+  background-position:
+     0px  0px,
+     5px  3px,
+     2px  1px,
+     9px  6px,
+    14px 11px,
+     7px  4px,
+    21px 17px,
+     4px  2px;
+
+  /* Blur léger : fusionne les points proches → "nuage" */
+  filter: blur(0.6px);
+
+  /*
+     Masque de dispersion gauche→droite :
+     dense à gauche (autour de la marque),
+     quasi invisible à droite (onglets sur fond coloré pur)
   */
   -webkit-mask-image: linear-gradient(
     to right,
     rgba(0,0,0,1.00)  0%,
-    rgba(0,0,0,1.00) 16%,
-    rgba(0,0,0,0.60) 30%,
-    rgba(0,0,0,0.22) 46%,
-    rgba(0,0,0,0.05) 60%,
+    rgba(0,0,0,1.00) 14%,
+    rgba(0,0,0,0.75) 24%,
+    rgba(0,0,0,0.40) 36%,
+    rgba(0,0,0,0.12) 50%,
     rgba(0,0,0,0.00) 100%
   );
   mask-image: linear-gradient(
     to right,
     rgba(0,0,0,1.00)  0%,
-    rgba(0,0,0,1.00) 16%,
-    rgba(0,0,0,0.60) 30%,
-    rgba(0,0,0,0.22) 46%,
-    rgba(0,0,0,0.05) 60%,
+    rgba(0,0,0,1.00) 14%,
+    rgba(0,0,0,0.75) 24%,
+    rgba(0,0,0,0.40) 36%,
+    rgba(0,0,0,0.12) 50%,
     rgba(0,0,0,0.00) 100%
   );
 
-  opacity: 0.92;
+  opacity: 0.90;
 
-  /* Défilement indépendant de chaque couche vers la droite */
+  /* 8 vitesses différentes → aucune couche ne se synchronise */
   animation:
-    px-a  4s linear infinite,
-    px-b  7s linear infinite,
-    px-c  3s linear infinite,
-    px-d 13s linear infinite;
+    nx-a  4.1s linear infinite,
+    nx-b  6.7s linear infinite,
+    nx-c  2.9s linear infinite,
+    nx-d  9.3s linear infinite,
+    nx-e 14.7s linear infinite,
+    nx-f  5.3s linear infinite,
+    nx-g 19.1s linear infinite,
+    nx-h  3.7s linear infinite;
 }
 
-/* Couche A — très rapide, tuile 9 px */
-@keyframes px-a{
-  from { background-position:  0 0, 0 0, 0 0, 0 0; }
-  to   { background-position: 9px 0, 0 0, 0 0, 0 0; }
-}
-/* Couche B — vitesse moyenne, tuile 16 px */
-@keyframes px-b{
-  from { background-position: 0 0,   0 0, 0 0, 0 0; }
-  to   { background-position: 0 0, 16px 0, 0 0, 0 0; }
-}
-/* Couche C — la plus rapide, ultra-scintillante, tuile 6 px */
-@keyframes px-c{
-  from { background-position: 0 0, 0 0,  0 0, 0 0; }
-  to   { background-position: 0 0, 0 0, 6px 0, 0 0; }
-}
-/* Couche D — lente, gemmes traversantes, tuile 28 px */
-@keyframes px-d{
-  from { background-position: 0 0, 0 0, 0 0,   0 0; }
-  to   { background-position: 0 0, 0 0, 0 0, 28px 0; }
-}
+@keyframes nx-a{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
+                 to  {background-position:  7px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;} }
+@keyframes nx-b{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
+                 to  {background-position:  0px  0px,18px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;} }
+@keyframes nx-c{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
+                 to  {background-position:  0px  0px, 5px 3px, 7px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;} }
+@keyframes nx-d{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
+                 to  {background-position:  0px  0px, 5px 3px, 2px 1px,28px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;} }
+@keyframes nx-e{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
+                 to  {background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,43px 11px, 7px 4px,21px 17px, 4px 2px;} }
+@keyframes nx-f{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
+                 to  {background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px,18px 4px,21px 17px, 4px 2px;} }
+@keyframes nx-g{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
+                 to  {background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,62px 17px, 4px 2px;} }
+@keyframes nx-h{ from{background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px, 4px 2px;}
+                 to  {background-position:  0px  0px, 5px 3px, 2px 1px, 9px 6px,14px 11px, 7px 4px,21px 17px,12px 2px;} }
 
 
 /* =====================================================
@@ -1205,25 +1230,31 @@ textarea:focus{
 
 /* =====================================================
    PAGE CLASSES HG — 1 ÉLÈVE = 1 LIGNE COMPACTE
-   Colonnes : Nom/Prénom | Groupe | Adaptation | Place
+   Structure HTML attendue :
+     .eleve-row
+       .eleve-ident        → col 1 nom
+       .eleve-options      → flex row contenant les 3 opts
+         .opt-groupe       → radios gr1/gr2
+         .opt-adapt        → select adaptation
+         .opt-place        → select place
    BALISE : AG_CLASSeshg_ONE_LINE_V1
    ===================================================== */
 
+/*
+   La ligne = flexbox horizontal strict.
+   .eleve-ident prend l'espace disponible (flex:1).
+   .eleve-options est un flex-row compact fixe.
+   → garantit 1 seule ligne quelle que soit la largeur écran.
+*/
 .page-classeshg .eleve-row{
-  display: grid;
-  /*
-    Col 1 : nom/prénom  — prend l'espace restant
-    Col 2 : groupe gr1/gr2 — fixe compact
-    Col 3 : adaptation select — fixe
-    Col 4 : place select     — fixe compact
-  */
-  grid-template-columns: 1fr 120px 148px 108px;
-  gap: 6px;
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  padding: 4px 8px;
-  margin-bottom: 3px;
+  gap: 8px;
+  padding: 3px 8px;
+  margin-bottom: 2px;
   border-left: 2px solid transparent;
-  min-height: 36px;
+  min-height: 34px;
   transition: background 0.15s, border-color 0.15s;
 }
 
@@ -1232,10 +1263,20 @@ textarea:focus{
   border-left-color: rgba(232,160,48,0.48);
 }
 
+/* Zébrage */
+.page-classeshg .eleve-row:nth-child(even){
+  background: rgba(255,255,255,0.018);
+}
+.page-classeshg .eleve-row:nth-child(even):hover{
+  background: rgba(232,160,48,0.06);
+}
+
+/* Col nom : prend tout l'espace restant */
 .page-classeshg .eleve-ident{
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  min-width: 0;
 }
 
 .page-classeshg .eleve-open{
@@ -1245,9 +1286,9 @@ textarea:focus{
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: 'Poiret One', sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   letter-spacing: 0.04em;
-  padding: 3px 6px;
+  padding: 2px 6px;
   border-color: transparent;
   clip-path: none;
 }
@@ -1257,63 +1298,53 @@ textarea:focus{
   background: rgba(232,160,48,0.06);
 }
 
-/* display:contents permet aux enfants de .eleve-options
-   d'occuper directement les colonnes de la grille parente */
-.page-classeshg .eleve-options{ display: contents; }
-
-/* Chaque .opt = une cellule de la grille */
-.page-classeshg .opt{
+/* Zone options : flex-row, ne rétrécit pas */
+.page-classeshg .eleve-options{
   display: flex;
-  gap: 5px;
+  flex-direction: row;
   align-items: center;
-  font-size: 0.78rem;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-/* Labels discrets devant les selects */
-.page-classeshg .opt > label{
-  color: var(--texte-doux);
-  font-size: 0.72rem;
-}
-
-/* Selects adaptation et place — compacts */
-.page-classeshg .opt select{
-  width: 100%;
-  font-size: 0.78rem;
-  padding: 3px 22px 3px 6px;  /* padding-right pour la flèche */
-}
-
-/* Select place — largeur fixe serrée */
-.page-classeshg .opt-place select{
-  width: 100%;
-  font-size: 0.78rem;
-}
-
-/* Radios groupe — alignés horizontalement, compacts */
+/* Radios groupe — côte à côte, compacts */
 .page-classeshg .opt-groupe{
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .page-classeshg .opt-groupe label{
   display: flex;
   align-items: center;
   gap: 3px;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--texte-doux);
   cursor: pointer;
   white-space: nowrap;
 }
 
-/* Séparateur zébré entre lignes */
-.page-classeshg .eleve-row:nth-child(even){
-  background: rgba(255,255,255,0.018);
+/* Select adaptation — largeur fixe */
+.page-classeshg .opt-adapt{
+  flex-shrink: 0;
 }
 
-.page-classeshg .eleve-row:nth-child(even):hover{
-  background: rgba(232,160,48,0.06);
+.page-classeshg .opt-adapt select{
+  width: 130px;
+  font-size: 0.76rem;
+  padding: 3px 22px 3px 6px;
+}
+
+/* Select place — largeur fixe serrée, juste assez pour "Table 10" */
+.page-classeshg .opt-place{
+  flex-shrink: 0;
+}
+
+.page-classeshg .opt-place select{
+  width: 88px;
+  font-size: 0.76rem;
+  padding: 3px 20px 3px 6px;
 }
 
 
