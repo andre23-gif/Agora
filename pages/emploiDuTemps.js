@@ -188,12 +188,51 @@ function positionnerSemaineCourante() {
    BLOC 5 — INIT PAGE (calendrier + index semaines)
    ====================================================== */
 
-function ensureCalendar() {
-  if (semaines.length === 0) {
-    semaines = genererSemainesScolaires();
-    positionnerSemaineCourante();
-  }
+/* === AG_EDT_CALENDAR_SUPABASE_V1_BEGIN =========================
+   But métier :
+   - semaines[] = toutes les semaines scolaires (lundi→lundi)
+   - Supabase = source de vérité : edt_weeks doit contenir ces semaines (même vides)
+   - Création automatique des semaines manquantes dans edt_weeks (upsert)
+   ============================================================== */
+
+let _calendarEnsuredOnce = false;
+
+async function ensureCalendar() {
+  if (_calendarEnsuredOnce) return;
+
+  // 1) Générer toutes les semaines scolaires (UI)
+  semaines = genererSemainesScolaires();
+  positionnerSemaineCourante();
+
+  // 2) Créer les lignes de semaines manquantes en base (Supabase)
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) throw new Error("Aucune année active.");
+
+  const sb = sbAgoram();
+
+  // meta par défaut = celle de bufferEdition (source visuelle)
+  const defaults = bufferEdition?.meta || { type: "A", trimestre: "T1", semestre: "S1" };
+
+  // payload : une ligne par lundi
+  const weeksPayload = semaines.map(w => ({
+    annee_id: anneeId,
+    iso_lundi: w.isoLundi,
+    type: defaults.type,
+    trimestre: defaults.trimestre,
+    semestre: defaults.semestre
+  }));
+
+  // upsert = insert si absent, sinon ne casse pas (ON CONFLICT) 【1-d34f01】【2-d36914】
+  const { error } = await sb
+    .from("edt_weeks")
+    .upsert(weeksPayload, { onConflict: "annee_id,iso_lundi" });
+
+  if (error) throw new Error(`Upsert edt_weeks calendrier impossible. ${error.message}`);
+
+  _calendarEnsuredOnce = true;
 }
+
+/* === AG_EDT_CALENDAR_SUPABASE_V1_END =========================== */
 
 /* ======================================================
    BLOC 6 — DATA : classes sélectionnables (pour modale)
@@ -498,7 +537,7 @@ function metaButton(k, v, active) {
 }
 
 export async function renderEmploiDuTemps() {
-  ensureCalendar();
+  await ensureCalendar();
 
   const annee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
 
