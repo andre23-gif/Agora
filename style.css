@@ -487,25 +487,161 @@ button:active,
 #modal{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.68);
+  background: rgba(0,0,0,0.72);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
+  padding: 16px;          /* évite que la modale touche les bords */
 }
 
 #modal:empty{ display: none; }
 
+/* Modale large : 85% de l'écran, hauteur max 90vh avec scroll interne */
 #modal > *{
   background: #040c1c;
   border: 1px solid rgba(232,160,48,0.32);
   border-top: 2px solid rgba(232,160,48,0.78);
-  padding: 22px;
+  padding: 20px 24px;
   border-radius: 0;
   clip-path: polygon(14px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 14px);
-  max-width: 600px;
-  width: 100%;
-  box-shadow: 0 0 50px rgba(0,0,0,0.82), 0 0 24px rgba(232,160,48,0.08);
+
+  width: 85vw;
+  max-width: 1100px;
+  max-height: 90vh;
+  overflow-y: auto;       /* scroll si contenu dépasse */
+
+  box-shadow: 0 0 60px rgba(0,0,0,0.90), 0 0 30px rgba(232,160,48,0.10);
+}
+
+/* Scrollbar interne modale */
+#modal > *::-webkit-scrollbar{ width: 4px; }
+#modal > *::-webkit-scrollbar-track{ background: rgba(232,160,48,0.04); }
+#modal > *::-webkit-scrollbar-thumb{ background: rgba(232,160,48,0.45); border-radius: 0; }
+
+/* =====================================================
+   MODALE PROFIL ÉLÈVE — STRUCTURE INTERNE
+   ===================================================== */
+
+/* En-tête modale : nom + bouton fermer */
+.modal-head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(232,160,48,0.22);
+}
+
+.modal-head h2{
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+}
+
+.btn-close{
+  font-size: 1rem;
+  padding: 4px 10px;
+  border-color: rgba(232,160,48,0.35);
+  clip-path: none;
+  border-radius: 0;
+}
+
+/* Onglets trimestre */
+.trimestres{
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.tri{
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  padding: 5px 14px;
+  border-color: rgba(232,160,48,0.28);
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+}
+
+.tri.active{
+  background: rgba(232,160,48,0.16);
+  border-color: var(--accent-or-vif);
+  color: var(--accent-or-vif);
+  box-shadow: 0 0 8px rgba(232,160,48,0.30);
+}
+
+/* Grille compétences : 2 colonnes */
+.competences{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 20px;
+}
+
+/* Ligne compétence */
+.comp-row{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-left: 2px solid rgba(232,160,48,0.20);
+  transition: background 0.12s;
+}
+
+.comp-row:hover{
+  background: rgba(232,160,48,0.05);
+  border-left-color: var(--accent-or);
+}
+
+.comp-label{
+  flex: 1;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--texte-doux);
+}
+
+/* Boutons IFST */
+.comp-btns{
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.btn-comp{
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  border: 1px solid rgba(232,160,48,0.28);
+  clip-path: none;
+  border-radius: 0;
+  color: var(--texte-doux);
+  transition: all 0.15s ease;
+}
+
+.btn-comp:hover{
+  border-color: var(--accent-or);
+  color: var(--accent-or-vif);
+  box-shadow: 0 0 6px rgba(232,160,48,0.30);
+}
+
+.btn-comp.active{
+  background: rgba(232,160,48,0.22);
+  border-color: var(--accent-or-vif);
+  color: var(--accent-or-vif);
+  box-shadow: 0 0 8px rgba(232,160,48,0.40);
+}
+
+/* Bloc h3 dans la modale */
+.bloc h3{
+  font-size: 0.80rem;
+  letter-spacing: 0.10em;
+  margin-bottom: 10px;
+  color: var(--texte-doux);
+  text-transform: uppercase;
 }
 
 
@@ -600,9 +736,8 @@ button:active,
 }
 
 .page-classeshg .liste-eleves{
-  max-height: 320px;
   overflow-y: auto;
-  padding-right: 6px;
+  padding-right: 4px;
   margin-bottom: 12px;
 }
 
@@ -1069,18 +1204,26 @@ textarea:focus{
 
 
 /* =====================================================
-   PAGE CLASSES HG — 1 ÉLÈVE = 1 LIGNE
+   PAGE CLASSES HG — 1 ÉLÈVE = 1 LIGNE COMPACTE
+   Colonnes : Nom/Prénom | Groupe | Adaptation | Place
    BALISE : AG_CLASSeshg_ONE_LINE_V1
    ===================================================== */
 
 .page-classeshg .eleve-row{
   display: grid;
-  grid-template-columns: 1fr 150px 220px 160px;
-  gap: 10px;
+  /*
+    Col 1 : nom/prénom  — prend l'espace restant
+    Col 2 : groupe gr1/gr2 — fixe compact
+    Col 3 : adaptation select — fixe
+    Col 4 : place select     — fixe compact
+  */
+  grid-template-columns: 1fr 120px 148px 108px;
+  gap: 6px;
   align-items: center;
-  padding: 6px 10px;
-  margin-bottom: 6px;
+  padding: 4px 8px;
+  margin-bottom: 3px;
   border-left: 2px solid transparent;
+  min-height: 36px;
   transition: background 0.15s, border-color 0.15s;
 }
 
@@ -1089,7 +1232,11 @@ textarea:focus{
   border-left-color: rgba(232,160,48,0.48);
 }
 
-.page-classeshg .eleve-ident{ display:flex; align-items:center; min-width:0; }
+.page-classeshg .eleve-ident{
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
 
 .page-classeshg .eleve-open{
   width: 100%;
@@ -1098,13 +1245,76 @@ textarea:focus{
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: 'Poiret One', sans-serif;
-  letter-spacing: 0.05em;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  padding: 3px 6px;
+  border-color: transparent;
+  clip-path: none;
 }
 
+.page-classeshg .eleve-open:hover{
+  border-color: rgba(232,160,48,0.35);
+  background: rgba(232,160,48,0.06);
+}
+
+/* display:contents permet aux enfants de .eleve-options
+   d'occuper directement les colonnes de la grille parente */
 .page-classeshg .eleve-options{ display: contents; }
 
-.page-classeshg .opt{ display:flex; gap:6px; align-items:center; }
-.page-classeshg .opt select{ width: 100%; }
+/* Chaque .opt = une cellule de la grille */
+.page-classeshg .opt{
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Labels discrets devant les selects */
+.page-classeshg .opt > label{
+  color: var(--texte-doux);
+  font-size: 0.72rem;
+}
+
+/* Selects adaptation et place — compacts */
+.page-classeshg .opt select{
+  width: 100%;
+  font-size: 0.78rem;
+  padding: 3px 22px 3px 6px;  /* padding-right pour la flèche */
+}
+
+/* Select place — largeur fixe serrée */
+.page-classeshg .opt-place select{
+  width: 100%;
+  font-size: 0.78rem;
+}
+
+/* Radios groupe — alignés horizontalement, compacts */
+.page-classeshg .opt-groupe{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.page-classeshg .opt-groupe label{
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  color: var(--texte-doux);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Séparateur zébré entre lignes */
+.page-classeshg .eleve-row:nth-child(even){
+  background: rgba(255,255,255,0.018);
+}
+
+.page-classeshg .eleve-row:nth-child(even):hover{
+  background: rgba(232,160,48,0.06);
+}
 
 
 /* =====================================================
