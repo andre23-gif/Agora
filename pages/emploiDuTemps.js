@@ -692,19 +692,26 @@ export function bindEmploiDuTempsEvents() {
     await refresh();
   };
 
-  if (anneeSelect) anneeSelect.onchange = async (e) => {
-    window.appAnneeCourante = e.target.value;
-    semaines = [];
-    semaineActive.iso_lundi = null;
-    weekStatusIndex = new Map();
-    semainesCibles.clear();
+  /* === AG_EDT_ANNEE_CHANGE_RESET_CALENDAR_V1_BEGIN ===================== */
+if (anneeSelect) anneeSelect.onchange = async (e) => {
+  window.appAnneeCourante = e.target.value;
 
-    /* reset buffer */
-    bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
-    bufferEdition.grid = new Map();
+  // reset état calendrier + semaine + index
+  semaines = [];
+  semaineActive.iso_lundi = null;
+  weekStatusIndex = new Map();
+  semainesCibles.clear();
 
-    await refresh();
-  };
+  /* reset buffer */
+  bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
+  bufferEdition.grid = new Map();
+
+  // ✅ point critique : forcer ensureCalendar() à recalculer pour la nouvelle année
+  _calendarEnsuredOnce = false;
+
+  await refresh();
+};
+/* === AG_EDT_ANNEE_CHANGE_RESET_CALENDAR_V1_END ======================= */
 
  document.querySelectorAll(".edt-meta[data-k][data-v]").forEach(btn => {
   btn.onclick = async () => {
