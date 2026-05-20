@@ -809,7 +809,7 @@ export async function renderEmploiDuTemps() {
 
           ${(() => {
 
-            const { start, end } = getAnneeScolaireCourante();
+            const { start, end } = window.getAnneeScolaireCourante();
 
             const options = [`${start-1}-${end-1}`, `${start}-${end}`, `${start+1}-${end+1}`];
 
