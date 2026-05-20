@@ -181,9 +181,24 @@ async function importPage(relPath) {
       }
     }
 
-    // Boutons nav
-    document.getElementById("navSalle").onclick = () =>
-      afficher(renderSalle, bindSalleEvents);
+    /* === AG_ROUTER_SALLE_INIT_V1_BEGIN ==================== */
+
+document.getElementById("navSalle").onclick = async () => {
+  const mod = await importPage("./pages/salle.js?v=" + V);
+  if (mod.initSalle) await mod.initSalle();
+  
+  /* === AG_ROUTER_SALLE_INIT_DEFAULT_V1_BEGIN ============ */
+{
+  const mod = await importPage("./pages/salle.js?v=" + V);
+  if (mod.initSalle) await mod.initSalle();
+  afficher(renderSalle, bindSalleEvents);
+}
+/* === AG_ROUTER_SALLE_INIT_DEFAULT_V1_END ============== */
+
+};
+
+/* === AG_ROUTER_SALLE_INIT_V1_END ====================== */
+``
 
 
 document.getElementById("navClassesHG").onclick = () =>
