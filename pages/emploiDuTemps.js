@@ -50,7 +50,7 @@ let semaineActive = {
 };
 
 /* ======================================================
-   BLOC 2B — BUFFER D'ÉDITION (NOUVEAU, SEUL AJOUT STRUCTUREL)
+   BLOC 2B — BUFFER D'ÉDITION
    ====================================================== */
 
 let bufferEdition = {
@@ -188,11 +188,8 @@ function positionnerSemaineCourante() {
    BLOC 5 — INIT PAGE (calendrier + index semaines)
    ====================================================== */
 
-/* === AG_EDT_CALENDAR_DYNAMIC_V2_BEGIN ===================== */
-
 async function ensureCalendar() {
-
-  // toujours recalculer à partir de l'année active
+  // Toujours recalculer et réaligner de manière dynamique à chaque rendu
   semaines = genererSemainesScolaires();
   positionnerSemaineCourante();
 
@@ -221,11 +218,6 @@ async function ensureCalendar() {
 
   if (error) throw new Error(`Upsert edt_weeks impossible. ${error.message}`);
 }
-
-/* === AG_EDT_CALENDAR_DYNAMIC_V2_END ======================= */
-
-
-/* === AG_EDT_CALENDAR_SUPABASE_V1_END =========================== */
 
 /* ======================================================
    BLOC 6 — DATA : classes sélectionnables (pour modale)
@@ -397,14 +389,10 @@ async function loadWeek(isoLundi) {
     weekStatusIndex.set(String(isoLundi), idx);
   }
 
-  /* === AG_EDT_BUFFER_SYNC_FROM_WEEK_V1 =====================
-     Copie de la semaine réelle -> bufferEdition (édition temporaire)
-     ======================================================== */
   bufferEdition.meta = { ...semaineActive.meta };
   bufferEdition.grid = new Map(
     Array.from(semaineActive.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
   );
-  /* === AG_EDT_BUFFER_SYNC_FROM_WEEK_V1_END ================= */
 
   syncState = "ok";
   lastSyncAt = new Date();
@@ -467,16 +455,14 @@ async function saveWeek(isoLundi) {
 
   const prev = weekStatusIndex.get(String(isoLundi)) || {};
   weekStatusIndex.set(String(isoLundi), {
+    ...prev,
     has_data: payload.length > 0,
     type: meta.type,
     trimestre: meta.trimestre,
     semestre: meta.semestre,
-    last_update: new Date().toISOString(),
-    ...prev
+    last_update: new Date().toISOString()
   });
 
-  syncState = "ok";
-  lastSyncAt = new Date();
   semaineActive.status = payload.length ? "loaded" : "empty";
 }
 
@@ -497,7 +483,7 @@ async function applyWeekToTargets(sourceIso, targetsIsoList) {
     await saveWeek(iso);
   }
 
-  // Restore source (UI cohérente)
+  // Restaurer la source originale pour l'UI
   semaineActive.iso_lundi = sourceIso;
   semaineActive.meta = { ...savedMeta };
   semaineActive.grid = new Map(savedGrid);
@@ -519,7 +505,7 @@ function weekLabel(s) {
 
 function cellText(jour, creneau) {
   const key = `${jour}|${creneau}`;
-  const v = bufferEdition.grid.get(key); // ✅ affichage buffer
+  const v = bufferEdition.grid.get(key); 
   if (!v || !v.classe_id) return "&nbsp;";
   const nom = escapeHtml(v.classe_nom || "—");
   return v.groupe ? `${nom} ${escapeHtml(v.groupe)}` : nom;
@@ -549,7 +535,7 @@ export async function renderEmploiDuTemps() {
     }
   }
 
-  const meta = bufferEdition.meta; // ✅ meta buffer
+  const meta = bufferEdition.meta; 
 
   return `
     <section class="page page-edt">
@@ -599,9 +585,7 @@ export async function renderEmploiDuTemps() {
           }
         </span>
 
-        <span id="edtSyncTime">
-          ${lastSyncAt ? lastSyncAt.toLocaleTimeString("fr-FR") : ""}
-        </span>
+        <span id="edtSyncTime">${lastSyncAt ? lastSyncAt.toLocaleTimeString("fr-FR") : ""}</span>
 
         <button id="valider">Valider</button>
       </div>
@@ -685,46 +669,35 @@ export function bindEmploiDuTempsEvents() {
     await refresh();
   };
 
-  /* === AG_EDT_ANNEE_CHANGE_RESET_CALENDAR_V1_BEGIN ===================== */
-if (anneeSelect) anneeSelect.onchange = async (e) => {
-  window.appAnneeCourante = e.target.value;
+  if (anneeSelect) anneeSelect.onchange = async (e) => {
+    window.appAnneeCourante = e.target.value;
 
-  // reset état calendrier + semaine + index
-  semaines = [];
-  semaineActive.iso_lundi = null;
-  weekStatusIndex = new Map();
-  semainesCibles.clear();
+    // Reset état complet
+    semaines = [];
+    semaineActive.iso_lundi = null;
+    weekStatusIndex = new Map();
+    semainesCibles.clear();
 
-  /* reset buffer */
-  bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
-  bufferEdition.grid = new Map();
+    bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
+    bufferEdition.grid = new Map();
 
-  // ✅ point critique : forcer ensureCalendar() à recalculer pour la nouvelle année
-  _calendarEnsuredOnce = false;
-
-  await refresh();
-};
-/* === AG_EDT_ANNEE_CHANGE_RESET_CALENDAR_V1_END ======================= */
-
- document.querySelectorAll(".edt-meta[data-k][data-v]").forEach(btn => {
-  btn.onclick = async () => {
-
-    const k = btn.dataset.k;
-    const v = btn.dataset.v;
-
-    // ✅ mettre à jour le buffer correctement
-    bufferEdition.meta = {
-      ...bufferEdition.meta,
-      [k]: v
-    };
-
-    syncState = "dirty";
     await refresh();
   };
-});
-``
 
-  /* === AG_EDT_WEEK_INTERACTIONS_V1_BEGIN ========================= */
+  document.querySelectorAll(".edt-meta[data-k][data-v]").forEach(btn => {
+    btn.onclick = async () => {
+      const k = btn.dataset.k;
+      const v = btn.dataset.v;
+
+      bufferEdition.meta = {
+        ...bufferEdition.meta,
+        [k]: v
+      };
+
+      syncState = "dirty";
+      await refresh();
+    };
+  });
 
   document.querySelectorAll(".edt-weekbtn[data-week-index]").forEach(b => {
     b.onclick = async (e) => {
@@ -742,8 +715,6 @@ if (anneeSelect) anneeSelect.onchange = async (e) => {
     };
   });
 
-  /* === AG_EDT_WEEK_INTERACTIONS_V1_END =========================== */
-
   document.querySelectorAll(".edt-cell[data-j][data-c]").forEach(td => {
     td.onclick = async () => {
       await ouvrirModal(td.dataset.j, td.dataset.c);
@@ -754,26 +725,19 @@ if (anneeSelect) anneeSelect.onchange = async (e) => {
     try {
       syncState = "unknown";
 
-      /* === AG_EDT_BUFFER_INJECT_ON_VALIDATE_V1 =====================
-         Injecter bufferEdition -> semaineActive juste avant écriture
-         ============================================================ */
       semaineActive.meta = { ...bufferEdition.meta };
       semaineActive.grid = new Map(
         Array.from(bufferEdition.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
       );
-      /* === AG_EDT_BUFFER_INJECT_ON_VALIDATE_V1_END ================= */
 
-      // 1) enregistrer semaine active
       const sourceIso = semaineActive.iso_lundi;
       await saveWeek(sourceIso);
 
-      // 2) appliquer si cibles cochées (hors source)
       const targets = Array.from(semainesCibles).filter(x => x !== sourceIso);
       if (targets.length) {
         await applyWeekToTargets(sourceIso, targets);
       }
 
-      // 3) rafraîchir index + UI
       await loadWeekStatusIndex();
       semainesCibles.clear();
 
@@ -797,7 +761,7 @@ async function ouvrirModal(jour, creneau) {
   const options = await getClassesOptions();
 
   const key = `${jour}|${creneau}`;
-  const current = bufferEdition.grid.get(key) || { classe_id: null, groupe: null, classe_nom: null }; // ✅ buffer
+  const current = bufferEdition.grid.get(key) || { classe_id: null, groupe: null, classe_nom: null }; 
 
   const optHtml = options.map(o => {
     const v = `${o.classe_id || ""}|${o.groupe || ""}`;
