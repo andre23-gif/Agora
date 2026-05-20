@@ -104,7 +104,9 @@ async function importPage(relPath) {
     let renderArchives, bindArchivesEvents;
 
     try {
-      ({ renderSalle, bindSalleEvents } = await importPage("./pages/salle.js"));
+      const salleModule = await importPage("./pages/salle.js");
+({ renderSalle, bindSalleEvents } = salleModule);
+window.__salle_init = salleModule.initSalle;
      ({ renderClassesHG, bindClassesHGEvents } = await importPage("./pages/classesHG.js"));
       ({ renderBulletinsHG, bindBulletinsHGEvents } = await importPage("./pages/bulletinsHG.js"));
       ({ renderPP, bindPPEvents } = await importPage("./pages/pp.js"));
@@ -183,22 +185,15 @@ async function importPage(relPath) {
 
     /* === AG_ROUTER_SALLE_INIT_V1_BEGIN ==================== */
 
-document.getElementById("navSalle").onclick = async () => {
-  const mod = await importPage("./pages/salle.js?v=" + V);
-  if (mod.initSalle) await mod.initSalle();
-  
-  /* === AG_ROUTER_SALLE_INIT_DEFAULT_V1_BEGIN ============ */
-{
-  const mod = await importPage("./pages/salle.js?v=" + V);
-  if (mod.initSalle) await mod.initSalle();
-  afficher(renderSalle, bindSalleEvents);
-}
-/* === AG_ROUTER_SALLE_INIT_DEFAULT_V1_END ============== */
+/* === AG_ROUTER_SALLE_INIT_V1_BEGIN ==================== */
 
+document.getElementById("navSalle").onclick = async () => {
+  await window.__salle_init();
+
+  afficher(renderSalle, bindSalleEvents);
 };
 
 /* === AG_ROUTER_SALLE_INIT_V1_END ====================== */
-``
 
 
 document.getElementById("navClassesHG").onclick = () =>
@@ -220,7 +215,16 @@ document.getElementById("navClassesHG").onclick = () =>
       afficher(renderArchives, bindArchivesEvents);
 
     // Page par défaut
-    afficher(renderSalle, bindSalleEvents);
+   /* === AG_ROUTER_SALLE_INIT_DEFAULT_V1_BEGIN ============ */
+
+{
+ await window.__salle_init();
+
+
+  afficher(renderSalle, bindSalleEvents);
+}
+
+/* === AG_ROUTER_SALLE_INIT_DEFAULT_V1_END ============== */
 
   </script>
 
