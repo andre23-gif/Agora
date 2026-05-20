@@ -1,8 +1,8 @@
-/* ======================================================
-   FONCTIONS ET ÉTATS GLOBAUX — DÉBUT DU FICHIER
-   ====================================================== */
+/* ==========================================================================
+   EMPLOIDUTEMPS.JS — VERSION FINALE INTÉGRALE & SÉCURISÉE
+   ========================================================================== */
 
-// Vos variables d'état (state) globales au fichier
+// --- ÉTATS GLOBAUX DU MODULE ---
 let semaines = [];
 let semaineRefIndex = -1;
 let weekStatusIndex = new Map();
@@ -22,12 +22,12 @@ let bufferEdition = {
   grid: new Map()
 };
 
-// Constantes de structure
-const JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-const TYPES = ["A", "B"];
-const TRIMESTRES = ["T1", "T2", "T3"];
-const SEMESTRES = ["S1", "S2"];
-const CRENEAUX = [
+// --- CONSTANTES STRUCTURELLES (PARTAGÉES AVEC LES AUTRES PAGES) ---
+export const JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+export const TYPES = ["A", "B"];
+export const TRIMESTRES = ["T1", "T2", "T3"];
+export const SEMESTRES = ["S1", "S2"];
+export const CRENEAUX = [
   { code: "M1", debut: "08:00", fin: "08:55" },
   { code: "M2", debut: "08:55", fin: "09:50" },
   { code: "M3", debut: "10:05", fin: "11:00" },
@@ -41,32 +41,74 @@ const CRENEAUX = [
   { code: "PM", debut: "Mercredi", fin: "Après-midi" }
 ];
 
-/* ======================================================
-   FONCTION INTERNE — ENFORCE CALENDAR (REMISE EN PLACE)
-   ====================================================== */
+/* ==========================================================================
+   FONCTIONS UTILITAIRES ET FORMATAGE
+   ========================================================================== */
+
+function capitalize(s) {
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function formatFR(dateObj) {
+  if (!dateObj) return "";
+  const d = new Date(dateObj);
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[m]));
+}
+
+function weekLabel(s) {
+  return `S${String(s.weekNo).padStart(2, "0")} (${s.weekYear}) — ${formatFR(s.lundi)}`;
+}
+
+function cellText(jour, creneau) {
+  const key = `${jour}|${creneau}`;
+  const v = bufferEdition.grid.get(key); 
+  if (!v || !v.classe_id) return "&nbsp;";
+  const nom = escapeHtml(v.classe_nom || "—");
+  return v.groupe ? `${nom} ${escapeHtml(v.groupe)}` : nom;
+}
+
+function metaButton(k, v, active) {
+  return `<button class="edt-meta" data-k="${k}" data-v="${v}" ${active ? 'data-active="1"' : ""}>${v}</button>`;
+}
+
+/* ==========================================================================
+   GESTION DU CALENDRIER ET CONTEXTE ÉCOLE
+   ========================================================================== */
+
+export function getAnneeScolaireCourante() {
+  const now = new Date();
+  const year = now.getFullYear();
+  // Si on est en août ou après, l'année scolaire commence cette année, sinon l'année d'avant
+  if (now.getMonth() >= 7) {
+    return { start: year, end: year + 1 };
+  } else {
+    return { start: year - 1, end: year };
+  }
+}
 
 async function ensureCalendar() {
-  // Si le tableau des semaines est déjà rempli, pas besoin de travailler pour rien
   if (semaines && semaines.length > 0) return;
 
   const annee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
-  
-  // Génération automatique des semaines de l'année scolaire (du 1er sept au 31 juillet environ)
   const [yearStart] = annee.split("-").map(Number);
   
-  let current = new Date(yearStart, 8, 1); // 1er Septembre
-  // On recule jusqu'au lundi de cette semaine-là
+  let current = new Date(yearStart, 8, 1); 
   const day = current.getDay();
   const diff = current.getDate() - day + (day === 0 ? -6 : 1);
   current = new Date(current.setDate(diff));
 
-  const end = new Date(yearStart + 1, 6, 31); // 31 Juillet de l'année suivante
+  const end = new Date(yearStart + 1, 6, 31); 
   const list = [];
 
   while (current <= end) {
     const isoLundi = current.toISOString().split("T")[0];
-    
-    // Calcul du numéro de la semaine ISO
     const d = new Date(Date.UTC(current.getFullYear(), current.getMonth(), current.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
     const yearStartIso = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -79,58 +121,102 @@ async function ensureCalendar() {
       weekYear: d.getUTCFullYear()
     });
 
-    current.setDate(current.getDate() + 7); // Semaine suivante
+    current.setDate(current.getDate() + 7);
   }
 
   semaines = list;
 
-  // Si on n'a pas encore d'index sélectionné, on se met sur la première semaine
   if (semaineRefIndex === -1 && semaines.length > 0) {
     semaineRefIndex = 0;
   }
 }
 
-/* ======================================================
-   BLOC 7 — DATA : ensureWeekRow (CORRIGÉ ET SÉCURISÉ)
-   ====================================================== */
+/* ==========================================================================
+   COUCHES COUPLAGE BASE DE DONNÉES (SUPABASE ACCESSORS)
+   ========================================================================== */
+
+async function getActiveAnneeId() {
+  const sb = sbAgoram();
+  const codeAnnee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
+  
+  const { data, error } = await sb
+    .from("annees")
+    .select("id")
+    .eq("code", codeAnnee)
+    .maybeSingle();
+
+  if (error) throw new Error(`Impossible de récupérer l'ID de l'année : ${error.message}`);
+  return data ? data.id : null;
+}
+
+async function getClassesOptions() {
+  const sb = sbAgoram();
+  const { data, error } = await sb
+    .from("classes")
+    .select("id, nom, code")
+    .order("nom");
+
+  if (error) return [{ classe_id: null, groupe: null, label: "Erreur de chargement" }];
+
+  const options = [{ classe_id: null, groupe: null, label: "[ Retirer le cours ]" }];
+  if (data) {
+    for (const c of data) {
+      options.push({ classe_id: c.id, groupe: null, label: c.nom });
+      options.push({ classe_id: c.id, groupe: "Gr 1", label: `${c.nom} (Gr 1)` });
+      options.push({ classe_id: c.id, groupe: "Gr 2", label: `${c.nom} (Gr 2)` });
+    }
+  }
+  return options;
+}
+
+/* ==========================================================================
+   OPERATIONS DATA : LECTURE, INTERACTION ET INTERFACES SUPABASE
+   ========================================================================== */
 
 async function ensureWeekRow(anneeId, isoLundi) {
   const sb = sbAgoram();
-
-  // Sécurité UPSERT : Si la ligne existe, Supabase la laisse tranquille, sinon il la crée.
   const { error } = await sb
     .from("edt_weeks")
-    .upsert(
-      [
-        { 
-          annee_id: anneeId, 
-          iso_lundi: isoLundi, 
-          type: "A", 
-          trimestre: "T1", 
-          semestre: "S1" 
-        }
-      ], 
-      { onConflict: "annee_id,iso_lundi" }
-    );
+    .upsert([
+      { annee_id: anneeId, iso_lundi: isoLundi, type: "A", trimestre: "T1", semestre: "S1" }
+    ], { onConflict: "annee_id,iso_lundi" });
 
-  if (error) {
-    throw new Error(`Création de la ligne de semaine impossible. ${error.message}`);
-  }
+  if (error) throw new Error(`Création/Vérification de la semaine impossible : ${error.message}`);
 }
 
-/* ======================================================
-   BLOC 8 — DATA : loadWeek (Chargement d'une semaine)
-   ====================================================== */
+async function loadWeekStatusIndex() {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) return;
+
+  const sb = sbAgoram();
+  const { data, error } = await sb
+    .from("edt_weeks")
+    .select("iso_lundi, type, trimestre, semestre")
+    .eq("annee_id", anneeId);
+
+  if (error) throw new Error(`Erreur d'indexation des statuts : ${error.message}`);
+
+  weekStatusIndex.clear();
+  if (data) {
+    for (const w of data) {
+      // Pour les besoins de l'affichage dans la barre de gauche
+      weekStatusIndex.set(String(w.iso_lundi), {
+        has_data: true, 
+        type: w.type,
+        trimestre: w.trimestre,
+        semestre: w.semestre
+      });
+    }
+  }
+}
 
 async function loadWeek(isoLundi) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
 
   await ensureWeekRow(anneeId, isoLundi);
-
   const sb = sbAgoram();
 
-  // 1. Charger les métadonnées de la semaine
   const { data: wData, error: wErr } = await sb
     .from("edt_weeks")
     .select("type, trimestre, semestre")
@@ -138,21 +224,16 @@ async function loadWeek(isoLundi) {
     .eq("iso_lundi", isoLundi)
     .maybeSingle();
 
-  if (wErr) throw new Error(`Erreur loadWeek (meta): ${wErr.message}`);
+  if (wErr) throw new Error(`Erreur loadWeek (meta) : ${wErr.message}`);
 
-  // 2. Charger les cellules de cours de la semaine
   const { data: cData, error: cErr } = await sb
     .from("edt_cells")
-    .select(`
-      jour, creneau, classe_id, groupe,
-      classes:classe_id ( nom )
-    `)
+    .select(`jour, creneau, classe_id, groupe, classes:classe_id(nom)`)
     .eq("annee_id", anneeId)
     .eq("iso_lundi", isoLundi);
 
-  if (cErr) throw new Error(`Erreur loadWeek (cells): ${cErr.message}`);
+  if (cErr) throw new Error(`Erreur loadWeek (cells) : ${cErr.message}`);
 
-  // 3. Mettre à jour l'état de l'application
   semaineActive.iso_lundi = isoLundi;
   semaineActive.meta = {
     type: wData?.type || "A",
@@ -172,7 +253,6 @@ async function loadWeek(isoLundi) {
     }
   }
 
-  // Synchronisation du buffer de travail (copie miroir pour l'édition)
   bufferEdition.meta = { ...semaineActive.meta };
   bufferEdition.grid = new Map(
     Array.from(semaineActive.grid.entries()).map(([k, v]) => [k, { ...v }])
@@ -182,20 +262,14 @@ async function loadWeek(isoLundi) {
   syncState = "ok";
 }
 
-/* ======================================================
-   BLOC 9 — DATA : saveWeek (Sauvegarde complète propre)
-   ====================================================== */
-
 async function saveWeek(isoLundi) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
 
   const sb = sbAgoram();
   semaineActive.status = "saving";
-
   const meta = bufferEdition.meta;
 
-  // Enregistrement/Mise à jour des métadonnées de la semaine
   const { error: errUpW } = await sb
     .from("edt_weeks")
     .upsert([{
@@ -206,20 +280,17 @@ async function saveWeek(isoLundi) {
       semestre: meta.semestre
     }], { onConflict: "annee_id,iso_lundi" });
 
-  if (errUpW) throw new Error(`Upsert edt_weeks impossible. ${errUpW.message}`);
+  if (errUpW) throw new Error(`Upsert edt_weeks impossible : ${errUpW.message}`);
 
-  // Nettoyage des anciennes cellules existantes pour cette semaine
   const { error: errDel } = await sb
     .from("edt_cells")
     .delete()
     .eq("annee_id", anneeId)
     .eq("iso_lundi", isoLundi);
 
-  if (errDel) throw new Error(`Delete edt_cells impossible. ${errDel.message}`);
+  if (errDel) throw new Error(`Clean edt_cells impossible : ${errDel.message}`);
 
-  // Préparation du payload depuis notre buffer d'édition
   const payload = [];
-  
   for (const [key, v] of bufferEdition.grid.entries()) {
     if (!v || !v.classe_id || String(v.classe_id).trim() === "") continue;
     
@@ -236,13 +307,11 @@ async function saveWeek(isoLundi) {
     });
   }
 
-  // Insertion des nouvelles cellules s'il y en a
   if (payload.length > 0) {
     const { error: errIns } = await sb.from("edt_cells").insert(payload);
-    if (errIns) throw new Error(`Insert edt_cells impossible. ${errIns.message}`);
+    if (errIns) throw new Error(`Insert edt_cells erroné : ${errIns.message}`);
   }
 
-  // Mise à jour de l'index des statuts locaux pour l'UI (le petit carré bleu)
   const prev = weekStatusIndex.get(String(isoLundi)) || {};
   weekStatusIndex.set(String(isoLundi), {
     ...prev,
@@ -256,10 +325,6 @@ async function saveWeek(isoLundi) {
   semaineActive.status = payload.length ? "loaded" : "empty";
 }
 
-/* ======================================================
-   BLOC 10 — DATA : Multi-reproduction (Duplication semaines)
-   ====================================================== */
-
 async function applyWeekToTargets(sourceIso, targetIsos) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) return;
@@ -267,7 +332,6 @@ async function applyWeekToTargets(sourceIso, targetIsos) {
   const sb = sbAgoram();
   const meta = bufferEdition.meta;
 
-  // 1. On prépare les semaines cibles dans edt_weeks
   const weeksPayload = targetIsos.map(iso => ({
     annee_id: anneeId,
     iso_lundi: iso,
@@ -282,7 +346,6 @@ async function applyWeekToTargets(sourceIso, targetIsos) {
 
   if (wErr) throw wErr;
 
-  // 2. On supprime les anciens cours des semaines cibles
   const { error: dErr } = await sb
     .from("edt_cells")
     .delete()
@@ -291,7 +354,6 @@ async function applyWeekToTargets(sourceIso, targetIsos) {
 
   if (dErr) throw dErr;
 
-  // 3. On extrait les cellules du buffer actuel pour les dupliquer
   const cellsPayload = [];
   for (const [key, v] of bufferEdition.grid.entries()) {
     if (!v || !v.classe_id) continue;
@@ -310,39 +372,15 @@ async function applyWeekToTargets(sourceIso, targetIsos) {
     }
   }
 
-  // 4. On envoie tout d'un coup dans Supabase
   if (cellsPayload.length > 0) {
     const { error: iErr } = await sb.from("edt_cells").insert(cellsPayload);
     if (iErr) throw iErr;
   }
 }
 
-// --- LA SUITE DU FICHIER EST LE BLOC 11 DE NOTRE DISCUSSIONS PRÉCÉDENTE ---
-/* ======================================================
-   BLOC 11 — RENDU (UI) — VERSION FINALE SÉCURISÉE
-   ====================================================== */
-
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
-  }[m]));
-}
-
-function weekLabel(s) {
-  return `S${String(s.weekNo).padStart(2,"0")} (${s.weekYear}) — ${formatFR(s.lundi)}`;
-}
-
-function cellText(jour, creneau) {
-  const key = `${jour}|${creneau}`;
-  const v = bufferEdition.grid.get(key); 
-  if (!v || !v.classe_id) return "&nbsp;";
-  const nom = escapeHtml(v.classe_nom || "—");
-  return v.groupe ? `${nom} ${escapeHtml(v.groupe)}` : nom;
-}
-
-function metaButton(k, v, active) {
-  return `<button class="edt-meta" data-k="${k}" data-v="${v}" ${active ? 'data-active="1"' : ""}>${v}</button>`;
-}
+/* ==========================================================================
+   BLOC RENDU INTERFACE UTILISATEUR (UI VIEW HTML)
+   ========================================================================== */
 
 export async function renderEmploiDuTemps() {
   await ensureCalendar();
@@ -355,8 +393,7 @@ export async function renderEmploiDuTemps() {
 
   const sem = semaines[semaineRefIndex];
 
-  // CORRECTION SÉCURITÉ : Si la semaine affichée change, on FORCE le rechargement depuis Supabase
-  // pour écraser le buffer d'édition de la semaine précédente.
+  // SÉCURITÉ DE FLUX : Changement de semaine forcée
   if (semaineActive.iso_lundi !== sem.isoLundi) {
     try {
       await loadWeek(sem.isoLundi);
@@ -370,7 +407,6 @@ export async function renderEmploiDuTemps() {
 
   return `
     <section class="page page-edt">
-
       <div class="topbar">
         <button id="prev">◀</button>
         <strong>${weekLabel(sem)}</strong>
@@ -410,7 +446,6 @@ export async function renderEmploiDuTemps() {
             "⚪ —"
           }
         </span>
-
         <span id="edtSyncTime">${lastSyncAt ? lastSyncAt.toLocaleTimeString("fr-FR") : ""}</span>
         <button id="valider">Valider</button>
       </div>
@@ -422,8 +457,7 @@ export async function renderEmploiDuTemps() {
               const iso = s.isoLundi;
               const checked = semainesCibles.has(iso) ? "checked" : "";
               const st = weekStatusIndex.get(String(iso));
-              const hasData = st ? !!st.has_data : false;
-              const dot = hasData ? "🟦" : "⬜";
+              const dot = st && st.has_data ? "🟦" : "⬜";
 
               return `
                 <div class="edt-weekrow ${i === semaineRefIndex ? "active" : ""}">
@@ -457,15 +491,14 @@ export async function renderEmploiDuTemps() {
           </div>
         </div>
       </div>
-
       <div id="modal"></div>
     </section>
   `;
 }
 
-/* ======================================================
-   BLOC 12 — EVENTS — VERSION FINALE SÉCURISÉE
-   ====================================================== */
+/* ==========================================================================
+   LISTENERS & ATTACHEMENTS ACTIONS (DOM EVENTS HANDLERS)
+   ========================================================================== */
 
 export function bindEmploiDuTempsEvents() {
   const prev = document.getElementById("prev");
@@ -492,15 +525,15 @@ export function bindEmploiDuTempsEvents() {
   if (anneeSelect) anneeSelect.onchange = async (e) => {
     window.appAnneeCourante = e.target.value;
 
-    // Reset complet et propre de l'état local pour forcer le recalcul
+    // SÉCURITÉ DE REINITIALISATION COMPLÈTE
     semaines = [];
     semaineRefIndex = -1; 
-    semaineActive.iso_lundi = null; // FORCE loadWeek() à s'exécuter au prochain render
+    semaineActive.iso_lundi = null; 
     weekStatusIndex = new Map();
     semainesCibles.clear();
 
     bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
-    bufferEdition.grid = new Map(); // Vide le buffer pour éviter les fuites visuelles entre années
+    bufferEdition.grid = new Map();
 
     await refresh();
   };
@@ -567,9 +600,9 @@ export function bindEmploiDuTempsEvents() {
   };
 }
 
-/* ======================================================
-   BLOC 13 — MODALE cellule (classe/groupe)
-   ====================================================== */
+/* ==========================================================================
+   FENÊTRE MODALE D'ÉDITION DES SÉANCES
+   ========================================================================== */
 
 async function ouvrirModal(jour, creneau) {
   const options = await getClassesOptions();
@@ -615,7 +648,7 @@ async function ouvrirModal(jour, creneau) {
         (String(o.classe_id || "") === String(classe_id || "")) &&
         (String(o.groupe || "") === String(groupe || ""))
       );
-      const nom = opt ? opt.label.replace(" gr 1","").replace(" gr 2","") : "—";
+      const nom = opt ? opt.label.replace(" (Gr 1)", "").replace(" (Gr 2)", "") : "—";
       bufferEdition.grid.set(key, { classe_id, classe_nom: nom, groupe });
     }
 
@@ -625,24 +658,57 @@ async function ouvrirModal(jour, creneau) {
   };
 }
 
-/* ======================================================
-   BLOC 14 — REFRESH SPA
-   ====================================================== */
+/* ==========================================================================
+   REFRESH MANAGER (SPA CYCLE)
+   ========================================================================== */
 
 async function refresh() {
   const app = document.getElementById("app");
-  app.innerHTML = await renderEmploiDuTemps();
-  bindEmploiDuTempsEvents();
+  if (app) {
+    app.innerHTML = await renderEmploiDuTemps();
+    bindEmploiDuTempsEvents();
+  }
 }
 
-/* ======================================================
-   BLOC 15 — ACCÈS MÉTIER (lecture)
-   ====================================================== */
+/* ==========================================================================
+   FONCTIONS CONTRACTUELLES VERS LES AUTRES PAGES (EXPORTS MÉTIERS)
+   ========================================================================== */
 
+/**
+ * Utilisé par les autres modules pour obtenir la configuration de la semaine active
+ */
 export function getEDTActiveWeek() {
   return {
     iso_lundi: semaineActive.iso_lundi,
     meta: { ...semaineActive.meta },
     status: semaineActive.status
   };
+}
+
+/**
+ * Analyse l'heure courante de la journée et retourne l'objet créneau associé (ex: M1, A2...)
+ * Utile pour le dashboard ou la page salle.js
+ */
+export function getCreneauCourant() {
+  const now = new Date();
+  const HH = String(now.getHours()).padStart(2, "0");
+  const MM = String(now.getMinutes()).padStart(2, "0");
+  const heureIndex = `${HH}:${MM}`;
+
+  for (const cr of CRENEAUX) {
+    if (cr.code === "PM") continue;
+    if (heureIndex >= cr.debut && heureIndex <= cr.fin) {
+      return cr;
+    }
+  }
+  return null;
+}
+
+/**
+ * Retourne le nom du jour courant en français (ex: "lundi")
+ */
+export function getJourCourant() {
+  const idx = new Date().getDay();
+  const map = [null, "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", null];
+  return map[idx] || null;
 }
