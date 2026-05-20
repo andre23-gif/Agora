@@ -1,13 +1,12 @@
-/* ==========================================================================
-   EMPLOIDUTEMPS.JS — VERSION FINALE INTÉGRALE & SÉCURISÉE
-   ========================================================================== */
+/* ======================================================
+   ÉTATS GLOBAUX & STRUCTURES D'ORIGINE
+   ====================================================== */
 
-// --- ÉTATS GLOBAUX DU MODULE ---
 let semaines = [];
 let semaineRefIndex = -1;
 let weekStatusIndex = new Map();
 let semainesCibles = new Set();
-let syncState = "ok"; // ok, dirty, error, unknown
+let syncState = "ok"; 
 let lastSyncAt = null;
 
 let semaineActive = {
@@ -22,28 +21,26 @@ let bufferEdition = {
   grid: new Map()
 };
 
-// --- CONSTANTES STRUCTURELLES (PARTAGÉES AVEC LES AUTRES PAGES) ---
+// TES HORAIRES STRICTS ET EXACTS REPLUGGÉS ICI
 export const JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 export const TYPES = ["A", "B"];
 export const TRIMESTRES = ["T1", "T2", "T3"];
 export const SEMESTRES = ["S1", "S2"];
 export const CRENEAUX = [
-  { code: "M1", debut: "08:00", fin: "08:55" },
-  { code: "M2", debut: "08:55", fin: "09:50" },
-  { code: "M3", debut: "10:05", fin: "11:00" },
-  { code: "M4", debut: "11:00", fin: "11:55" },
-  { code: "M5", debut: "11:55", fin: "12:50" },
-  { code: "A1", debut: "13:00", fin: "13:55" },
-  { code: "A2", debut: "13:55", fin: "14:50" },
-  { code: "A3", debut: "15:05", fin: "16:00" },
-  { code: "A4", debut: "16:00", fin: "16:55" },
-  { code: "A5", debut: "17:00", fin: "17:55" },
+  { code: "M1", debut: "08:30", fin: "09:25" },
+  { code: "M2", debut: "09:25", fin: "10:20" },
+  { code: "M3", debut: "10:35", fin: "11:30" },
+  { code: "M4", debut: "11:30", fin: "12:25" },
+  { code: "S1", debut: "13:30", fin: "14:25" },
+  { code: "S2", debut: "14:25", fin: "15:20" },
+  { code: "S3", debut: "15:35", fin: "16:30" },
+  { code: "S4", debut: "16:30", fin: "17:25" },
   { code: "PM", debut: "Mercredi", fin: "Après-midi" }
 ];
 
-/* ==========================================================================
-   FONCTIONS UTILITAIRES ET FORMATAGE
-   ========================================================================== */
+/* ======================================================
+   UTILITAIRES DE BASE
+   ====================================================== */
 
 function capitalize(s) {
   if (!s) return "";
@@ -58,12 +55,12 @@ function formatFR(dateObj) {
 
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
   }[m]));
 }
 
 function weekLabel(s) {
-  return `S${String(s.weekNo).padStart(2, "0")} (${s.weekYear}) — ${formatFR(s.lundi)}`;
+  return `S${String(s.weekNo).padStart(2,"0")} (${s.weekYear}) — ${formatFR(s.lundi)}`;
 }
 
 function cellText(jour, creneau) {
@@ -78,14 +75,13 @@ function metaButton(k, v, active) {
   return `<button class="edt-meta" data-k="${k}" data-v="${v}" ${active ? 'data-active="1"' : ""}>${v}</button>`;
 }
 
-/* ==========================================================================
-   GESTION DU CALENDRIER ET CONTEXTE ÉCOLE
-   ========================================================================== */
+/* ======================================================
+   FONCTIONS CALENDRIER ET ACCÈS RÉSEAU
+   ====================================================== */
 
 export function getAnneeScolaireCourante() {
   const now = new Date();
   const year = now.getFullYear();
-  // Si on est en août ou après, l'année scolaire commence cette année, sinon l'année d'avant
   if (now.getMonth() >= 7) {
     return { start: year, end: year + 1 };
   } else {
@@ -95,7 +91,6 @@ export function getAnneeScolaireCourante() {
 
 async function ensureCalendar() {
   if (semaines && semaines.length > 0) return;
-
   const annee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
   const [yearStart] = annee.split("-").map(Number);
   
@@ -114,64 +109,40 @@ async function ensureCalendar() {
     const yearStartIso = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     const weekNo = Math.ceil((((d - yearStartIso) / 86400000) + 1) / 7);
 
-    list.push({
-      isoLundi,
-      lundi: new Date(current),
-      weekNo,
-      weekYear: d.getUTCFullYear()
-    });
-
+    list.push({ isoLundi, lundi: new Date(current), weekNo, weekYear: d.getUTCFullYear() });
     current.setDate(current.getDate() + 7);
   }
-
   semaines = list;
-
-  if (semaineRefIndex === -1 && semaines.length > 0) {
-    semaineRefIndex = 0;
-  }
+  if (semaineRefIndex === -1 && semaines.length > 0) semaineRefIndex = 0;
 }
-
-/* ==========================================================================
-   COUCHES COUPLAGE BASE DE DONNÉES (SUPABASE ACCESSORS)
-   ========================================================================== */
 
 async function getActiveAnneeId() {
   const sb = sbAgoram();
   const codeAnnee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
-  
-  const { data, error } = await sb
-    .from("annees")
-    .select("id")
-    .eq("code", codeAnnee)
-    .maybeSingle();
-
+  const { data, error } = await sb.from("annees").select("id").eq("code", codeAnnee).maybeSingle();
   if (error) throw new Error(`Impossible de récupérer l'ID de l'année : ${error.message}`);
   return data ? data.id : null;
 }
 
 async function getClassesOptions() {
   const sb = sbAgoram();
-  const { data, error } = await sb
-    .from("classes")
-    .select("id, nom, code")
-    .order("nom");
-
-  if (error) return [{ classe_id: null, groupe: null, label: "Erreur de chargement" }];
+  const { data, error } = await sb.from("classes").select("id, nom, code").order("nom");
+  if (error) return [{ classe_id: null, groupe: null, label: "Erreur" }];
 
   const options = [{ classe_id: null, groupe: null, label: "[ Retirer le cours ]" }];
   if (data) {
     for (const c of data) {
       options.push({ classe_id: c.id, groupe: null, label: c.nom });
-      options.push({ classe_id: c.id, groupe: "Gr 1", label: `${c.nom} (Gr 1)` });
-      options.push({ classe_id: c.id, groupe: "Gr 2", label: `${c.nom} (Gr 2)` });
+      options.push({ classe_id: c.id, groupe: "gr 1", label: `${c.nom} gr 1` });
+      options.push({ classe_id: c.id, groupe: "gr 2", label: `${c.nom} gr 2` });
     }
   }
   return options;
 }
 
-/* ==========================================================================
-   OPERATIONS DATA : LECTURE, INTERACTION ET INTERFACES SUPABASE
-   ========================================================================== */
+/* ======================================================
+   REPARATION : ensureWeekRow (RÉPARATION CRASH 409)
+   ====================================================== */
 
 async function ensureWeekRow(anneeId, isoLundi) {
   const sb = sbAgoram();
@@ -181,34 +152,12 @@ async function ensureWeekRow(anneeId, isoLundi) {
       { annee_id: anneeId, iso_lundi: isoLundi, type: "A", trimestre: "T1", semestre: "S1" }
     ], { onConflict: "annee_id,iso_lundi" });
 
-  if (error) throw new Error(`Création/Vérification de la semaine impossible : ${error.message}`);
+  if (error) throw new Error(`Création de la ligne de semaine impossible. ${error.message}`);
 }
 
-async function loadWeekStatusIndex() {
-  const anneeId = await getActiveAnneeId();
-  if (!anneeId) return;
-
-  const sb = sbAgoram();
-  const { data, error } = await sb
-    .from("edt_weeks")
-    .select("iso_lundi, type, trimestre, semestre")
-    .eq("annee_id", anneeId);
-
-  if (error) throw new Error(`Erreur d'indexation des statuts : ${error.message}`);
-
-  weekStatusIndex.clear();
-  if (data) {
-    for (const w of data) {
-      // Pour les besoins de l'affichage dans la barre de gauche
-      weekStatusIndex.set(String(w.iso_lundi), {
-        has_data: true, 
-        type: w.type,
-        trimestre: w.trimestre,
-        semestre: w.semestre
-      });
-    }
-  }
-}
+/* ======================================================
+   FONCTION loadWeek
+   ====================================================== */
 
 async function loadWeek(isoLundi) {
   const anneeId = await getActiveAnneeId();
@@ -224,15 +173,15 @@ async function loadWeek(isoLundi) {
     .eq("iso_lundi", isoLundi)
     .maybeSingle();
 
-  if (wErr) throw new Error(`Erreur loadWeek (meta) : ${wErr.message}`);
+  if (wErr) throw new Error(`Erreur loadWeek (meta): ${wErr.message}`);
 
   const { data: cData, error: cErr } = await sb
     .from("edt_cells")
-    .select(`jour, creneau, classe_id, groupe, classes:classe_id(nom)`)
+    .select(`jour, creneau, classe_id, groupe, classes:classe_id ( nom )`)
     .eq("annee_id", anneeId)
     .eq("iso_lundi", isoLundi);
 
-  if (cErr) throw new Error(`Erreur loadWeek (cells) : ${cErr.message}`);
+  if (cErr) throw new Error(`Erreur loadWeek (cells): ${cErr.message}`);
 
   semaineActive.iso_lundi = isoLundi;
   semaineActive.meta = {
@@ -262,6 +211,10 @@ async function loadWeek(isoLundi) {
   syncState = "ok";
 }
 
+/* ======================================================
+   REPARATION : saveWeek (RÉPARATION SEMAINE VIDE)
+   ====================================================== */
+
 async function saveWeek(isoLundi) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
@@ -280,7 +233,7 @@ async function saveWeek(isoLundi) {
       semestre: meta.semestre
     }], { onConflict: "annee_id,iso_lundi" });
 
-  if (errUpW) throw new Error(`Upsert edt_weeks impossible : ${errUpW.message}`);
+  if (errUpW) throw new Error(`Upsert edt_weeks impossible. ${errUpW.message}`);
 
   const { error: errDel } = await sb
     .from("edt_cells")
@@ -288,7 +241,7 @@ async function saveWeek(isoLundi) {
     .eq("annee_id", anneeId)
     .eq("iso_lundi", isoLundi);
 
-  if (errDel) throw new Error(`Clean edt_cells impossible : ${errDel.message}`);
+  if (errDel) throw new Error(`Delete edt_cells impossible. ${errDel.message}`);
 
   const payload = [];
   for (const [key, v] of bufferEdition.grid.entries()) {
@@ -309,7 +262,7 @@ async function saveWeek(isoLundi) {
 
   if (payload.length > 0) {
     const { error: errIns } = await sb.from("edt_cells").insert(payload);
-    if (errIns) throw new Error(`Insert edt_cells erroné : ${errIns.message}`);
+    if (errIns) throw new Error(`Insert edt_cells impossible. ${errIns.message}`);
   }
 
   const prev = weekStatusIndex.get(String(isoLundi)) || {};
@@ -324,6 +277,10 @@ async function saveWeek(isoLundi) {
 
   semaineActive.status = payload.length ? "loaded" : "empty";
 }
+
+/* ======================================================
+   FONCTION applyWeekToTargets
+   ====================================================== */
 
 async function applyWeekToTargets(sourceIso, targetIsos) {
   const anneeId = await getActiveAnneeId();
@@ -340,18 +297,10 @@ async function applyWeekToTargets(sourceIso, targetIsos) {
     semestre: meta.semestre
   }));
 
-  const { error: wErr } = await sb
-    .from("edt_weeks")
-    .upsert(weeksPayload, { onConflict: "annee_id,iso_lundi" });
-
+  const { error: wErr } = await sb.from("edt_weeks").upsert(weeksPayload, { onConflict: "annee_id,iso_lundi" });
   if (wErr) throw wErr;
 
-  const { error: dErr } = await sb
-    .from("edt_cells")
-    .delete()
-    .eq("annee_id", anneeId)
-    .in("iso_lundi", targetIsos);
-
+  const { error: dErr } = await sb.from("edt_cells").delete().eq("annee_id", anneeId).in("iso_lundi", targetIsos);
   if (dErr) throw dErr;
 
   const cellsPayload = [];
@@ -378,13 +327,26 @@ async function applyWeekToTargets(sourceIso, targetIsos) {
   }
 }
 
-/* ==========================================================================
-   BLOC RENDU INTERFACE UTILISATEUR (UI VIEW HTML)
-   ========================================================================== */
+async function loadWeekStatusIndex() {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) return;
+  const sb = sbAgoram();
+  const { data, error } = await sb.from("edt_weeks").select("iso_lundi, type, trimestre, semestre").eq("annee_id", anneeId);
+  if (error) throw new Error(`Erreur loadWeekStatusIndex : ${error.message}`);
+  weekStatusIndex.clear();
+  if (data) {
+    for (const w of data) {
+      weekStatusIndex.set(String(w.iso_lundi), { has_data: true, type: w.type, trimestre: w.trimestre, semestre: w.semestre });
+    }
+  }
+}
+
+/* ======================================================
+   REPARATION : renderEmploiDuTemps (FLUX SEMAINE)
+   ====================================================== */
 
 export async function renderEmploiDuTemps() {
   await ensureCalendar();
-
   const annee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
 
   if (weekStatusIndex.size === 0) {
@@ -393,7 +355,7 @@ export async function renderEmploiDuTemps() {
 
   const sem = semaines[semaineRefIndex];
 
-  // SÉCURITÉ DE FLUX : Changement de semaine forcée
+  // SÉCURITÉ : Forcer la lecture Supabase au saut de semaine
   if (semaineActive.iso_lundi !== sem.isoLundi) {
     try {
       await loadWeek(sem.isoLundi);
@@ -414,9 +376,7 @@ export async function renderEmploiDuTemps() {
 
         <select id="weekSelect">
           ${semaines.map((s, i) => `
-            <option value="${i}" ${i === semaineRefIndex ? "selected" : ""}>
-              ${weekLabel(s)}
-            </option>
+            <option value="${i}" ${i === semaineRefIndex ? "selected" : ""}>${weekLabel(s)}</option>
           `).join("")}
         </select>
 
@@ -431,20 +391,13 @@ export async function renderEmploiDuTemps() {
 
         <span>Type</span>
         ${TYPES.map(v => metaButton("type", v, meta.type === v)).join("")}
-
         <span>T</span>
         ${TRIMESTRES.map(v => metaButton("trimestre", v, meta.trimestre === v)).join("")}
-
         <span>S</span>
         ${SEMESTRES.map(v => metaButton("semestre", v, meta.semestre === v)).join("")}
 
         <span id="edtSyncState">
-          ${
-            syncState === "ok" ? "🟢 Sync OK" :
-            syncState === "dirty" ? "🟠 Modifié" :
-            syncState === "error" ? "🔴 Erreur" :
-            "⚪ —"
-          }
+          ${syncState === "ok" ? "🟢 Sync OK" : syncState === "dirty" ? "🟠 Modifié" : syncState === "error" ? "🔴 Erreur" : "⚪ —"}
         </span>
         <span id="edtSyncTime">${lastSyncAt ? lastSyncAt.toLocaleTimeString("fr-FR") : ""}</span>
         <button id="valider">Valider</button>
@@ -462,9 +415,7 @@ export async function renderEmploiDuTemps() {
               return `
                 <div class="edt-weekrow ${i === semaineRefIndex ? "active" : ""}">
                   <input type="checkbox" class="edt-weekcheck" data-iso="${iso}" ${checked}>
-                  <span class="edt-weekbtn" data-week-index="${i}">
-                    ${dot} ${escapeHtml(weekLabel(s))}
-                  </span>
+                  <span class="edt-weekbtn" data-week-index="${i}">${dot} ${escapeHtml(weekLabel(s))}</span>
                 </div>
               `;
             }).join("")}
@@ -496,9 +447,9 @@ export async function renderEmploiDuTemps() {
   `;
 }
 
-/* ==========================================================================
-   LISTENERS & ATTACHEMENTS ACTIONS (DOM EVENTS HANDLERS)
-   ========================================================================== */
+/* ======================================================
+   REPARATION : bindEmploiDuTempsEvents (SECURITE ANNEE)
+   ====================================================== */
 
 export function bindEmploiDuTempsEvents() {
   const prev = document.getElementById("prev");
@@ -507,34 +458,19 @@ export function bindEmploiDuTempsEvents() {
   const anneeSelect = document.getElementById("anneeSelect");
   const valider = document.getElementById("valider");
 
-  if (prev) prev.onclick = async () => {
-    semaineRefIndex = Math.max(0, semaineRefIndex - 1);
-    await refresh();
-  };
-
-  if (next) next.onclick = async () => {
-    semaineRefIndex = Math.min(semaines.length - 1, semaineRefIndex + 1);
-    await refresh();
-  };
-
-  if (weekSelect) weekSelect.onchange = async (e) => {
-    semaineRefIndex = Number(e.target.value);
-    await refresh();
-  };
+  if (prev) prev.onclick = async () => { semaineRefIndex = Math.max(0, semaineRefIndex - 1); await refresh(); };
+  if (next) next.onclick = async () => { semaineRefIndex = Math.min(semaines.length - 1, semaineRefIndex + 1); await refresh(); };
+  if (weekSelect) weekSelect.onchange = async (e) => { semaineRefIndex = Number(e.target.value); await refresh(); };
 
   if (anneeSelect) anneeSelect.onchange = async (e) => {
     window.appAnneeCourante = e.target.value;
-
-    // SÉCURITÉ DE REINITIALISATION COMPLÈTE
     semaines = [];
     semaineRefIndex = -1; 
     semaineActive.iso_lundi = null; 
     weekStatusIndex = new Map();
     semainesCibles.clear();
-
     bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
     bufferEdition.grid = new Map();
-
     await refresh();
   };
 
@@ -549,46 +485,31 @@ export function bindEmploiDuTempsEvents() {
   });
 
   document.querySelectorAll(".edt-weekbtn[data-week-index]").forEach(b => {
-    b.onclick = async (e) => {
-      e.stopPropagation();
-      semaineRefIndex = Number(b.dataset.weekIndex);
-      await refresh();
-    };
+    b.onclick = async (e) => { e.stopPropagation(); semaineRefIndex = Number(b.dataset.weekIndex); await refresh(); };
   });
 
   document.querySelectorAll(".edt-weekcheck[data-iso]").forEach(cb => {
-    cb.onclick = (e) => {
-      e.stopPropagation();
-      if (cb.checked) semainesCibles.add(cb.dataset.iso);
-      else semainesCibles.delete(cb.dataset.iso);
-    };
+    cb.onclick = (e) => { e.stopPropagation(); if (cb.checked) semainesCibles.add(cb.dataset.iso); else semainesCibles.delete(cb.dataset.iso); };
   });
 
   document.querySelectorAll(".edt-cell[data-j][data-c]").forEach(td => {
-    td.onclick = async () => {
-      await ouvrirModal(td.dataset.j, td.dataset.c);
-    };
+    td.onclick = async () => { await ouvrirModal(td.dataset.j, td.dataset.c); };
   });
 
   if (valider) valider.onclick = async () => {
     try {
       syncState = "unknown";
       semaineActive.meta = { ...bufferEdition.meta };
-      semaineActive.grid = new Map(
-        Array.from(bufferEdition.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
-      );
+      semaineActive.grid = new Map(Array.from(bufferEdition.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v]));
 
       const sourceIso = semaineActive.iso_lundi;
       await saveWeek(sourceIso);
 
       const targets = Array.from(semainesCibles).filter(x => x !== sourceIso);
-      if (targets.length) {
-        await applyWeekToTargets(sourceIso, targets);
-      }
+      if (targets.length) await applyWeekToTargets(sourceIso, targets);
 
       await loadWeekStatusIndex();
       semainesCibles.clear();
-
       syncState = "ok";
       lastSyncAt = new Date();
       await refresh();
@@ -600,9 +521,9 @@ export function bindEmploiDuTempsEvents() {
   };
 }
 
-/* ==========================================================================
-   FENÊTRE MODALE D'ÉDITION DES SÉANCES
-   ========================================================================== */
+/* ======================================================
+   FONCTION ouvrirModal
+   ====================================================== */
 
 async function ouvrirModal(jour, creneau) {
   const options = await getClassesOptions();
@@ -632,7 +553,6 @@ async function ouvrirModal(jour, creneau) {
   `;
 
   const close = () => { document.getElementById("modal").innerHTML = ""; };
-
   document.getElementById("edtModalClose").onclick = close;
   document.getElementById("edtCancel").onclick = close;
 
@@ -644,23 +564,19 @@ async function ouvrirModal(jour, creneau) {
     if (!classe_id) {
       bufferEdition.grid.delete(key);
     } else {
-      const opt = options.find(o =>
-        (String(o.classe_id || "") === String(classe_id || "")) &&
-        (String(o.groupe || "") === String(groupe || ""))
-      );
-      const nom = opt ? opt.label.replace(" (Gr 1)", "").replace(" (Gr 2)", "") : "—";
+      const opt = options.find(o => (String(o.classe_id || "") === String(classe_id || "")) && (String(o.groupe || "") === String(groupe || "")));
+      const nom = opt ? opt.label.replace(" gr 1","").replace(" gr 2","") : "—";
       bufferEdition.grid.set(key, { classe_id, classe_nom: nom, groupe });
     }
-
     syncState = "dirty";
     close();
     await refresh();
   };
 }
 
-/* ==========================================================================
-   REFRESH MANAGER (SPA CYCLE)
-   ========================================================================== */
+/* ======================================================
+   FONCTION refresh
+   ====================================================== */
 
 async function refresh() {
   const app = document.getElementById("app");
@@ -670,13 +586,10 @@ async function refresh() {
   }
 }
 
-/* ==========================================================================
-   FONCTIONS CONTRACTUELLES VERS LES AUTRES PAGES (EXPORTS MÉTIERS)
-   ========================================================================== */
+/* ======================================================
+   FONCTIONS CONTRACTUELLES VERS LES AUTRES PAGES
+   ====================================================== */
 
-/**
- * Utilisé par les autres modules pour obtenir la configuration de la semaine active
- */
 export function getEDTActiveWeek() {
   return {
     iso_lundi: semaineActive.iso_lundi,
@@ -685,28 +598,19 @@ export function getEDTActiveWeek() {
   };
 }
 
-/**
- * Analyse l'heure courante de la journée et retourne l'objet créneau associé (ex: M1, A2...)
- * Utile pour le dashboard ou la page salle.js
- */
 export function getCreneauCourant() {
   const now = new Date();
-  const HH = String(now.getHours()).padStart(2, "0");
-  const MM = String(now.getMinutes()).padStart(2, "0");
+  const HH = String(now.getHours()).padStart(2,"0");
+  const MM = String(now.getMinutes()).padStart(2,"0");
   const heureIndex = `${HH}:${MM}`;
 
   for (const cr of CRENEAUX) {
     if (cr.code === "PM") continue;
-    if (heureIndex >= cr.debut && heureIndex <= cr.fin) {
-      return cr;
-    }
+    if (heureIndex >= cr.debut && heureIndex <= cr.fin) return cr;
   }
   return null;
 }
 
-/**
- * Retourne le nom du jour courant en français (ex: "lundi")
- */
 export function getJourCourant() {
   const idx = new Date().getDay();
   const map = [null, "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", null];
