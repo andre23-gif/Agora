@@ -61,7 +61,7 @@ let bufferEdition = {
 let syncState = "unknown";        // ok|dirty|error|unknown
 let lastSyncAt = null;
 
-let _calendarEnsuredOnce = false; // ✅ Ajouté pour corriger l'erreur ReferenceError au changement d'année
+let _calendarEnsuredOnce = false;
 
 /* ======================================================
    BLOC 3 — SUPABASE HELPERS
@@ -190,10 +190,8 @@ function positionnerSemaineCourante() {
    BLOC 5 — INIT PAGE (calendrier + index semaines)
    ====================================================== */
 
-/* === AG_EDT_CALENDAR_DYNAMIC_V2_BEGIN ===================== */
-
 async function ensureCalendar() {
-  // toujours recalculer à partir de l'année active
+  if (_calendarEnsuredOnce) return;
   semaines = genererSemainesScolaires();
   positionnerSemaineCourante();
 
@@ -202,11 +200,7 @@ async function ensureCalendar() {
 
   const sb = sbAgoram();
 
-  const defaults = bufferEdition?.meta || {
-    type: "A",
-    trimestre: "T1",
-    semestre: "S1"
-  };
+  const defaults = { type: "A", trimestre: "T1", semestre: "S1" };
 
   const weeksPayload = semaines.map(w => ({
     annee_id: anneeId,
@@ -221,9 +215,8 @@ async function ensureCalendar() {
     .upsert(weeksPayload, { onConflict: "annee_id,iso_lundi" });
 
   if (error) throw new Error(`Upsert edt_weeks impossible. ${error.message}`);
+  _calendarEnsuredOnce = true;
 }
-
-/* === AG_EDT_CALENDAR_DYNAMIC_V2_END ======================= */
 
 /* ======================================================
    BLOC 6 — DATA : classes sélectionnables (pour modale)
@@ -309,7 +302,7 @@ async function ensureWeekRow(anneeId, isoLundi) {
   if (errSel) throw new Error(`Lecture edt_weeks impossible. ${errSel.message}`);
   if (existing) return;
 
-  const defaults = semaineActive?.meta || { type: "A", trimestre: "T1", semestre: "S1" };
+  const defaults = { type: "A", trimestre: "T1", semestre: "S1" };
 
   const { error: errIns } = await sb
     .from("edt_weeks")
@@ -365,14 +358,29 @@ async function loadWeek(isoLundi) {
     idToNom = new Map((cls || []).map(x => [x.id, x.nom]));
   }
 
+  // CORRECTION BRANCHEMENT 1 : On nettoie et réinitialise TOUJOURS la grille pour éviter que les cours de la semaine précédente ne restent figés
   const grid = new Map();
-  (cells || []).forEach(c => {
-    const key = `${c.jour}|${c.creneau}`;
-    grid.set(key, {
-      classe_id: c.classe_id || null,
-      classe_nom: c.classe_id ? (idToNom.get(c.classe_id) || "—") : null,
-      groupe: c.groupe || null
+  
+  // Remplissage initial de la structure avec du vide pour garantir la remise à zéro complète à l'affichage
+  JOURS.forEach(j => {
+    CRENEAUX.forEach(cr => {
+      if (cr.code !== "PM") {
+        grid.set(`${j}|${cr.code}`, { classe_id: null, classe_nom: null, groupe: null });
+      }
     });
+  });
+
+  let validCellsCount = 0;
+  (cells || []).forEach(c => {
+    if (c.classe_id) {
+      const key = `${c.jour}|${c.creneau}`;
+      grid.set(key, {
+        classe_id: c.classe_id,
+        classe_nom: idToNom.get(c.classe_id) || "—",
+        groupe: c.groupe || null
+      });
+      validCellsCount++;
+    }
   });
 
   semaineActive = {
@@ -383,7 +391,7 @@ async function loadWeek(isoLundi) {
       semestre: (w?.semestre || "S1")
     },
     grid,
-    status: (cells && cells.length) ? "loaded" : "empty"
+    status: validCellsCount > 0 ? "loaded" : "empty"
   };
 
   const idx = weekStatusIndex.get(String(isoLundi));
@@ -391,13 +399,11 @@ async function loadWeek(isoLundi) {
     idx.type = semaineActive.meta.type;
     idx.trimestre = semaineActive.meta.trimestre;
     idx.semestre = semaineActive.meta.semestre;
-    idx.has_data = (cells && cells.length) ? true : idx.has_data;
+    idx.has_data = validCellsCount > 0;
     weekStatusIndex.set(String(isoLundi), idx);
   }
 
-  /* === AG_EDT_BUFFER_SYNC_FROM_WEEK_V1 =====================
-     Copie de la semaine réelle -> bufferEdition (édition temporaire)
-     ======================================================== */
+  /* === AG_EDT_BUFFER_SYNC_FROM_WEEK_V1 ===================== */
   bufferEdition.meta = { ...semaineActive.meta };
   bufferEdition.grid = new Map(
     Array.from(semaineActive.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
@@ -421,6 +427,7 @@ async function saveWeek(isoLundi) {
 
   const meta = semaineActive.meta;
 
+  // Étape 1 : Sauvegarde des métadonnées de la semaine
   const { error: errUpW } = await sb
     .from("edt_weeks")
     .upsert([{
@@ -433,26 +440,28 @@ async function saveWeek(isoLundi) {
 
   if (errUpW) throw new Error(`Upsert edt_weeks impossible. ${errUpW.message}`);
 
-  const { error: errDel } = await sb
-    .from("edt_cells")
-    .delete()
-    .eq("annee_id", anneeId)
-    .eq("iso_lundi", isoLundi);
-
-  if (errDel) throw new Error(`Delete edt_cells impossible. ${errDel.message}`);
-
+  // CORRECTION BRANCHEMENT 2 : Plus de delete risqué ou partiel qui provoque des disparitions.
+  // On utilise l'architecture Upsert de Supabase avec la clé primaire composite complète (annee_id, iso_lundi, jour, creneau).
+  // Un créneau modifié à "vide" (classe_id: null) écrasera et annulera proprement l'ancien enregistrement en base.
   const payload = [];
+  let validCellsCount = 0;
+
   for (const [key, v] of semaineActive.grid.entries()) {
-    if (!v || !v.classe_id) continue;
     const [jour, creneau] = key.split("|");
+    
+    // On envoie TOUT pour refléter exactement l'état du buffer à Supabase (qu'il soit plein ou mis à null)
     payload.push({
       annee_id: anneeId,
       iso_lundi: isoLundi,
       jour,
       creneau,
-      classe_id: v.classe_id,
-      groupe: v.groupe || null
+      classe_id: v && v.classe_id ? v.classe_id : null,
+      groupe: v && v.groupe ? v.groupe : null
     });
+
+    if (v && v.classe_id) {
+      validCellsCount++;
+    }
   }
 
   if (payload.length) {
@@ -460,12 +469,12 @@ async function saveWeek(isoLundi) {
       .from("edt_cells")
       .upsert(payload, { onConflict: "annee_id,iso_lundi,jour,creneau" });
 
-    if (errIns) throw new Error(`Insert edt_cells impossible. ${errIns.message}`);
+    if (errIns) throw new Error(`Mise à jour edt_cells impossible (Supabase). ${errIns.message}`);
   }
 
   const prev = weekStatusIndex.get(String(isoLundi)) || {};
   weekStatusIndex.set(String(isoLundi), {
-    has_data: payload.length > 0,
+    has_data: validCellsCount > 0,
     type: meta.type,
     trimestre: meta.trimestre,
     semestre: meta.semestre,
@@ -475,7 +484,7 @@ async function saveWeek(isoLundi) {
 
   syncState = "ok";
   lastSyncAt = new Date();
-  semaineActive.status = payload.length ? "loaded" : "empty";
+  semaineActive.status = validCellsCount > 0 ? "loaded" : "empty";
 }
 
 /* ======================================================
@@ -517,7 +526,7 @@ function weekLabel(s) {
 
 function cellText(jour, creneau) {
   const key = `${jour}|${creneau}`;
-  const v = bufferEdition.grid.get(key); // ✅ affichage buffer
+  const v = bufferEdition.grid.get(key); 
   if (!v || !v.classe_id) return "&nbsp;";
   const nom = escapeHtml(v.classe_nom || "—");
   return v.groupe ? `${nom} ${escapeHtml(v.groupe)}` : nom;
@@ -547,7 +556,7 @@ export async function renderEmploiDuTemps() {
     }
   }
 
-  const meta = bufferEdition.meta; // ✅ meta buffer
+  const meta = bufferEdition.meta; 
 
   return `
     <section class="page page-edt">
@@ -683,33 +692,26 @@ export function bindEmploiDuTempsEvents() {
     await refresh();
   };
 
-  /* === AG_EDT_ANNEE_CHANGE_RESET_CALENDAR_V1_BEGIN ===================== */
   if (anneeSelect) anneeSelect.onchange = async (e) => {
     window.appAnneeCourante = e.target.value;
 
-    // reset état calendrier + semaine + index
     semaines = [];
     semaineActive.iso_lundi = null;
     weekStatusIndex = new Map();
     semainesCibles.clear();
 
-    /* reset buffer */
     bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
     bufferEdition.grid = new Map();
 
-    // ✅ point critique : forcer ensureCalendar() à recalculer pour la nouvelle année
     _calendarEnsuredOnce = false;
-
     await refresh();
   };
-  /* === AG_EDT_ANNEE_CHANGE_RESET_CALENDAR_V1_END ======================= */
 
   document.querySelectorAll(".edt-meta[data-k][data-v]").forEach(btn => {
     btn.onclick = async () => {
       const k = btn.dataset.k;
       const v = btn.dataset.v;
 
-      // ✅ mettre à jour le buffer correctement
       bufferEdition.meta = {
         ...bufferEdition.meta,
         [k]: v
@@ -718,9 +720,7 @@ export function bindEmploiDuTempsEvents() {
       syncState = "dirty";
       await refresh();
     };
-  }); // ✅ Suppression des caractères résiduels `` qui cassaient la syntaxe ici
-
-  /* === AG_EDT_WEEK_INTERACTIONS_V1_BEGIN ========================= */
+  });
 
   document.querySelectorAll(".edt-weekbtn[data-week-index]").forEach(b => {
     b.onclick = async (e) => {
@@ -738,8 +738,6 @@ export function bindEmploiDuTempsEvents() {
     };
   });
 
-  /* === AG_EDT_WEEK_INTERACTIONS_V1_END =========================== */
-
   document.querySelectorAll(".edt-cell[data-j][data-c]").forEach(td => {
     td.onclick = async () => {
       await ouvrirModal(td.dataset.j, td.dataset.c);
@@ -750,26 +748,21 @@ export function bindEmploiDuTempsEvents() {
     try {
       syncState = "unknown";
 
-      /* === AG_EDT_BUFFER_INJECT_ON_VALIDATE_V1 =====================
-         Injecter bufferEdition -> semaineActive juste avant écriture
-         ============================================================ */
+      /* === AG_EDT_BUFFER_INJECT_ON_VALIDATE_V1 ===================== */
       semaineActive.meta = { ...bufferEdition.meta };
       semaineActive.grid = new Map(
         Array.from(bufferEdition.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
       );
       /* === AG_EDT_BUFFER_INJECT_ON_VALIDATE_V1_END ================= */
 
-      // 1) enregistrer semaine active
       const sourceIso = semaineActive.iso_lundi;
       await saveWeek(sourceIso);
 
-      // 2) appliquer si cibles cochées (hors source)
       const targets = Array.from(semainesCibles).filter(x => x !== sourceIso);
       if (targets.length) {
         await applyWeekToTargets(sourceIso, targets);
       }
 
-      // 3) rafraîchir index + UI
       await loadWeekStatusIndex();
       semainesCibles.clear();
 
@@ -793,7 +786,7 @@ async function ouvrirModal(jour, creneau) {
   const options = await getClassesOptions();
 
   const key = `${jour}|${creneau}`;
-  const current = bufferEdition.grid.get(key) || { classe_id: null, groupe: null, classe_nom: null }; // ✅ buffer
+  const current = bufferEdition.grid.get(key) || { classe_id: null, groupe: null, classe_nom: null };
 
   const optHtml = options.map(o => {
     const v = `${o.classe_id || ""}|${o.groupe || ""}`;
@@ -833,8 +826,10 @@ async function ouvrirModal(jour, creneau) {
     const classe_id = classe_id_raw ? classe_id_raw : null;
     const groupe = groupe_raw ? groupe_raw : null;
 
+    // CORRECTION BRANCHEMENT 3 : On ne supprime plus la clé avec Map.delete().
+    // On met explicitement à null pour que l'état soit conservé dans le buffer et écrit correctement sur Supabase.
     if (!classe_id) {
-      bufferEdition.grid.delete(key);
+      bufferEdition.grid.set(key, { classe_id: null, classe_nom: null, groupe: null });
     } else {
       const opt = options.find(o =>
         (String(o.classe_id || "") === String(classe_id || "")) &&
