@@ -12,15 +12,15 @@
 
   /* --- Configuration --- */
   const CFG = {
-    count:      380,    // nombre de particules simultanées
+    count:      420,    // nombre de particules simultanées
     minR:       0.2,    // rayon min px
-    maxR:       1.8,    // rayon max px
+    maxR:       2.0,    // rayon max px
     minSpeed:   0.08,   // vitesse horizontale min px/frame
-    maxSpeed:   0.72,   // vitesse horizontale max px/frame
-    drift:      0.25,   // amplitude dérive verticale (px/frame max)
-    spawnZone:  0.30,   // les particules naissent dans les 30% gauche
-    fadeStart:  0.28,   // commence à s'effacer à 28% de la largeur
-    fadeEnd:    0.72,   // totalement transparent à 72%
+    maxSpeed:   0.35,   // vitesse horizontale max px/frame
+    drift:      0.40,   // amplitude dérive verticale (px/frame max)
+    spawnZone:  0.18,   // les particules naissent dans les 30% gauche
+    fadeStart:  0.15,   // commence à s'effacer à 28% de la largeur
+    fadeEnd:    0.55,   // totalement transparent à 72%
     colors: [
       [255, 215,  80],  // or vif
       [245, 192,  96],  // or doux
