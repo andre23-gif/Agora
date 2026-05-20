@@ -18,8 +18,8 @@
     minSpeed:   0.08,   // vitesse horizontale min px/frame
     maxSpeed:   0.35,   // vitesse horizontale max px/frame
     drift:      0.40,   // amplitude dérive verticale (px/frame max)
-    spawnZone:  0.18,   // les particules naissent dans les 30% gauche
-    fadeStart:  0.15,   // commence à s'effacer à 28% de la largeur
+    spawnZone:  0.04,   // les particules naissent dans les 30% gauche
+    fadeStart:  0.05,   // commence à s'effacer à 28% de la largeur
     fadeEnd:    0.55,   // totalement transparent à 72%
     colors: [
       [255, 215,  80],  // or vif
