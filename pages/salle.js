@@ -398,7 +398,11 @@ export async function initSalle() {
 ------------------------------------------------------- */
 
 export function renderSalle() {
-  if (!contexte) initSalle();
+  
+if (!contexte) {
+  return `<div class="page">Chargement...</div>`;
+}
+
 
   const titreClasse = contexte.classe
     ? `${contexte.classe}${contexte.groupe ? " " + contexte.groupe : ""}`
