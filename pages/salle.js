@@ -213,6 +213,43 @@ function getOrCreateSeanceId(ctx) {
   }
 }
 
+/* === AG_SALLE_SEANCE_SUPABASE_BEGIN === */
+
+async function ensureSeanceSupabase(ctx, seanceId) {
+  if (!window.sb) return;
+
+  const sb = window.sb.schema("agoram");
+
+  if (!ctx?.classe || !ctx?.creneau || !ctx?.dateISO) return;
+
+  const { data: classeRow } = await sb
+    .from("classes")
+    .select("id")
+    .eq("nom", ctx.classe)
+    .maybeSingle();
+
+  if (!classeRow) {
+    console.error("Classe introuvable:", ctx.classe);
+    return;
+  }
+
+  const cr = CRENEAUX.find(c => c.code === ctx.creneau);
+
+  const { error } = await sb
+    .from("seances")
+    .upsert([{
+      id: seanceId,
+      classe_id: classeRow.id,
+      date_seance: ctx.dateISO,
+      heure_debut: cr?.debut || null,
+      heure_fin: cr?.fin || null
+    }], { onConflict: "id" });
+
+  if (error) console.error("Erreur seance supabase:", error.message);
+}
+
+/* === AG_SALLE_SEANCE_SUPABASE_END === */
+
 /* -------------------------------------------------------
    BLOC 5 — ÉTAT SALLE
 ------------------------------------------------------- */
@@ -513,6 +550,7 @@ function ouvrirParticipation() {
   // précharge depuis Supabase si disponible, puis rend
   (async () => {
     if (window.sb && contexte?.classe && contexte?.creneau) {
+      await ensureSeanceSupabase(contexte, seanceId);
       const sb = window.sb.schema("agoram");
       const ids = list.map(e => String(e.id));
 
@@ -595,7 +633,7 @@ function renderParticipationModal(list, seanceId, currentByEleve) {
   });
 
   // valider : backup local + upsert supabase
-  document.getElementById("savePart").onclick = async () => {
+document.getElementById("savePart").onclick = async () => {
     // backup local
     list.forEach(e => {
       const v = currentByEleve.get(String(e.id)) || "Passif";
@@ -605,6 +643,36 @@ function renderParticipationModal(list, seanceId, currentByEleve) {
         valeur: v
       });
     });
+
+    // Supabase
+    try {
+      if (window.sb) {
+        const sb = window.sb.schema("agoram");
+
+        // ✅ 1) Garantit que seanceId existe bien dans agoram.seances (FK)
+        await ensureSeanceSupabase(contexte, seanceId);
+
+        // ✅ 2) Filtre : on n’envoie à Supabase que des UUID valides
+        const rows = list
+          .filter(e => typeof e.id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(e.id))
+          .map(e => ({
+            eleve_id: e.id,
+            seance_id: seanceId,
+            valeur: currentByEleve.get(String(e.id)) || "Passif"
+          }));
+
+        const { error } = await sb
+          .from("participations_hg")
+          .upsert(rows, { onConflict: "eleve_id,seance_id" });
+
+        if (error) console.error("Supabase upsert participations_hg:", error.message);
+      }
+    } catch (e) {
+      console.error("Supabase upsert exception:", e?.message || e);
+    }
+
+    document.getElementById("modal").innerHTML = "";
+  };
 
     // Supabase
     try {
