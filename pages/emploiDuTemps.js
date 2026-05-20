@@ -766,23 +766,13 @@ export async function renderEmploiDuTemps() {
         </select>
 
         <span>Année</span>
-        <select id="anneeSelect">
+       <select id="anneeSelect">
           ${(() => {
+            const currentYear = new Date().getFullYear();
+            const startYear = new Date().getMonth() < 8 ? currentYear - 1 : currentYear;
             const options = [`${startYear-1}-${startYear}`, `${startYear}-${startYear+1}`, `${startYear+1}-${startYear+2}`];
             return options.map(a => `<option value="${a}" ${a === annee ? "selected" : ""}>${a}</option>`).join("");
           })()}
-
-
-          (() => {
-  // On définit l'année scolaire localement sans dépendre de fonctions externes douteuses
-  const currentYear = new Date().getFullYear();
-  const start = new Date().getMonth() < 8 ? currentYear - 1 : currentYear;
-  const end = start + 1;
-  
-  const options = [`${start-1}-${end-1}`, `${start}-${end}`, `${start+1}-${end+1}`];
-  return options.map(a => `<option value="${a}" ${a === annee ? "selected" : ""}>${a}</option>`).join("");
-})()
-
         </select>
 
 
