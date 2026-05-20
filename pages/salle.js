@@ -168,6 +168,15 @@ function getContexteSeanceCourante() {
 
   const match = lignes.find(x => x.jour === jour && x.creneau === creneau);
 
+/* === AG_DEBUG_EDT_BEGIN === */
+console.log("DEBUG EDT lignes:", lignes);
+console.log("DEBUG recherche:", {
+  jour_recherche: jour,
+  creneau_recherche: creneau
+});
+console.log("DEBUG match:", match);
+/* === AG_DEBUG_EDT_END === */
+
   return {
     dateISO,
     isoLundi,
