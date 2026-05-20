@@ -1,388 +1,140 @@
-/* === AG_EDT_PAGE_REWRITE_V1_BUFFER =====================================
-   Page : Emploi du Temps (EDT) — SANS MODÈLE
-   Métier :
-     - 1 semaine = 1 document (edt_weeks + edt_cells)
-     - semaine visible même vide
-     - modification via bufferEdition (édition temporaire)
-     - "Valider" = injecter bufferEdition -> semaineActive, enregistrer semaine active + appliquer aux semaines cochées
-   Dépendances :
-     - window.sb (supabase-js)
-     - window.appAnneeCourante ("YYYY-YYYY")
-   =============================================================== */
-
 /* ======================================================
-   BLOC 1 — CONSTANTES (créneaux + jours)
+   FONCTIONS ET ÉTATS GLOBAUX — DÉBUT DU FICHIER
    ====================================================== */
 
-export const CRENEAUX = [
-  { code: "M1", debut: "08:30", fin: "09:25" },
-  { code: "M2", debut: "09:25", fin: "10:20" },
-  { code: "M3", debut: "10:35", fin: "11:30" },
-  { code: "M4", debut: "11:30", fin: "12:30" },
-  { code: "PM", debut: "12:30", fin: "13:55" },
-  { code: "S1", debut: "13:55", fin: "14:55" },
-  { code: "S2", debut: "14:55", fin: "15:50" },
-  { code: "S3", debut: "16:05", fin: "17:05" },
-  { code: "S4", debut: "17:05", fin: "18:00" },
-];
-
-const JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi"];
-const TYPES = ["A", "B", "V"];
-const TRIMESTRES = ["T1", "T2", "T3"];
-const SEMESTRES = ["S1", "S2"];
-
-/* ======================================================
-   BLOC 2 — ÉTAT LOCAL (SANS MODÈLE)
-   ====================================================== */
-
-let semaines = [];                // [{ isoLundi, lundi:Date, weekNo, weekYear }]
-let semaineRefIndex = -1;         // Index de la semaine affichée (-1 = non initialisé)
-
-let semainesCibles = new Set();   // iso_lundi cochés pour application
-
-let weekStatusIndex = new Map();  // iso_lundi -> { has_data, type, trimestre, semestre, last_update }
+// Vos variables d'état (state) globales au fichier
+let semaines = [];
+let semaineRefIndex = -1;
+let weekStatusIndex = new Map();
+let semainesCibles = new Set();
+let syncState = "ok"; // ok, dirty, error, unknown
+let lastSyncAt = null;
 
 let semaineActive = {
   iso_lundi: null,
   meta: { type: "A", trimestre: "T1", semestre: "S1" },
-  grid: new Map(),               // key "jour|creneau" -> { classe_id, classe_nom, groupe }
-  status: "idle"                 // idle|loading|empty|loaded|dirty|saving|error
+  grid: new Map(),
+  status: "empty"
 };
-
-/* ======================================================
-   BLOC 2B — BUFFER D'ÉDITION
-   ====================================================== */
 
 let bufferEdition = {
   meta: { type: "A", trimestre: "T1", semestre: "S1" },
-  grid: new Map()                // key "jour|creneau" -> { classe_id, classe_nom, groupe }
+  grid: new Map()
 };
 
-let syncState = "unknown";        // ok|dirty|error|unknown
-let lastSyncAt = null;
+// Constantes de structure
+const JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const TYPES = ["A", "B"];
+const TRIMESTRES = ["T1", "T2", "T3"];
+const SEMESTRES = ["S1", "S2"];
+const CRENEAUX = [
+  { code: "M1", debut: "08:00", fin: "08:55" },
+  { code: "M2", debut: "08:55", fin: "09:50" },
+  { code: "M3", debut: "10:05", fin: "11:00" },
+  { code: "M4", debut: "11:00", fin: "11:55" },
+  { code: "M5", debut: "11:55", fin: "12:50" },
+  { code: "A1", debut: "13:00", fin: "13:55" },
+  { code: "A2", debut: "13:55", fin: "14:50" },
+  { code: "A3", debut: "15:05", fin: "16:00" },
+  { code: "A4", debut: "16:00", fin: "16:55" },
+  { code: "A5", debut: "17:00", fin: "17:55" },
+  { code: "PM", debut: "Mercredi", fin: "Après-midi" }
+];
 
 /* ======================================================
-   BLOC 3 — SUPABASE HELPERS
-   ====================================================== */
-
-function requireSupabase() {
-  if (!window.sb) throw new Error("Supabase non initialisé (window.sb absent).");
-  return window.sb;
-}
-
-function sbAgoram() {
-  return requireSupabase().schema("agoram");
-}
-
-async function getActiveAnneeId() {
-  const sb = sbAgoram();
-  const { data, error } = await sb
-    .from("annees")
-    .select("id")
-    .eq("active", true)
-    .maybeSingle();
-
-  if (error) throw new Error(`Impossible de lire 'annees'. ${error.message}`);
-  return data ? data.id : null;
-}
-
-/* ======================================================
-   BLOC 4 — OUTILS DATE (ISO semaine)
-   ====================================================== */
-
-function toISODate(d) {
-  return d.toISOString().slice(0, 10);
-}
-
-function formatFR(d) {
-  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
-}
-
-function capitalize(s) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function mondayOfWeek(date) {
-  const d = new Date(date);
-  const day = d.getDay() || 7; // dimanche=7
-  if (day !== 1) d.setDate(d.getDate() - day + 1);
-  d.setHours(0,0,0,0);
-  return d;
-}
-
-function getNowDate() {
-  if (window.APP_SERVER_DATE_ISO) {
-    const [y, m, dd] = window.APP_SERVER_DATE_ISO.split("-").map(Number);
-    return new Date(y, m - 1, dd);
-  }
-  return new Date();
-}
-
-function getISOWeekInfo(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const day = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - day);
-  const weekYear = d.getUTCFullYear();
-
-  const yearStart = new Date(Date.UTC(weekYear, 0, 1));
-  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-
-  return { weekYear, weekNo };
-}
-
-function mondayOfISOWeek(weekYear, weekNo) {
-  const jan4 = new Date(Date.UTC(weekYear, 0, 4));
-  const jan4Day = jan4.getUTCDay() || 7;
-  const mondayWeek1 = new Date(jan4);
-  mondayWeek1.setUTCDate(jan4.getUTCDate() - (jan4Day - 1));
-
-  const monday = new Date(mondayWeek1);
-  monday.setUTCDate(mondayWeek1.getUTCDate() + (weekNo - 1) * 7);
-
-  return new Date(monday.getUTCFullYear(), monday.getUTCMonth(), monday.getUTCDate(), 0,0,0,0);
-}
-
-function isoWeeksInYear(weekYear) {
-  const dec28 = new Date(Date.UTC(weekYear, 11, 28));
-  return getISOWeekInfo(new Date(dec28.getUTCFullYear(), dec28.getUTCMonth(), dec28.getUTCDate())).weekNo;
-}
-
-function parseAnneeScolaire(str) {
-  const m = String(str || "").match(/^(\d{4})-(\d{4})$/);
-  if (!m) return null;
-  return { start: Number(m[1]), end: Number(m[2]) };
-}
-
-function getAnneeScolaireCourante() {
-  return parseAnneeScolaire(window.appAnneeCourante || "2025-2026")
-    || { start: 2025, end: 2026 };
-}
-
-function makeWeekItem(lundi) {
-  const { weekYear, weekNo } = getISOWeekInfo(lundi);
-  return { isoLundi: toISODate(lundi), lundi, weekYear, weekNo };
-}
-
-function genererSemainesScolaires() {
-  const { start, end } = getAnneeScolaireCourante();
-  const startWeek = 35;
-  const endWeek = 34;
-
-  const lastWeekStartYear = isoWeeksInYear(start);
-  const out = [];
-
-  for (let w = startWeek; w <= lastWeekStartYear; w++) out.push(makeWeekItem(mondayOfISOWeek(start, w)));
-  for (let w = 1; w <= endWeek; w++) out.push(makeWeekItem(mondayOfISOWeek(end, w)));
-
-  return out;
-}
-
-function positionnerSemaineCourante() {
-  const now = getNowDate();
-  const isoCourant = toISODate(mondayOfWeek(now));
-  const idx = semaines.findIndex(s => s.isoLundi === isoCourant);
-  semaineRefIndex = idx >= 0 ? idx : 0;
-}
-
-/* ======================================================
-   BLOC 5 — INIT PAGE (Recalcul local instantané)
-   ====================================================== */
-
-async function ensureCalendar() {
-  // Recalcul local à la volée basé sur l'année sélectionnée (pas de cache bloquant)
-  semaines = genererSemainesScolaires();
-  
-  // Positionne sur aujourd'hui uniquement au premier chargement de la page
-  if (semaineRefIndex === -1) {
-    positionnerSemaineCourante();
-  }
-  
-  // REMARQUE MÉTIER : L'insertion en BDD des lignes de semaines manquantes se fait désormais
-  // de manière paresseuse et sécurisée dans loadWeek() via la fonction ensureWeekRow().
-}
-
-/* ======================================================
-   BLOC 6 — DATA : classes sélectionnables (pour modale)
-   ====================================================== */
-
-let _classesOptionsCache = null;
-let _classesOptionsCacheAnnee = null;
-
-async function getClassesOptions() {
-  const anneeId = await getActiveAnneeId();
-  if (!anneeId) return [];
-
-  if (_classesOptionsCache && _classesOptionsCacheAnnee === anneeId) {
-    return _classesOptionsCache;
-  }
-
-  const sb = sbAgoram();
-  const { data, error } = await sb
-    .from("classes")
-    .select("id, nom")
-    .eq("annee_id", anneeId)
-    .order("nom");
-
-  if (error) throw new Error(`Impossible de lire 'classes'. ${error.message}`);
-
-  const out = [];
-  out.push({ classe_id: null, groupe: null, label: "— (vide)" });
-
-  (data || []).forEach(c => {
-    out.push({ classe_id: c.id, groupe: null, label: c.nom });
-    out.push({ classe_id: c.id, groupe: "gr 1", label: `${c.nom} gr 1` });
-    out.push({ classe_id: c.id, groupe: "gr 2", label: `${c.nom} gr 2` });
-  });
-
-  _classesOptionsCache = out;
-  _classesOptionsCacheAnnee = anneeId;
-
-  return out;
-}
-
-/* ======================================================
-   BLOC 7 — DATA : index semaines (statut enregistré/vide)
-   ====================================================== */
-
-async function loadWeekStatusIndex() {
-  const anneeId = await getActiveAnneeId();
-  if (!anneeId) return;
-
-  const sb = sbAgoram();
-  const { data, error } = await sb
-    .from("edt_week_status")
-    .select("iso_lundi, has_data, type, trimestre, semestre, last_update")
-    .eq("annee_id", anneeId);
-
-  if (error) throw new Error(`Impossible de lire 'edt_week_status'. ${error.message}`);
-
-  weekStatusIndex = new Map();
-  (data || []).forEach(r => {
-    weekStatusIndex.set(String(r.iso_lundi), {
-      has_data: !!r.has_data,
-      type: r.type,
-      trimestre: r.trimestre,
-      semestre: r.semestre,
-      last_update: r.last_update || null
-    });
-  });
-}
-
-/* ======================================================
-   BLOC 8 — DATA : charger une semaine (avec création dynamique à la demande)
+   BLOC 7 — DATA : ensureWeekRow (CORRIGÉ ET SÉCURISÉ)
    ====================================================== */
 
 async function ensureWeekRow(anneeId, isoLundi) {
   const sb = sbAgoram();
 
-  const { data: existing, error: errSel } = await sb
+  // Sécurité UPSERT : Si la ligne existe, Supabase la laisse tranquille, sinon il la crée.
+  const { error } = await sb
     .from("edt_weeks")
-    .select("annee_id, iso_lundi")
-    .eq("annee_id", anneeId)
-    .eq("iso_lundi", isoLundi)
-    .maybeSingle();
+    .upsert(
+      [
+        { 
+          annee_id: anneeId, 
+          iso_lundi: isoLundi, 
+          type: "A", 
+          trimestre: "T1", 
+          semestre: "S1" 
+        }
+      ], 
+      { onConflict: "annee_id,iso_lundi" }
+    );
 
-  if (errSel) throw new Error(`Lecture edt_weeks impossible. ${errSel.message}`);
-  if (existing) return;
-
-  const defaults = semaineActive?.meta || { type: "A", trimestre: "T1", semestre: "S1" };
-
-  const { error: errIns } = await sb
-    .from("edt_weeks")
-    .insert([{
-      annee_id: anneeId,
-      iso_lundi: isoLundi,
-      type: defaults.type,
-      trimestre: defaults.trimestre,
-      semestre: defaults.semestre
-    }]);
-
-  if (errIns) throw new Error(`Création de la ligne de semaine impossible. ${errIns.message}`);
+  if (error) {
+    throw new Error(`Création de la ligne de semaine impossible. ${error.message}`);
+  }
 }
+
+/* ======================================================
+   BLOC 8 — DATA : loadWeek (Chargement d'une semaine)
+   ====================================================== */
 
 async function loadWeek(isoLundi) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
 
-  semaineActive.status = "loading";
-  syncState = "unknown";
-
-  // Aligne la BDD uniquement pour la semaine ciblée avant de la lire
   await ensureWeekRow(anneeId, isoLundi);
 
   const sb = sbAgoram();
 
-  const { data: w, error: errW } = await sb
+  // 1. Charger les métadonnées de la semaine
+  const { data: wData, error: wErr } = await sb
     .from("edt_weeks")
     .select("type, trimestre, semestre")
     .eq("annee_id", anneeId)
     .eq("iso_lundi", isoLundi)
     .maybeSingle();
 
-  if (errW) throw new Error(`Lecture edt_weeks impossible. ${errW.message}`);
+  if (wErr) throw new Error(`Erreur loadWeek (meta): ${wErr.message}`);
 
-  const { data: cells, error: errC } = await sb
+  // 2. Charger les cellules de cours de la semaine
+  const { data: cData, error: cErr } = await sb
     .from("edt_cells")
-    .select("jour, creneau, classe_id, groupe")
+    .select(`
+      jour, creneau, classe_id, groupe,
+      classes:classe_id ( nom )
+    `)
     .eq("annee_id", anneeId)
     .eq("iso_lundi", isoLundi);
 
-  if (errC) throw new Error(`Lecture edt_cells impossible. ${errC.message}`);
+  if (cErr) throw new Error(`Erreur loadWeek (cells): ${cErr.message}`);
 
-  const ids = Array.from(new Set((cells || []).map(x => x.classe_id).filter(Boolean)));
-  let idToNom = new Map();
-
-  if (ids.length) {
-    const { data: cls, error: errCls } = await sb
-      .from("classes")
-      .select("id, nom")
-      .in("id", ids);
-
-    if (errCls) throw new Error(`Lecture classes impossible. ${errCls.message}`);
-    idToNom = new Map((cls || []).map(x => [x.id, x.nom]));
-  }
-
-  const grid = new Map();
-  (cells || []).forEach(c => {
-    const key = `${c.jour}|${c.creneau}`;
-    grid.set(key, {
-      classe_id: c.classe_id || null,
-      classe_nom: c.classe_id ? (idToNom.get(c.classe_id) || "—") : null,
-      groupe: c.groupe || null
-    });
-  });
-
-  semaineActive = {
-    iso_lundi: isoLundi,
-    meta: {
-      type: (w?.type || "A"),
-      trimestre: (w?.trimestre || "T1"),
-      semestre: (w?.semestre || "S1")
-    },
-    grid,
-    status: (cells && cells.length) ? "loaded" : "empty"
+  // 3. Mettre à jour l'état de l'application
+  semaineActive.iso_lundi = isoLundi;
+  semaineActive.meta = {
+    type: wData?.type || "A",
+    trimestre: wData?.trimestre || "T1",
+    semestre: wData?.semestre || "S1"
   };
 
-  const idx = weekStatusIndex.get(String(isoLundi));
-  if (idx) {
-    idx.type = semaineActive.meta.type;
-    idx.trimestre = semaineActive.meta.trimestre;
-    idx.semestre = semaineActive.meta.semestre;
-    idx.has_data = (cells && cells.length) ? true : idx.has_data;
-    weekStatusIndex.set(String(isoLundi), idx);
+  semaineActive.grid = new Map();
+  if (cData) {
+    for (const c of cData) {
+      const key = `${c.jour}|${c.creneau}`;
+      semaineActive.grid.set(key, {
+        classe_id: c.classe_id,
+        classe_nom: c.classes?.nom || "—",
+        groupe: c.groupe
+      });
+    }
   }
 
+  // Synchronisation du buffer de travail (copie miroir pour l'édition)
   bufferEdition.meta = { ...semaineActive.meta };
   bufferEdition.grid = new Map(
-    Array.from(semaineActive.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
+    Array.from(semaineActive.grid.entries()).map(([k, v]) => [k, { ...v }])
   );
 
+  semaineActive.status = "loaded";
   syncState = "ok";
-  lastSyncAt = new Date();
 }
 
 /* ======================================================
-   BLOC 9 — DATA : enregistrer une semaine
+   BLOC 9 — DATA : saveWeek (Sauvegarde complète propre)
    ====================================================== */
 
 async function saveWeek(isoLundi) {
@@ -392,8 +144,9 @@ async function saveWeek(isoLundi) {
   const sb = sbAgoram();
   semaineActive.status = "saving";
 
-  const meta = semaineActive.meta;
+  const meta = bufferEdition.meta;
 
+  // Enregistrement/Mise à jour des métadonnées de la semaine
   const { error: errUpW } = await sb
     .from("edt_weeks")
     .upsert([{
@@ -406,6 +159,7 @@ async function saveWeek(isoLundi) {
 
   if (errUpW) throw new Error(`Upsert edt_weeks impossible. ${errUpW.message}`);
 
+  // Nettoyage des anciennes cellules existantes pour cette semaine
   const { error: errDel } = await sb
     .from("edt_cells")
     .delete()
@@ -414,28 +168,32 @@ async function saveWeek(isoLundi) {
 
   if (errDel) throw new Error(`Delete edt_cells impossible. ${errDel.message}`);
 
+  // Préparation du payload depuis notre buffer d'édition
   const payload = [];
-  for (const [key, v] of semaineActive.grid.entries()) {
-    if (!v || !v.classe_id) continue;
+  
+  for (const [key, v] of bufferEdition.grid.entries()) {
+    if (!v || !v.classe_id || String(v.classe_id).trim() === "") continue;
+    
     const [jour, creneau] = key.split("|");
+    const cleanClasseId = isNaN(v.classe_id) ? v.classe_id : parseInt(v.classe_id, 10);
+
     payload.push({
       annee_id: anneeId,
       iso_lundi: isoLundi,
-      jour,
-      creneau,
-      classe_id: v.classe_id,
+      jour: jour,
+      creneau: creneau,
+      classe_id: cleanClasseId,
       groupe: v.groupe || null
     });
   }
 
-  if (payload.length) {
-    const { error: errIns } = await sb
-      .from("edt_cells")
-      .upsert(payload, { onConflict: "annee_id,iso_lundi,jour,creneau" });
-
+  // Insertion des nouvelles cellules s'il y en a
+  if (payload.length > 0) {
+    const { error: errIns } = await sb.from("edt_cells").insert(payload);
     if (errIns) throw new Error(`Insert edt_cells impossible. ${errIns.message}`);
   }
 
+  // Mise à jour de l'index des statuts locaux pour l'UI (le petit carré bleu)
   const prev = weekStatusIndex.get(String(isoLundi)) || {};
   weekStatusIndex.set(String(isoLundi), {
     ...prev,
@@ -450,28 +208,67 @@ async function saveWeek(isoLundi) {
 }
 
 /* ======================================================
-   BLOC 10 — DATA : appliquer semaine active aux cibles
+   BLOC 10 — DATA : Multi-reproduction (Duplication semaines)
    ====================================================== */
 
-async function applyWeekToTargets(sourceIso, targetsIsoList) {
-  if (!targetsIsoList.length) return;
+async function applyWeekToTargets(sourceIso, targetIsos) {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) return;
 
-  const savedGrid = new Map(semaineActive.grid);
-  const savedMeta = { ...semaineActive.meta };
+  const sb = sbAgoram();
+  const meta = bufferEdition.meta;
 
-  for (const iso of targetsIsoList) {
-    semaineActive.iso_lundi = iso;
-    semaineActive.meta = { ...savedMeta };
-    semaineActive.grid = new Map(savedGrid);
-    await saveWeek(iso);
+  // 1. On prépare les semaines cibles dans edt_weeks
+  const weeksPayload = targetIsos.map(iso => ({
+    annee_id: anneeId,
+    iso_lundi: iso,
+    type: meta.type,
+    trimestre: meta.trimestre,
+    semestre: meta.semestre
+  }));
+
+  const { error: wErr } = await sb
+    .from("edt_weeks")
+    .upsert(weeksPayload, { onConflict: "annee_id,iso_lundi" });
+
+  if (wErr) throw wErr;
+
+  // 2. On supprime les anciens cours des semaines cibles
+  const { error: dErr } = await sb
+    .from("edt_cells")
+    .delete()
+    .eq("annee_id", anneeId)
+    .in("iso_lundi", targetIsos);
+
+  if (dErr) throw dErr;
+
+  // 3. On extrait les cellules du buffer actuel pour les dupliquer
+  const cellsPayload = [];
+  for (const [key, v] of bufferEdition.grid.entries()) {
+    if (!v || !v.classe_id) continue;
+    const [jour, creneau] = key.split("|");
+    const cleanClasseId = isNaN(v.classe_id) ? v.classe_id : parseInt(v.classe_id, 10);
+
+    for (const targetIso of targetIsos) {
+      cellsPayload.push({
+        annee_id: anneeId,
+        iso_lundi: targetIso,
+        jour: jour,
+        creneau: creneau,
+        classe_id: cleanClasseId,
+        groupe: v.groupe || null
+      });
+    }
   }
 
-  // Restaurer la source originale pour l'UI
-  semaineActive.iso_lundi = sourceIso;
-  semaineActive.meta = { ...savedMeta };
-  semaineActive.grid = new Map(savedGrid);
+  // 4. On envoie tout d'un coup dans Supabase
+  if (cellsPayload.length > 0) {
+    const { error: iErr } = await sb.from("edt_cells").insert(cellsPayload);
+    if (iErr) throw iErr;
+  }
 }
 
+// --- LA SUITE DU FICHIER EST LE BLOC 11 DE NOTRE DISCUSSIONS PRÉCÉDENTE ---
 /* ======================================================
    BLOC 11 — RENDU (UI) — VERSION FINALE SÉCURISÉE
    ====================================================== */
