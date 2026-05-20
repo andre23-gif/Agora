@@ -33,23 +33,21 @@ const COMPETENCES_HG = [
   "Usages numériques"
 ];
 
-
 const TRIMESTRES = ["T1", "T2", "T3"];
 const ADAPTATIONS = ["", "PPS", "PAP", "PPRE", "Adaptations", "Adaptations partielles"];
 const IFST = ["I", "F", "S", "TS"];
 
-// Mapping compétences -> colonnes Supabase agoram.competences_hg
 const COMP_COL = {
-  "Lecture document": "lecture_document",
-   "Lecture consignes": "lecture_consignes",
-  "Rédaction de texte": "redaction_de_texte",
-   "Présentation de document": "presentation_de_document",
-  "Lecture image": "lecture_image",
-  "Analyse": "analyse_competence",
-  "Culture générale": "culture_generale",
-  "Apprentissage connaissances": "apprentissage_connaissances",
-  "Langage cartographique": "langage_cartographique",
-  "Usages numériques": "usages_numeriques",
+  "Lecture document":           "lecture_document",
+  "Lecture consignes":          "lecture_consignes",
+  "Rédaction de texte":         "redaction_de_texte",
+  "Présentation de document":   "presentation_de_document",
+  "Lecture image":              "lecture_image",
+  "Analyse":                    "analyse_competence",
+  "Culture générale":           "culture_generale",
+  "Apprentissage connaissances":"apprentissage_connaissances",
+  "Langage cartographique":     "langage_cartographique",
+  "Usages numériques":          "usages_numeriques",
 };
 
 /* -------------------------------------------------------
@@ -57,12 +55,11 @@ const COMP_COL = {
 ------------------------------------------------------- */
 
 let classeActive = null;
-let elevesClasse = []; // [{id, nom, prenom, genre, groupe, adaptations, place, classe_id}]
+let elevesClasse = [];
 
-let syncState = "unknown"; // "unknown" | "ok" | "dirty" | "error"
-let lastSyncAt = null;     // Date | null
+let syncState = "unknown";
+let lastSyncAt = null;
 
-// cache des classes pour l'année active : [{id, nom, is_pp}]
 let classesMeta = [];
 
 /* -------------------------------------------------------
@@ -107,7 +104,6 @@ async function getActiveAnneeId() {
   return data ? data.id : null;
 }
 
-/* === AG_CLASSeshg_CLASSES_META_V1 === */
 async function getClassesSupabaseMeta() {
   const sb = sbAgoram();
   const anneeId = await getActiveAnneeId();
@@ -193,7 +189,7 @@ export async function renderClassesHG() {
     return `
       <div class="page page-classeshg">
         <h1>Classes HG</h1>
-        <p>Aucune classe disponible. Importe d’abord des élèves.</p>
+        <p>Aucune classe disponible. Importe d'abord des élèves.</p>
       </div>
     `;
   }
@@ -219,34 +215,31 @@ export async function renderClassesHG() {
   return `
     <div class="page page-classeshg">
 
-   <div class="classes-tabs" id="classesTabs">
-  ${classesMeta.map(c => `
-    <div class="tab-wrap ${c.nom === classeActive ? "active" : ""}">
-      <button class="tab ${c.nom === classeActive ? "active" : ""}"
-              data-classe="${escapeAttr(c.nom)}">
-        ${escapeHtml(c.nom)}
-      </button>
-
-      <label class="pp-radio" data-pp-id="${escapeAttr(c.id)}" title="Classe suivie en PP">
-        <input
-          type="radio"
-          name="pp-classe"
-          value="${escapeAttr(c.id)}"
-          ${c.is_pp ? "checked" : ""}
-        >
-        PP
-      </label>
-    </div>
-  `).join("")}
-</div>
-
-      <!-- === AG_CLASSeshg_TABS_BLOCK_FINAL === -->
+      <div class="classes-tabs" id="classesTabs">
+        ${classesMeta.map(c => `
+          <div class="tab-wrap ${c.nom === classeActive ? "active" : ""}">
+            <button class="tab ${c.nom === classeActive ? "active" : ""}"
+                    data-classe="${escapeAttr(c.nom)}">
+              ${escapeHtml(c.nom)}
+            </button>
+            <label class="pp-radio" data-pp-id="${escapeAttr(c.id)}" title="Classe suivie en PP">
+              <input
+                type="radio"
+                name="pp-classe"
+                value="${escapeAttr(c.id)}"
+                ${c.is_pp ? "checked" : ""}
+              >
+              PP
+            </label>
+          </div>
+        `).join("")}
+      </div>
 
       <h1>Classe ${escapeHtml(classeActive)}</h1>
 
       <div class="classeshg-syncbar">
         <span id="syncState">
-          ${syncState === "ok" ? "🟢 Synchronisé" :
+          ${syncState === "ok"    ? "🟢 Synchronisé" :
             syncState === "dirty" ? "🟠 Modifications non synchronisées" :
             syncState === "error" ? "🔴 Erreur de synchronisation" :
             "⚪ Statut inconnu"}
@@ -266,6 +259,7 @@ export async function renderClassesHG() {
     </div>
   `;
 }
+
 /* -------------------------------------------------------
    BLOC 6 — RENDU ÉLÈVE (ligne cockpit)
 ------------------------------------------------------- */
@@ -273,10 +267,11 @@ export async function renderClassesHG() {
 function renderEleveRow(eleve) {
   const adaptActuelle = (eleve.adaptations && eleve.adaptations.length) ? eleve.adaptations[0] : "";
   const placeActuelle = (typeof eleve.place === "number") ? eleve.place : "";
-  const groupeActuel = eleve.groupe || "";
+  const groupeActuel  = eleve.groupe || "";
 
   return `
     <div class="eleve-row${groupeActuel ? "" : " missing-groupe"}" data-id="${escapeAttr(eleve.id)}">
+
       <div class="eleve-ident">
         <button class="eleve-open" data-open="${escapeAttr(eleve.id)}">
           ${escapeHtml(eleve.nom)} ${escapeHtml(eleve.prenom)}
@@ -296,27 +291,21 @@ function renderEleveRow(eleve) {
           </label>
         </div>
 
-        <div class="opt opt-genre">
-          ${escapeHtml(eleve.genre || "—")}
-        </div>
-
-        <label class="opt">
-          Adaptation
-          <select class="opt-adapt" data-adapt="${escapeAttr(eleve.id)}">
+        <div class="opt opt-adapt">
+          <select data-adapt="${escapeAttr(eleve.id)}">
             ${ADAPTATIONS.map(a => {
               const lab = a === "" ? "—" : a;
               return `<option value="${escapeAttr(a)}" ${adaptActuelle === a ? "selected" : ""}>${escapeHtml(lab)}</option>`;
             }).join("")}
           </select>
-        </label>
+        </div>
 
-        <label class="opt">
-          Place
-          <select class="opt-place" data-place="${escapeAttr(eleve.id)}">
+        <div class="opt opt-place">
+          <select data-place="${escapeAttr(eleve.id)}">
             <option value="">—</option>
             ${renderPlaceOptions(placeActuelle)}
           </select>
-        </label>
+        </div>
 
       </div>
     </div>
@@ -324,7 +313,7 @@ function renderEleveRow(eleve) {
 }
 
 /* -------------------------------------------------------
-   BLOC 7 — OPTIONS PLACES (1..30)
+   BLOC 7 — OPTIONS PLACES (1..30) — libellé "Table 8"
 ------------------------------------------------------- */
 
 function renderPlaceOptions(current) {
@@ -342,9 +331,9 @@ function renderPlaceOptions(current) {
 
 export function bindClassesHGEvents() {
 
-console.log("✅ bindClassesHGEvents exécuté");
-   
-  // Synchroniser : relecture Supabase + preuve
+  console.log("✅ bindClassesHGEvents exécuté");
+
+  // Synchroniser
   const syncBtn = document.getElementById("syncBtn");
   if (syncBtn) {
     syncBtn.onclick = async () => {
@@ -361,109 +350,80 @@ console.log("✅ bindClassesHGEvents exécuté");
     };
   }
 
-// Onglets classe (uniquement ceux qui ont data-classe)
-document.querySelectorAll('#classesTabs .tab[data-classe]').forEach(btn => {
-  btn.addEventListener("click", async () => {
-    initClassesHG(btn.dataset.classe);
-    await loadClasseFromSupabase(classeActive);
-    syncState = "ok";
-    lastSyncAt = new Date();
-    await rerender();
-  });
-});
-
-/* === AG_CLASSeshg_PP_RADIO_V1_BEGIN =========================
-   PP par classe = radio (comme gr1/gr2)
-   Écrit Supabase : classes.is_pp
-   =========================================================== */
-
-document.querySelectorAll("#classesTabs .pp-radio input[type='radio']").forEach(r => {
-  r.addEventListener("click", (e) => {
-    e.stopPropagation();
-  });
-
-  r.addEventListener("change", async (e) => {
-    e.stopPropagation();
-
-    const classeId = r.value;
-
-    try {
-      const sb = sbAgoram();
-      const anneeId = await getActiveAnneeId();
-      if (!anneeId) throw new Error("Aucune année active.");
-
-      // 1) Reset toutes les classes de l'année
-      const { error: errReset } = await sb
-        .from("classes")
-        .update({ is_pp: false })
-        .eq("annee_id", anneeId);
-
-      if (errReset) throw new Error(errReset.message);
-
-      // 2) Activer la classe choisie
-      const { error: errSet } = await sb
-        .from("classes")
-        .update({ is_pp: true })
-        .eq("id", classeId);
-
-      if (errSet) throw new Error(errSet.message);
-
-      syncState = "dirty";
+  // Onglets classe
+  document.querySelectorAll('#classesTabs .tab[data-classe]').forEach(btn => {
+    btn.addEventListener("click", async () => {
+      initClassesHG(btn.dataset.classe);
+      await loadClasseFromSupabase(classeActive);
+      syncState = "ok";
+      lastSyncAt = new Date();
       await rerender();
-
-    } catch (err) {
-      console.error(err);
-      syncState = "error";
-      await rerender();
-    }
+    });
   });
-});
 
-/* === AG_CLASSeshg_PP_RADIO_V1_END =========================== */
+  // PP radio
+  document.querySelectorAll("#classesTabs .pp-radio input[type='radio']").forEach(r => {
+    r.addEventListener("click", (e) => { e.stopPropagation(); });
 
-// ✅ Clic nom élève → ouvrir modale
-document.querySelectorAll(".eleve-open").forEach(btn => {
-  btn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+    r.addEventListener("change", async (e) => {
+      e.stopPropagation();
+      const classeId = r.value;
+      try {
+        const sb = sbAgoram();
+        const anneeId = await getActiveAnneeId();
+        if (!anneeId) throw new Error("Aucune année active.");
 
-    const id = btn.dataset.open;
-    const eleve = elevesClasse.find(x => String(x.id) === String(id));
+        const { error: errReset } = await sb
+          .from("classes")
+          .update({ is_pp: false })
+          .eq("annee_id", anneeId);
+        if (errReset) throw new Error(errReset.message);
 
-    if (eleve) {
-      console.log("OUVERTURE MODALE", eleve); // debug
-      ouvrirProfilEleve(eleve);
-    } else {
-      console.error("Eleve introuvable", id);
-    }
+        const { error: errSet } = await sb
+          .from("classes")
+          .update({ is_pp: true })
+          .eq("id", classeId);
+        if (errSet) throw new Error(errSet.message);
+
+        syncState = "dirty";
+        await rerender();
+      } catch (err) {
+        console.error(err);
+        syncState = "error";
+        await rerender();
+      }
+    });
   });
-});
 
-   
-
-/* === AG_CLASSeshg_ELEVE_MODAL_BIND_V1_BEGIN ====================
-   Clic nom -> ouvre modale profil élève HG
-*/
-
+  // Clic nom élève → modale
+  document.querySelectorAll(".eleve-open").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = btn.dataset.open;
+      const eleve = elevesClasse.find(x => String(x.id) === String(id));
+      if (eleve) {
+        ouvrirProfilEleve(eleve);
+      } else {
+        console.error("Eleve introuvable", id);
+      }
+    });
+  });
 
   // Groupe : écriture immédiate
   document.querySelectorAll(".opt-groupe").forEach(zone => {
     const eleveId = zone.dataset.eid;
-
     zone.querySelectorAll('input[type="radio"]').forEach(input => {
       input.addEventListener("change", async () => {
         const grp = input.value;
         const eleve = elevesClasse.find(e => String(e.id) === String(eleveId));
         if (!eleve) return;
-
         const sb = sbAgoram();
         const { error } = await sb
           .from("eleves")
           .update({ groupe: grp })
           .eq("id", eleve.id);
-
         if (error) throw new Error(`Écriture groupe impossible. ${error.message}`);
-
         syncState = "dirty";
         await rerender();
       });
@@ -471,37 +431,32 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
   });
 
   // Adaptation : écriture immédiate
-  document.querySelectorAll(".opt-adapt").forEach(sel => {
+  document.querySelectorAll(".opt-adapt select").forEach(sel => {
     sel.addEventListener("change", async () => {
       const id = sel.dataset.adapt;
       const eleve = elevesClasse.find(e => String(e.id) === String(id));
       if (!eleve) return;
-
       const newAdaptations = sel.value ? [sel.value] : [];
       const sb = sbAgoram();
       const { error } = await sb
         .from("eleves")
         .update({ adaptations: newAdaptations })
         .eq("id", eleve.id);
-
       if (error) throw new Error(`Écriture adaptation impossible. ${error.message}`);
-
       syncState = "dirty";
       await rerender();
     });
   });
 
-  // Place : eleves.place + remplacement automatique (règle A)
-  document.querySelectorAll(".opt-place").forEach(sel => {
+  // Place : écriture immédiate + règle A
+  document.querySelectorAll(".opt-place select").forEach(sel => {
     sel.addEventListener("change", async () => {
       const id = sel.dataset.place;
       const eleve = elevesClasse.find(e => String(e.id) === String(id));
       if (!eleve) return;
-
       const sb = sbAgoram();
       const newNumero = sel.value ? Number(sel.value) : null;
 
-      // Règle A : si la place est prise dans la même classe, libérer l'autre élève
       if (newNumero !== null) {
         const { error: errFree } = await sb
           .from("eleves")
@@ -509,16 +464,13 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
           .eq("classe_id", eleve.classe_id)
           .eq("place", newNumero)
           .neq("id", eleve.id);
-
         if (errFree) throw new Error(`Libération place impossible. ${errFree.message}`);
       }
 
-      // Affecter la place à l'élève (ou null)
       const { error: errSet } = await sb
         .from("eleves")
         .update({ place: newNumero })
         .eq("id", eleve.id);
-
       if (errSet) throw new Error(`Écriture place impossible. ${errSet.message}`);
 
       syncState = "dirty";
@@ -528,13 +480,11 @@ document.querySelectorAll(".eleve-open").forEach(btn => {
 }
 
 /* -------------------------------------------------------
-   BLOC 9 — MODALE PROFIL ÉLÈVE (Compétences HG)
-   Stockage : dernière valeur uniquement (modifiable)
+   BLOC 9 — MODALE PROFIL ÉLÈVE
 ------------------------------------------------------- */
 
 function ouvrirProfilEleve(eleve) {
   const trimestreDefaut = "T1";
-
   const modal = document.getElementById("modal");
   if (!modal) {
     console.error("Bloc modale absent : <div id='modal'></div> introuvable.");
@@ -543,20 +493,16 @@ function ouvrirProfilEleve(eleve) {
 
   modal.innerHTML = `
     <div class="modal profil-eleve" role="dialog" aria-modal="true">
-
       <div class="modal-head">
         <h2>${escapeHtml(eleve.prenom)} ${escapeHtml(eleve.nom)}</h2>
         <button class="btn-close" id="closeProfil">✕</button>
       </div>
-
       <div class="trimestres" id="triTabs">
         ${TRIMESTRES.map(t => `
           <button class="tri ${t === trimestreDefaut ? "active" : ""}" data-tri="${t}">${t}</button>
         `).join("")}
       </div>
-
       <div id="profilBody"></div>
-
     </div>
   `;
 
@@ -564,10 +510,8 @@ function ouvrirProfilEleve(eleve) {
     modal.innerHTML = "";
   };
 
-  // rendu initial
   renderProfilBody(eleve, trimestreDefaut).catch(console.error);
 
-  // onglets trimestre
   document.querySelectorAll("#triTabs .tri").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll("#triTabs .tri").forEach(b => b.classList.remove("active"));
@@ -577,9 +521,12 @@ function ouvrirProfilEleve(eleve) {
   });
 }
 
+/* -------------------------------------------------------
+   BLOC 10 — LECTURE / ÉCRITURE COMPÉTENCES SUPABASE
+------------------------------------------------------- */
+
 async function readCompetences(eleveId, anneeId, periode) {
   const sb = sbAgoram();
-
   const { data, error } = await sb
     .from("competences_hg")
     .select("*")
@@ -587,7 +534,6 @@ async function readCompetences(eleveId, anneeId, periode) {
     .eq("annee_id", anneeId)
     .eq("periode", periode)
     .maybeSingle();
-
   if (error) throw new Error(`Lecture competences_hg impossible. ${error.message}`);
   return data || null;
 }
@@ -595,28 +541,24 @@ async function readCompetences(eleveId, anneeId, periode) {
 async function writeCompetence(eleveId, periode, competenceLabel, val) {
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
-
   const col = COMP_COL[competenceLabel];
   if (!col) throw new Error(`Colonne inconnue pour compétence: ${competenceLabel}`);
-
   const sb = sbAgoram();
   const payload = {
     eleve_id: eleveId,
     annee_id: anneeId,
-    periode: periode,
-    [col]: val
+    periode:  periode,
+    [col]:    val
   };
-
   const { error } = await sb
     .from("competences_hg")
     .upsert([payload], { onConflict: "eleve_id,annee_id,periode" });
-
   if (error) throw new Error(`Écriture compétence impossible. ${error.message}`);
 }
 
 /* -------------------------------------------------------
-   BLOC 10 — RENDU LIGNE COMPÉTENCE
-   (hors de renderProfilBody — portée module)
+   BLOC 11 — RENDU LIGNE COMPÉTENCE
+   (portée module — hors renderProfilBody)
 ------------------------------------------------------- */
 
 function renderCompetenceRow(eleveId, tri, label, currentVal) {
@@ -626,7 +568,7 @@ function renderCompetenceRow(eleveId, tri, label, currentVal) {
       <div class="comp-btns">
         ${IFST.map(v => `
           <button class="btn-comp ${v === currentVal ? "active" : ""}"
-                  data-eleveid="${escapeAttr(eleveId)}"
+                  data-eleveid="${escapeAttr(String(eleveId))}"
                   data-tri="${escapeAttr(tri)}"
                   data-label="${escapeAttr(label)}"
                   data-val="${v}">
@@ -639,7 +581,7 @@ function renderCompetenceRow(eleveId, tri, label, currentVal) {
 }
 
 /* -------------------------------------------------------
-   BLOC 11 — RENDU CORPS PROFIL ÉLÈVE
+   BLOC 12 — RENDU CORPS PROFIL (bind IFST inclus)
 ------------------------------------------------------- */
 
 async function renderProfilBody(eleve, tri) {
@@ -666,7 +608,7 @@ async function renderProfilBody(eleve, tri) {
     </div>
   `;
 
-  // Bind boutons IFST
+  // Bind boutons IFST — update visuel immédiat + écriture Supabase
   document.querySelectorAll(".btn-comp").forEach(btn => {
     btn.addEventListener("click", async () => {
       const eleveId = btn.dataset.eleveid;
@@ -678,9 +620,9 @@ async function renderProfilBody(eleve, tri) {
 
       current[label] = val;
 
-      const row = btn.closest(".comp-row");
-      if (row) {
-        row.querySelectorAll(".btn-comp").forEach(b => {
+      const compRow = btn.closest(".comp-row");
+      if (compRow) {
+        compRow.querySelectorAll(".btn-comp").forEach(b => {
           b.classList.toggle("active", b.dataset.val === val);
         });
       }
@@ -691,7 +633,7 @@ async function renderProfilBody(eleve, tri) {
 } // ← fermeture correcte de renderProfilBody
 
 /* -------------------------------------------------------
-   BLOC 12 — RERENDER PAGE
+   BLOC 13 — RERENDER PAGE
 ------------------------------------------------------- */
 
 async function rerender() {
@@ -701,8 +643,9 @@ async function rerender() {
   document.getElementById("app").innerHTML = await renderClassesHG();
   bindClassesHGEvents();
 }
+
 /* -------------------------------------------------------
-   BLOC 13 — UTILITAIRES
+   BLOC 14 — UTILITAIRES
 ------------------------------------------------------- */
 
 function escapeHtml(s) {
@@ -716,7 +659,7 @@ function escapeAttr(s) {
 }
 
 /* -------------------------------------------------------
-   BLOC 14 — ACCÈS MÉTIER (lecture)
+   BLOC 15 — ACCÈS MÉTIER (lecture)
 ------------------------------------------------------- */
 
 export function getElevesClasseHG() {
@@ -724,7 +667,7 @@ export function getElevesClasseHG() {
 }
 
 /* -------------------------------------------------------
-   BLOC 15 — POUR LA PAGE PP : classes cochées PP
+   BLOC 16 — POUR LA PAGE PP : classes cochées PP
    Usage (dans page PP) :
      const classesPP = await getPPClasses();
 ------------------------------------------------------- */
