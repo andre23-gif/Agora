@@ -131,9 +131,14 @@ function capitalize(s) {
 
 function mondayOfWeek(date) {
   const d = new Date(date);
-  const day = d.getDay() || 7;
-  if (day !== 1) d.setDate(d.getDate() - day + 1);
-  d.setHours(0,0,0,0);
+ function mondayOfWeek(date) {
+  const d = new Date(date);
+  // getDay() : 0=Dimanche, 1=Lundi, ..., 6=Samedi
+  // On veut ramener n'importe quel jour au lundi (1)
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
   return d;
 }
 
