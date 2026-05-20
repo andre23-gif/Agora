@@ -714,8 +714,9 @@ function escapeHtml(s) {
 
 /* === AG_EDT_WEEK_LABEL_FINAL_V3_BEGIN ===================== */
 
+
 function weekLabel(s) {
-  return `Semaine ${s.libelle} (${formatFR(s.lundi)})`;
+  return `${s.libelle} (${formatFR(s.lundi)})`;
 }
 
 /* === AG_EDT_WEEK_LABEL_FINAL_V3_END ======================= */
