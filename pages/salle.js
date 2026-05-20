@@ -343,7 +343,7 @@ function saveLastContent(classe, groupe, code) {
 ------------------------------------------------------- */
 
 export async function initSalle() {
-  contexte = await getContexteSeanceCourante
+  contexte = await getContexteSeanceCourante();
 
   const all = getEleves();
 
