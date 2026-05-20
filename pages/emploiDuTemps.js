@@ -428,7 +428,7 @@ async function saveWeek(isoLundi) {
   if (payload.length) {
     const { error: errIns } = await sb
       .from("edt_cells")
-      .insert(payload);
+      .upsert(payload, { onConflict: "annee_id,iso_lundi,jour,creneau" });
 
     if (errIns) throw new Error(`Insert edt_cells impossible. ${errIns.message}`);
   }
