@@ -726,86 +726,51 @@ function metaButton(k, v, active) {
 
 
 export async function renderEmploiDuTemps() {
-
   await ensureCalendar();
 
-
-
-  const annee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
-
-
+  const currentYear = new Date().getFullYear();
+  const startYear = new Date().getMonth() < 8 ? currentYear - 1 : currentYear;
+  const annee = window.appAnneeCourante || `${startYear}-${startYear + 1}`;
 
   if (weekStatusIndex.size === 0) {
-
     try { await loadWeekStatusIndex(); } catch (e) { console.error(e); }
-
   }
-
-
 
   const sem = semaines[semaineRefIndex];
 
-
-
-  // BRANCHEMENT FIXE 4 : Si on change de semaine ou à l'initialisation, on charge la semaine
-
   if (syncState !== "dirty" && (!semaineActive.iso_lundi || semaineActive.iso_lundi !== sem.isoLundi)) {
-
     try {
-
       await loadWeek(sem.isoLundi);
-
       syncState = "ok";
-
       lastSyncAt = new Date();
-
     } catch (e) {
-
       console.error(e);
-
       syncState = "error";
-
     }
-
   }
-
-
 
   const meta = bufferEdition.meta; 
 
-
-
   return `
-
     <section class="page page-edt">
-
       <div class="topbar">
-
         <button id="prev">◀</button>
-
         <strong>${weekLabel(sem)}</strong>
-
         <button id="next">▶</button>
-
         <select id="weekSelect">
-
           ${semaines.map((s, i) => `
-
             <option value="${i}" ${i === semaineRefIndex ? "selected" : ""}>
-
               ${weekLabel(s)}
-
             </option>
-
           `).join("")}
-
         </select>
 
-
-
         <span>Année</span>
-
         <select id="anneeSelect">
+          ${(() => {
+            const options = [`${startYear-1}-${startYear}`, `${startYear}-${startYear+1}`, `${startYear+1}-${startYear+2}`];
+            return options.map(a => `<option value="${a}" ${a === annee ? "selected" : ""}>${a}</option>`).join("");
+          })()}
 
 
           (() => {
