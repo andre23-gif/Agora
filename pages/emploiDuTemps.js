@@ -36,7 +36,7 @@ const SEMESTRES = ["S1", "S2"];
    ====================================================== */
 
 let semaines = [];                // [{ isoLundi, lundi:Date, weekNo, weekYear }]
-let semaineRefIndex = 0;          // index semaine affichée
+let semaineRefIndex = -1;         // Index de la semaine affichée (-1 signifie non initialisé)
 
 let semainesCibles = new Set();   // iso_lundi cochés pour application
 
@@ -189,9 +189,13 @@ function positionnerSemaineCourante() {
    ====================================================== */
 
 async function ensureCalendar() {
-  // Toujours recalculer et réaligner de manière dynamique à chaque rendu
+  // Toujours générer la liste des semaines à la volée pour être certain d'être synchro avec l'année
   semaines = genererSemainesScolaires();
-  positionnerSemaineCourante();
+  
+  // ✅ CORRECTION : On ne force le positionnement sur la semaine courante QUE si aucun choix utilisateur n'a été fait (-1)
+  if (semaineRefIndex === -1) {
+    positionnerSemaineCourante();
+  }
 
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
@@ -672,8 +676,9 @@ export function bindEmploiDuTempsEvents() {
   if (anneeSelect) anneeSelect.onchange = async (e) => {
     window.appAnneeCourante = e.target.value;
 
-    // Reset état complet
+    // Reset état complet et repasse à -1 pour forcer le repositionnement sur la semaine courante de la nouvelle année
     semaines = [];
+    semaineRefIndex = -1;
     semaineActive.iso_lundi = null;
     weekStatusIndex = new Map();
     semainesCibles.clear();
