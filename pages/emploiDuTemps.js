@@ -2,7 +2,6 @@
    Page : Emploi du Temps (EDT) — SANS MODÈLE
    Métier :
      - 1 semaine = 1 document (edt_weeks + edt_cells)
-     - semaine visible même vide
      - modification via bufferEdition (édition temporaire)
      - "Valider" = injecter bufferEdition -> semaineActive, enregistrer semaine active + appliquer aux semaines cochées
    Dépendances :
@@ -50,7 +49,7 @@ let semaineActive = {
 };
 
 /* ======================================================
-   BLOC 2B — BUFFER D'ÉDITION (NOUVEAU, SEUL AJOUT STRUCTUREL)
+   BLOC 2B — BUFFER D'ÉDITION
    ====================================================== */
 
 let bufferEdition = {
@@ -64,7 +63,7 @@ let lastSyncAt = null;
 let _calendarEnsuredOnce = false;
 
 /* ======================================================
-   BLOC 3 — SUPABASE HELPERS
+   BLOC 3 — SUPABASE HELPERS & DIAGNOSTIC
    ====================================================== */
 
 function requireSupabase() {
@@ -88,6 +87,32 @@ async function getActiveAnneeId() {
   return data ? data.id : null;
 }
 
+async function inspectSupabaseState(isoLundi) {
+  try {
+    const anneeId = await getActiveAnneeId();
+    const sb = sbAgoram();
+    
+    console.group(`🔍 DIAGNOSTIC SUPABASE — Semaine ${isoLundi}`);
+    const { data: weekRow } = await sb
+      .from("edt_weeks")
+      .select("*")
+      .eq("annee_id", anneeId)
+      .eq("iso_lundi", isoLundi)
+      .maybeSingle();
+    console.log("État actuel de 'edt_weeks' :", weekRow);
+
+    const { data: cellsRows } = await sb
+      .from("edt_cells")
+      .select("jour, creneau, classe_id, groupe")
+      .eq("annee_id", anneeId)
+      .eq("iso_lundi", isoLundi);
+    console.log(`Lignes trouvées dans 'edt_cells' (${cellsRows?.length || 0}) :`, cellsRows);
+    console.groupEnd();
+  } catch (err) {
+    console.error("❌ Échec de l'inspection Supabase :", err);
+  }
+}
+
 /* ======================================================
    BLOC 4 — OUTILS DATE (ISO semaine)
    ====================================================== */
@@ -106,7 +131,7 @@ function capitalize(s) {
 
 function mondayOfWeek(date) {
   const d = new Date(date);
-  const day = d.getDay() || 7; // dimanche=7
+  const day = d.getDay() || 7;
   if (day !== 1) d.setDate(d.getDate() - day + 1);
   d.setHours(0,0,0,0);
   return d;
@@ -199,7 +224,6 @@ async function ensureCalendar() {
   if (!anneeId) throw new Error("Aucune année active.");
 
   const sb = sbAgoram();
-
   const defaults = { type: "A", trimestre: "T1", semestre: "S1" };
 
   const weeksPayload = semaines.map(w => ({
@@ -322,7 +346,6 @@ async function loadWeek(isoLundi) {
   if (!anneeId) throw new Error("Aucune année active.");
 
   semaineActive.status = "loading";
-  syncState = "unknown";
 
   await ensureWeekRow(anneeId, isoLundi);
 
@@ -358,10 +381,8 @@ async function loadWeek(isoLundi) {
     idToNom = new Map((cls || []).map(x => [x.id, x.nom]));
   }
 
-  // CORRECTION BRANCHEMENT 1 : On nettoie et réinitialise TOUJOURS la grille pour éviter que les cours de la semaine précédente ne restent figés
   const grid = new Map();
   
-  // Remplissage initial de la structure avec du vide pour garantir la remise à zéro complète à l'affichage
   JOURS.forEach(j => {
     CRENEAUX.forEach(cr => {
       if (cr.code !== "PM") {
@@ -403,15 +424,10 @@ async function loadWeek(isoLundi) {
     weekStatusIndex.set(String(isoLundi), idx);
   }
 
-  /* === AG_EDT_BUFFER_SYNC_FROM_WEEK_V1 ===================== */
   bufferEdition.meta = { ...semaineActive.meta };
   bufferEdition.grid = new Map(
     Array.from(semaineActive.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
   );
-  /* === AG_EDT_BUFFER_SYNC_FROM_WEEK_V1_END ================= */
-
-  syncState = "ok";
-  lastSyncAt = new Date();
 }
 
 /* ======================================================
@@ -425,9 +441,9 @@ async function saveWeek(isoLundi) {
   const sb = sbAgoram();
   semaineActive.status = "saving";
 
-  const meta = semaineActive.meta;
+  // BRANCHEMENT FIXE 1 : On utilise la donnée fraîche issue du buffer d'édition au moment du clic
+  const meta = bufferEdition.meta;
 
-  // Étape 1 : Sauvegarde des métadonnées de la semaine
   const { error: errUpW } = await sb
     .from("edt_weeks")
     .upsert([{
@@ -440,16 +456,13 @@ async function saveWeek(isoLundi) {
 
   if (errUpW) throw new Error(`Upsert edt_weeks impossible. ${errUpW.message}`);
 
-  // CORRECTION BRANCHEMENT 2 : Plus de delete risqué ou partiel qui provoque des disparitions.
-  // On utilise l'architecture Upsert de Supabase avec la clé primaire composite complète (annee_id, iso_lundi, jour, creneau).
-  // Un créneau modifié à "vide" (classe_id: null) écrasera et annulera proprement l'ancien enregistrement en base.
   const payload = [];
   let validCellsCount = 0;
 
-  for (const [key, v] of semaineActive.grid.entries()) {
+  // BRANCHEMENT FIXE 2 : On boucle directement sur le buffer d'édition réel pour générer les paquets Supabase
+  for (const [key, v] of bufferEdition.grid.entries()) {
     const [jour, creneau] = key.split("|");
     
-    // On envoie TOUT pour refléter exactement l'état du buffer à Supabase (qu'il soit plein ou mis à null)
     payload.push({
       annee_id: anneeId,
       iso_lundi: isoLundi,
@@ -465,6 +478,7 @@ async function saveWeek(isoLundi) {
   }
 
   if (payload.length) {
+    console.log(`📤 Envoi du payload à Supabase pour la semaine ${isoLundi} :`, payload);
     const { error: errIns } = await sb
       .from("edt_cells")
       .upsert(payload, { onConflict: "annee_id,iso_lundi,jour,creneau" });
@@ -482,9 +496,12 @@ async function saveWeek(isoLundi) {
     ...prev
   });
 
-  syncState = "ok";
-  lastSyncAt = new Date();
+  // BRANCHEMENT FIXE 3 : On synchronise immédiatement la structure métier locale pour éviter le décalage asynchrone
+  semaineActive.meta = { ...meta };
+  semaineActive.grid = new Map(bufferEdition.grid);
   semaineActive.status = validCellsCount > 0 ? "loaded" : "empty";
+  
+  await inspectSupabaseState(isoLundi);
 }
 
 /* ======================================================
@@ -494,17 +511,14 @@ async function saveWeek(isoLundi) {
 async function applyWeekToTargets(sourceIso, targetsIsoList) {
   if (!targetsIsoList.length) return;
 
-  const savedGrid = new Map(semaineActive.grid);
-  const savedMeta = { ...semaineActive.meta };
+  const savedGrid = new Map(bufferEdition.grid);
+  const savedMeta = { ...bufferEdition.meta };
 
   for (const iso of targetsIsoList) {
-    semaineActive.iso_lundi = iso;
-    semaineActive.meta = { ...savedMeta };
-    semaineActive.grid = new Map(savedGrid);
+    // On duplique l'état actuel du buffer d'édition vers chaque cible de manière séquentielle sécurisée
     await saveWeek(iso);
   }
 
-  // Restore source (UI cohérente)
   semaineActive.iso_lundi = sourceIso;
   semaineActive.meta = { ...savedMeta };
   semaineActive.grid = new Map(savedGrid);
@@ -547,9 +561,12 @@ export async function renderEmploiDuTemps() {
 
   const sem = semaines[semaineRefIndex];
 
-  if (!semaineActive.iso_lundi || semaineActive.iso_lundi !== sem.isoLundi) {
+  // BRANCHEMENT FIXE 4 : Si on change de semaine ou à l'initialisation, on charge la semaine
+  if (syncState !== "dirty" && (!semaineActive.iso_lundi || semaineActive.iso_lundi !== sem.isoLundi)) {
     try {
       await loadWeek(sem.isoLundi);
+      syncState = "ok";
+      lastSyncAt = new Date();
     } catch (e) {
       console.error(e);
       syncState = "error";
@@ -560,17 +577,10 @@ export async function renderEmploiDuTemps() {
 
   return `
     <section class="page page-edt">
-
       <div class="topbar">
-
         <button id="prev">◀</button>
-
-        <strong>
-          ${weekLabel(sem)}
-        </strong>
-
+        <strong>${weekLabel(sem)}</strong>
         <button id="next">▶</button>
-
         <select id="weekSelect">
           ${semaines.map((s, i) => `
             <option value="${i}" ${i === semaineRefIndex ? "selected" : ""}>
@@ -600,21 +610,18 @@ export async function renderEmploiDuTemps() {
         <span id="edtSyncState">
           ${
             syncState === "ok" ? "🟢 Sync OK" :
-            syncState === "dirty" ? "🟠 Modifié" :
+            syncState === "dirty" ? "🟠 Modifié (En attente de validation)" :
             syncState === "error" ? "🔴 Erreur" :
             "⚪ —"
           }
         </span>
-
         <span id="edtSyncTime">
           ${lastSyncAt ? lastSyncAt.toLocaleTimeString("fr-FR") : ""}
         </span>
-
         <button id="valider">Valider</button>
       </div>
 
       <div class="edt-body">
-
         <div class="edt-leftpanel">
           <div class="edt-weeklist">
             ${semaines.map((s, i) => {
@@ -643,11 +650,9 @@ export async function renderEmploiDuTemps() {
                 <th></th>
                 ${JOURS.map(j => `<th>${capitalize(j)}</th>`).join("")}
               </tr>
-
               ${CRENEAUX.map(cr => `
                 <tr>
                   <th>${cr.code}<br><small>${cr.debut}-${cr.fin}</small></th>
-
                   ${JOURS.map(j => {
                     if (cr.code === "PM") return `<td class="edt-off">—</td>`;
                     return `<td class="edt-cell" data-j="${j}" data-c="${cr.code}">${cellText(j, cr.code)}</td>`;
@@ -657,11 +662,8 @@ export async function renderEmploiDuTemps() {
             </table>
           </div>
         </div>
-
       </div>
-
       <div id="modal"></div>
-
     </section>
   `;
 }
@@ -678,32 +680,33 @@ export function bindEmploiDuTempsEvents() {
   const valider = document.getElementById("valider");
 
   if (prev) prev.onclick = async () => {
+    syncState = "unknown";
     semaineRefIndex = Math.max(0, semaineRefIndex - 1);
     await refresh();
   };
 
   if (next) next.onclick = async () => {
+    syncState = "unknown";
     semaineRefIndex = Math.min(semaines.length - 1, semaineRefIndex + 1);
     await refresh();
   };
 
   if (weekSelect) weekSelect.onchange = async (e) => {
+    syncState = "unknown";
     semaineRefIndex = Number(e.target.value);
     await refresh();
   };
 
   if (anneeSelect) anneeSelect.onchange = async (e) => {
     window.appAnneeCourante = e.target.value;
-
     semaines = [];
     semaineActive.iso_lundi = null;
     weekStatusIndex = new Map();
     semainesCibles.clear();
-
     bufferEdition.meta = { type: "A", trimestre: "T1", semestre: "S1" };
     bufferEdition.grid = new Map();
-
     _calendarEnsuredOnce = false;
+    syncState = "unknown";
     await refresh();
   };
 
@@ -711,12 +714,7 @@ export function bindEmploiDuTempsEvents() {
     btn.onclick = async () => {
       const k = btn.dataset.k;
       const v = btn.dataset.v;
-
-      bufferEdition.meta = {
-        ...bufferEdition.meta,
-        [k]: v
-      };
-
+      bufferEdition.meta = { ...bufferEdition.meta, [k]: v };
       syncState = "dirty";
       await refresh();
     };
@@ -725,6 +723,7 @@ export function bindEmploiDuTempsEvents() {
   document.querySelectorAll(".edt-weekbtn[data-week-index]").forEach(b => {
     b.onclick = async (e) => {
       e.stopPropagation();
+      syncState = "unknown";
       semaineRefIndex = Number(b.dataset.weekIndex);
       await refresh();
     };
@@ -746,16 +745,9 @@ export function bindEmploiDuTempsEvents() {
 
   if (valider) valider.onclick = async () => {
     try {
-      syncState = "unknown";
-
-      /* === AG_EDT_BUFFER_INJECT_ON_VALIDATE_V1 ===================== */
-      semaineActive.meta = { ...bufferEdition.meta };
-      semaineActive.grid = new Map(
-        Array.from(bufferEdition.grid.entries()).map(([k, v]) => [k, v ? { ...v } : v])
-      );
-      /* === AG_EDT_BUFFER_INJECT_ON_VALIDATE_V1_END ================= */
-
       const sourceIso = semaineActive.iso_lundi;
+      
+      // BRANCHEMENT FIXE 5 : On exécute d'abord l'écriture de la source depuis le buffer actif
       await saveWeek(sourceIso);
 
       const targets = Array.from(semainesCibles).filter(x => x !== sourceIso);
@@ -766,6 +758,7 @@ export function bindEmploiDuTempsEvents() {
       await loadWeekStatusIndex();
       semainesCibles.clear();
 
+      // BRANCHEMENT FIXE 6 : On ne réappelle PAS loadWeek ici, l'état local a déjà été synchronisé proprement par saveWeek
       syncState = "ok";
       lastSyncAt = new Date();
       await refresh();
@@ -784,7 +777,6 @@ export function bindEmploiDuTempsEvents() {
 
 async function ouvrirModal(jour, creneau) {
   const options = await getClassesOptions();
-
   const key = `${jour}|${creneau}`;
   const current = bufferEdition.grid.get(key) || { classe_id: null, groupe: null, classe_nom: null };
 
@@ -800,15 +792,9 @@ async function ouvrirModal(jour, creneau) {
         <strong>${escapeHtml(capitalize(jour))} — ${escapeHtml(creneau)}</strong>
         <button id="edtModalClose">✕</button>
       </div>
-
       <div style="height:10px"></div>
-
-      <select id="edtSel">
-        ${optHtml}
-      </select>
-
+      <select id="edtSel">${optHtml}</select>
       <div style="height:10px"></div>
-
       <div style="display:flex;gap:10px;">
         <button id="edtOk">OK</button>
         <button id="edtCancel">Annuler</button>
@@ -826,8 +812,6 @@ async function ouvrirModal(jour, creneau) {
     const classe_id = classe_id_raw ? classe_id_raw : null;
     const groupe = groupe_raw ? groupe_raw : null;
 
-    // CORRECTION BRANCHEMENT 3 : On ne supprime plus la clé avec Map.delete().
-    // On met explicitement à null pour que l'état soit conservé dans le buffer et écrit correctement sur Supabase.
     if (!classe_id) {
       bufferEdition.grid.set(key, { classe_id: null, classe_nom: null, groupe: null });
     } else {
@@ -836,7 +820,6 @@ async function ouvrirModal(jour, creneau) {
         (String(o.groupe || "") === String(groupe || ""))
       );
       const nom = opt ? opt.label.replace(" gr 1","").replace(" gr 2","") : "—";
-
       bufferEdition.grid.set(key, { classe_id, classe_nom: nom, groupe });
     }
 
