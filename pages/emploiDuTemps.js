@@ -42,6 +42,55 @@ const CRENEAUX = [
 ];
 
 /* ======================================================
+   FONCTION INTERNE — ENFORCE CALENDAR (REMISE EN PLACE)
+   ====================================================== */
+
+async function ensureCalendar() {
+  // Si le tableau des semaines est déjà rempli, pas besoin de travailler pour rien
+  if (semaines && semaines.length > 0) return;
+
+  const annee = window.appAnneeCourante || `${getAnneeScolaireCourante().start}-${getAnneeScolaireCourante().end}`;
+  
+  // Génération automatique des semaines de l'année scolaire (du 1er sept au 31 juillet environ)
+  const [yearStart] = annee.split("-").map(Number);
+  
+  let current = new Date(yearStart, 8, 1); // 1er Septembre
+  // On recule jusqu'au lundi de cette semaine-là
+  const day = current.getDay();
+  const diff = current.getDate() - day + (day === 0 ? -6 : 1);
+  current = new Date(current.setDate(diff));
+
+  const end = new Date(yearStart + 1, 6, 31); // 31 Juillet de l'année suivante
+  const list = [];
+
+  while (current <= end) {
+    const isoLundi = current.toISOString().split("T")[0];
+    
+    // Calcul du numéro de la semaine ISO
+    const d = new Date(Date.UTC(current.getFullYear(), current.getMonth(), current.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStartIso = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStartIso) / 86400000) + 1) / 7);
+
+    list.push({
+      isoLundi,
+      lundi: new Date(current),
+      weekNo,
+      weekYear: d.getUTCFullYear()
+    });
+
+    current.setDate(current.getDate() + 7); // Semaine suivante
+  }
+
+  semaines = list;
+
+  // Si on n'a pas encore d'index sélectionné, on se met sur la première semaine
+  if (semaineRefIndex === -1 && semaines.length > 0) {
+    semaineRefIndex = 0;
+  }
+}
+
+/* ======================================================
    BLOC 7 — DATA : ensureWeekRow (CORRIGÉ ET SÉCURISÉ)
    ====================================================== */
 
