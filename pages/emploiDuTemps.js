@@ -131,10 +131,9 @@ function capitalize(s) {
 
 function mondayOfWeek(date) {
   const d = new Date(date);
- function mondayOfWeek(date) {
-  const d = new Date(date);
   // getDay() : 0=Dimanche, 1=Lundi, ..., 6=Samedi
-  // On veut ramener n'importe quel jour au lundi (1)
+  // Si le jour est dimanche (0), on soustrait 6 jours pour revenir au lundi précédent.
+  // Sinon, on soustrait le nombre de jours écoulés depuis le lundi (day - 1).
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
   d.setDate(diff);
