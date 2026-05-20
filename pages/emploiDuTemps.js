@@ -36,7 +36,7 @@ const SEMESTRES = ["S1", "S2"];
    ====================================================== */
 
 let semaines = [];                // [{ isoLundi, lundi:Date, weekNo, weekYear }]
-let semaineRefIndex = -1;         // Index de la semaine affichée (-1 signifie non initialisé)
+let semaineRefIndex = -1;         // Index de la semaine affichée (-1 = non initialisé)
 
 let semainesCibles = new Set();   // iso_lundi cochés pour application
 
@@ -185,42 +185,20 @@ function positionnerSemaineCourante() {
 }
 
 /* ======================================================
-   BLOC 5 — INIT PAGE (calendrier + index semaines)
+   BLOC 5 — INIT PAGE (Recalcul local instantané)
    ====================================================== */
 
 async function ensureCalendar() {
-  // Toujours générer la liste des semaines à la volée pour être certain d'être synchro avec l'année
+  // Recalcul local à la volée basé sur l'année sélectionnée (pas de cache bloquant)
   semaines = genererSemainesScolaires();
   
-  // ✅ CORRECTION : On ne force le positionnement sur la semaine courante QUE si aucun choix utilisateur n'a été fait (-1)
+  // Positionne sur aujourd'hui uniquement au premier chargement de la page
   if (semaineRefIndex === -1) {
     positionnerSemaineCourante();
   }
-
-  const anneeId = await getActiveAnneeId();
-  if (!anneeId) throw new Error("Aucune année active.");
-
-  const sb = sbAgoram();
-
-  const defaults = bufferEdition?.meta || {
-    type: "A",
-    trimestre: "T1",
-    semestre: "S1"
-  };
-
-  const weeksPayload = semaines.map(w => ({
-    annee_id: anneeId,
-    iso_lundi: w.isoLundi,
-    type: defaults.type,
-    trimestre: defaults.trimestre,
-    semestre: defaults.semestre
-  }));
-
-  const { error } = await sb
-    .from("edt_weeks")
-    .upsert(weeksPayload, { onConflict: "annee_id,iso_lundi" });
-
-  if (error) throw new Error(`Upsert edt_weeks impossible. ${error.message}`);
+  
+  // REMARQUE MÉTIER : L'insertion en BDD des lignes de semaines manquantes se fait désormais
+  // de manière paresseuse et sécurisée dans loadWeek() via la fonction ensureWeekRow().
 }
 
 /* ======================================================
@@ -291,7 +269,7 @@ async function loadWeekStatusIndex() {
 }
 
 /* ======================================================
-   BLOC 8 — DATA : charger une semaine (même vide)
+   BLOC 8 — DATA : charger une semaine (avec création dynamique à la demande)
    ====================================================== */
 
 async function ensureWeekRow(anneeId, isoLundi) {
@@ -319,7 +297,7 @@ async function ensureWeekRow(anneeId, isoLundi) {
       semestre: defaults.semestre
     }]);
 
-  if (errIns) throw new Error(`Création semaine impossible. ${errIns.message}`);
+  if (errIns) throw new Error(`Création de la ligne de semaine impossible. ${errIns.message}`);
 }
 
 async function loadWeek(isoLundi) {
@@ -329,6 +307,7 @@ async function loadWeek(isoLundi) {
   semaineActive.status = "loading";
   syncState = "unknown";
 
+  // Aligne la BDD uniquement pour la semaine ciblée avant de la lire
   await ensureWeekRow(anneeId, isoLundi);
 
   const sb = sbAgoram();
@@ -530,6 +509,7 @@ export async function renderEmploiDuTemps() {
 
   const sem = semaines[semaineRefIndex];
 
+  // Si on change de semaine, on recharge les données depuis Supabase pour cette nouvelle semaine
   if (!semaineActive.iso_lundi || semaineActive.iso_lundi !== sem.isoLundi) {
     try {
       await loadWeek(sem.isoLundi);
@@ -676,9 +656,9 @@ export function bindEmploiDuTempsEvents() {
   if (anneeSelect) anneeSelect.onchange = async (e) => {
     window.appAnneeCourante = e.target.value;
 
-    // Reset état complet et repasse à -1 pour forcer le repositionnement sur la semaine courante de la nouvelle année
+    // Reset complet de l'état local pour forcer le recalcul de la nouvelle année
     semaines = [];
-    semaineRefIndex = -1;
+    semaineRefIndex = -1; 
     semaineActive.iso_lundi = null;
     weekStatusIndex = new Map();
     semainesCibles.clear();
