@@ -188,32 +188,25 @@ function positionnerSemaineCourante() {
    BLOC 5 — INIT PAGE (calendrier + index semaines)
    ====================================================== */
 
-/* === AG_EDT_CALENDAR_SUPABASE_V1_BEGIN =========================
-   But métier :
-   - semaines[] = toutes les semaines scolaires (lundi→lundi)
-   - Supabase = source de vérité : edt_weeks doit contenir ces semaines (même vides)
-   - Création automatique des semaines manquantes dans edt_weeks (upsert)
-   ============================================================== */
-
-let _calendarEnsuredOnce = false;
+/* === AG_EDT_CALENDAR_DYNAMIC_V2_BEGIN ===================== */
 
 async function ensureCalendar() {
-  if (_calendarEnsuredOnce) return;
 
-  // 1) Générer toutes les semaines scolaires (UI)
+  // toujours recalculer à partir de l'année active
   semaines = genererSemainesScolaires();
   positionnerSemaineCourante();
 
-  // 2) Créer les lignes de semaines manquantes en base (Supabase)
   const anneeId = await getActiveAnneeId();
   if (!anneeId) throw new Error("Aucune année active.");
 
   const sb = sbAgoram();
 
-  // meta par défaut = celle de bufferEdition (source visuelle)
-  const defaults = bufferEdition?.meta || { type: "A", trimestre: "T1", semestre: "S1" };
+  const defaults = bufferEdition?.meta || {
+    type: "A",
+    trimestre: "T1",
+    semestre: "S1"
+  };
 
-  // payload : une ligne par lundi
   const weeksPayload = semaines.map(w => ({
     annee_id: anneeId,
     iso_lundi: w.isoLundi,
@@ -222,15 +215,15 @@ async function ensureCalendar() {
     semestre: defaults.semestre
   }));
 
-  // upsert = insert si absent, sinon ne casse pas (ON CONFLICT) 【1-d34f01】【2-d36914】
   const { error } = await sb
     .from("edt_weeks")
     .upsert(weeksPayload, { onConflict: "annee_id,iso_lundi" });
 
-  if (error) throw new Error(`Upsert edt_weeks calendrier impossible. ${error.message}`);
-
-  _calendarEnsuredOnce = true;
+  if (error) throw new Error(`Upsert edt_weeks impossible. ${error.message}`);
 }
+
+/* === AG_EDT_CALENDAR_DYNAMIC_V2_END ======================= */
+
 
 /* === AG_EDT_CALENDAR_SUPABASE_V1_END =========================== */
 
