@@ -163,32 +163,68 @@ body::before{
 
 .ag-header > *{ position: relative; z-index: 3; }
 
-/* ——— COUCHE 1 : halos rouge/bleu de profondeur ——— */
+/* ——— COUCHE 1 : cercles concentriques dorés — source gauche ——— */
+/*
+   Principe : conic-gradient rayonnant depuis un point ancré
+   à ~10% gauche + repeating-radial-gradient pour les anneaux
+   fins concentriques. Rotation lente = spirale vivante.
+   Halos rouge/bleu en fond pour la profondeur Foundation.
+*/
 .ag-header::before{
   content: "";
   position: absolute;
-  inset: 0;
+  inset: -20%;
   pointer-events: none;
   z-index: 0;
 
   background:
-    /* Halo rouge vif — centre-gauche */
-    radial-gradient(55% 100% at 32% 50%, rgba(200,36,18,0.58), transparent 65%),
-    /* Halo bleu profond — droite */
-    radial-gradient(50% 100% at 88% 50%, rgba(18,52,160,0.65), transparent 60%),
-    /* Micro-lueur or — bord gauche, source des pixels */
-    radial-gradient(18% 100% at 2%  50%, rgba(232,160,48,0.32), transparent 70%);
+    /* Anneaux concentriques dorés — fins, serrés, depuis gauche */
+    repeating-radial-gradient(
+      circle at 12% 50%,
+      transparent                       0px,
+      transparent                      18px,
+      rgba(232,160,48,0.22)            19px,
+      rgba(255,200,80,0.28)            20px,
+      transparent                      21px,
+      transparent                      38px,
+      rgba(232,160,48,0.18)            39px,
+      rgba(255,200,80,0.22)            40px,
+      transparent                      41px,
+      transparent                      58px,
+      rgba(232,160,48,0.14)            59px,
+      rgba(255,215,90,0.18)            60px,
+      transparent                      61px,
+      transparent                      78px,
+      rgba(232,160,48,0.10)            79px,
+      rgba(255,215,90,0.14)            80px,
+      transparent                      81px
+    ),
+    /* Conic — volute dorée depuis gauche */
+    conic-gradient(
+      from 200deg at 10% 55%,
+      rgba(232,160,48,0.40),
+      rgba(200,80,20,0.30),
+      rgba(42,106,204,0.18),
+      rgba(232,160,48,0.12),
+      rgba(200,80,20,0.08),
+      rgba(232,160,48,0.40)
+    ),
+    /* Halo rouge fond — centre */
+    radial-gradient(60% 100% at 35% 50%, rgba(180,32,14,0.45), transparent 65%),
+    /* Halo bleu fond — droite */
+    radial-gradient(50% 100% at 90% 50%, rgba(14,44,150,0.55), transparent 60%);
 
-  filter: blur(10px) saturate(1.6);
-  opacity: 0.90;
-  /* Légère respiration */
-  animation: bandeau-halo 10s ease-in-out infinite alternate;
+  filter: blur(1.2px) saturate(1.5) contrast(1.1);
+  opacity: 0.88;
+  transform-origin: 10% 55%;
+  animation: bandeau-volute 22s ease-in-out infinite;
 }
 
-@keyframes bandeau-halo{
-  0%  { opacity: 0.85; filter: blur(10px) saturate(1.5); }
-  50% { opacity: 0.96; filter: blur( 8px) saturate(1.85);}
-  100%{ opacity: 0.88; filter: blur(12px) saturate(1.55);}
+@keyframes bandeau-volute{
+  0%   { transform: rotate(-3deg) translateX(-0.5%) translateY(0%);  }
+  40%  { transform: rotate( 2.5deg) translateX(1.5%) translateY(-0.8%); }
+  70%  { transform: rotate(-1deg)   translateX(0.5%) translateY(0.6%);  }
+  100% { transform: rotate(-3deg) translateX(-0.5%) translateY(0%);  }
 }
 
 /* ——— COUCHE 2 : canvas particules (bandeau.js) ——— */
