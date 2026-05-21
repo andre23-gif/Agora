@@ -798,6 +798,7 @@ document.getElementById("savePart").onclick = async () => {
 
   document.getElementById("modal").innerHTML = "";
 };
+}
    function renderPartBtn(id, val, currentVal) {
   const active = (val === currentVal) ? "active" : "";
 
