@@ -92,9 +92,9 @@ function getNowDateISO() {
 async function ensureCalendar() {
   if (_calendarEnsuredOnce) return;
 
-  const sb = sbAgoram();
+  const sb = sbAgoram(); // ← était window.sb.schema(...) manquant ou mauvais schéma
 
-  // ✅ récupérer année active depuis Supabase
+  // Récupérer l'année active
   const { data: anneeRow, error: errAnnee } = await sb
     .from("annees")
     .select("libelle")
@@ -106,27 +106,28 @@ async function ensureCalendar() {
 
   const annee = anneeRow.libelle;
 
-  // ✅ charger les semaines correspondant à cette année
+  // Charger les semaines depuis agoram.semaines
   const { data, error } = await sb
     .from("semaines")
-    .select("libelle, date_lundi, annee_scolaire")
+    .select("id, libelle, date_lundi, annee_scolaire")
     .eq("annee_scolaire", annee)
     .order("date_lundi");
 
   if (error) throw new Error(`Chargement semaines impossible: ${error.message}`);
 
+  if (!data || data.length === 0) {
+    throw new Error(`Aucune semaine trouvée pour l'année '${annee}'. Vérifie la table agoram.semaines.`);
+  }
+
   semaines = data.map(s => ({
-    isoLundi: s.date_lundi,
-    lundi: new Date(s.date_lundi),
-    libelle: s.libelle
+    isoLundi: s.date_lundi,          // "2025-09-01"
+    lundi: new Date(s.date_lundi),   // objet Date pour formatFR()
+    libelle: s.libelle               // "Semaine 36"
   }));
 
   semaineRefIndex = 0;
-
   _calendarEnsuredOnce = true;
 }
-
-/* === AG_EDT_CALENDAR_FROM_ACTIVE_ANNEE_END ======================= */
 
 /* ======================================================
 
