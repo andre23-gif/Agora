@@ -253,14 +253,17 @@ const creneau = "S4";
 
     if (errClasse) throw errClasse;
 
-    return {
-      dateISO,
-      isoLundi,
-      jour,
-      creneau,
-      classe: classeRow ? classeRow.nom : null,
-      groupe: cell.groupe || null
-    };
+    
+return {
+  dateISO,
+  isoLundi,
+  jour,
+  creneau,
+  classe: classeRow ? classeRow.nom : null,
+  classe_id: cell.classe_id, // ✅ CRITICAL
+  groupe: cell.groupe || null
+};
+
 
   } catch (e) {
     console.error("Contexte salle (Supabase):", e.message || e);
@@ -391,19 +394,18 @@ function saveLastContent(classe, groupe, code) {
 export async function initSalle() {
   contexte = await getContexteSeanceCourante();
 
-  const all = getEleves();
+  const sb = window.sb.schema("agoram");
 
-  if (contexte.classe) {
-    const filtered = all.filter(e => e.classe === contexte.classe);
+const { data: all, error } = await sb
+  .from("eleves")
+  .select("*");
 
-    if (contexte.groupe) {
-      elevesSalle = filtered.filter(e => (e.groupe || null) === contexte.groupe);
-    } else {
-      elevesSalle = filtered;
-    }
-  } else {
-    elevesSalle = [];
-  }
+if (error || !all) {
+  console.error("Erreur chargement élèves:", error);
+  elevesSalle = [];
+  return;
+}
+
 
   elevesSalle = elevesSalle.map((e, idx) => ({
     ...e,
