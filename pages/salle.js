@@ -2,6 +2,21 @@
 import { getEleves } from "./importExport.js";
 import * as EDT from "./emploiDuTemps.js";
 
+// --- AJOUT : année active (pour filtrer edt_cells comme dans EDT)
+async function getActiveAnneeId() {
+  if (!window.sb) return null;
+  const sb = window.sb.schema("agoram");
+  const { data, error } = await sb
+    .from("annees")
+    .select("id")
+    .eq("active", true)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? data.id : null;
+}
+``
+
 /*
   Contrat Salle ↔ EDT (compat)
   - Ancien EDT : exportait getEDT + CRENEAUX
@@ -177,13 +192,38 @@ async function getContexteSeanceCourante() {
     };
   }
 
-  const sb = window.sb.schema("agoram");
+ const sb = window.sb.schema("agoram");
 
   try {
+    // ✅ année active
+    const anneeId = await getActiveAnneeId();
+    if (!anneeId) {
+      return {
+        dateISO,
+        isoLundi,
+        jour,
+        creneau,
+        classe: null,
+        groupe: null
+      };
+    }
+
+    // ✅ si hors créneau, inutile de requêter (évite eq("creneau", null))
+    if (!creneau) {
+      return {
+        dateISO,
+        isoLundi,
+        jour,
+        creneau,
+        classe: null,
+        groupe: null
+      };
+    }
 
     const { data: cell, error: errCell } = await sb
       .from("edt_cells")
       .select("classe_id, groupe")
+      .eq("annee_id", anneeId)         // ✅ AJOUT
       .eq("iso_lundi", isoLundi)
       .eq("jour", jour)
       .eq("creneau", creneau)
@@ -205,6 +245,7 @@ async function getContexteSeanceCourante() {
     const { data: classeRow, error: errClasse } = await sb
       .from("classes")
       .select("nom")
+      .eq("annee_id", anneeId)         // ✅ AJOUT (sécurité si classes multi-années)
       .eq("id", cell.classe_id)
       .maybeSingle();
 
@@ -220,7 +261,7 @@ async function getContexteSeanceCourante() {
     };
 
   } catch (e) {
-    console.error("Contexte salle (Supabase):", e.message);
+    console.error("Contexte salle (Supabase):", e.message || e);
     return {
       dateISO,
       isoLundi,
@@ -230,7 +271,7 @@ async function getContexteSeanceCourante() {
       groupe: null
     };
   }
-}
+
 
 /* === AG_SALLE_CONTEXTE_SUPABASE_V1_END ======================= */
 
@@ -275,9 +316,12 @@ async function ensureSeanceSupabase(ctx, seanceId) {
 
   if (!ctx?.classe || !ctx?.creneau || !ctx?.dateISO) return;
 
+const anneeId = await getActiveAnneeId();
+
   const { data: classeRow } = await sb
     .from("classes")
     .select("id")
+    .eq("annee_id", anneeId)
     .eq("nom", ctx.classe)
     .maybeSingle();
 
