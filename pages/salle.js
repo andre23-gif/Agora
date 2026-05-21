@@ -782,7 +782,7 @@ document.getElementById("savePart").onclick = async () => {
             valeur: currentByEleve.get(String(e.id)) || "Passif"
           }));
 
-     if (false) {
+     if (true) {
         const { error } = await sb
           .from("participations_hg")
           .upsert(rows, { onConflict: "eleve_id,seance_id" });
