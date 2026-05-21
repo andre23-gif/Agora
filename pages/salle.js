@@ -652,9 +652,9 @@ const PART_VALUES = ["Perturbateur", "Passif", "Impliqué", "Moteur"];
 let _canParticipationsHg = null;
 let _participationsHgWarned = false;
 
-async function canAccessParticipationsHg() {
-  if (_canParticipationsHg !== null) return _canParticipationsHg;
-  if (!window.sb) { _canParticipationsHg = false; return false; }
+function canAccessParticipationsHg() {
+  return false;
+}
 
   try {
     const sb = window.sb.schema("agoram");
