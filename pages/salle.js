@@ -419,11 +419,26 @@ if (error || !all) {
   return;
 }
 
+// ✅ FILTRER PAR CLASSE
 const filtered = all.filter(
   e => String(e.classe_id) === String(contexte.classe_id)
 );
 
+// ✅ UTILISER LES DONNÉES FILTRÉES
 elevesSalle = filtered.map((e, idx) => ({
+  ...e,
+  id: e.id ?? String(idx),
+  place: e.place != null ? Number(e.place) : null,
+  suivi: {
+    absence: false,
+    retard: false,
+    devoir: false,
+    absentControle: false,
+    observation: ""
+  },
+  adaptations: Array.isArray(e.adaptations) ? e.adaptations : []
+}));
+  
   ...e,
   id: e.id ?? String(idx),
   place: e.place != null ? Number(e.place) : null,
