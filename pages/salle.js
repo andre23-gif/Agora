@@ -782,21 +782,22 @@ document.getElementById("savePart").onclick = async () => {
             valeur: currentByEleve.get(String(e.id)) || "Passif"
           }));
 
-      if (false) {
-  const { error } = await sb
-    .from("participations_hg")
-    .upsert(rows, { onConflict: "eleve_id,seance_id" });
+     if (false) {
+        const { error } = await sb
+          .from("participations_hg")
+          .upsert(rows, { onConflict: "eleve_id,seance_id" });
 
-  if (error) console.error("Supabase upsert participations_hg:", error.message);
-}
-    } catch (e) {
-      console.error("Supabase upsert exception:", e?.message || e);
-    }
+        if (error) console.error("Supabase upsert participations_hg:", error.message);
+      }
 
-    document.getElementById("modal").innerHTML = "";
-  };
-}
+    } // ✅ ferme le if (window.sb && ...)
 
+  } catch (e) { // ✅ catch correspond bien au try
+    console.error("Supabase upsert exception:", e?.message || e);
+  }
+
+  document.getElementById("modal").innerHTML = "";
+};
    function renderPartBtn(id, val, currentVal) {
   const active = (val === currentVal) ? "active" : "";
 
