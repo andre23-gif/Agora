@@ -645,6 +645,45 @@ function ouvrirFicheEleve(eleve) {
 
 const PART_VALUES = ["Perturbateur", "Passif", "Impliqué", "Moteur"];
 
+// =======================================================
+// GARDE-FOU : certains projets refusent l'accès API à participations_hg (403)
+// → on teste une fois, puis on désactive proprement les appels API
+// =======================================================
+let _canParticipationsHg = null;
+let _participationsHgWarned = false;
+
+async function canAccessParticipationsHg() {
+  if (_canParticipationsHg !== null) return _canParticipationsHg;
+  if (!window.sb) { _canParticipationsHg = false; return false; }
+
+  try {
+    const sb = window.sb.schema("agoram");
+    const { error } = await sb
+      .from("participations_hg")
+      .select("id")
+      .limit(1);
+
+    if (error) {
+      _canParticipationsHg = false;
+      if (!_participationsHgWarned) {
+        console.warn("participations_hg inaccessible (mode local uniquement):", error.message || error);
+        _participationsHgWarned = true;
+      }
+      return false;
+    }
+
+    _canParticipationsHg = true;
+    return true;
+  } catch (e) {
+    _canParticipationsHg = false;
+    if (!_participationsHgWarned) {
+      console.warn("participations_hg inaccessible (exception, mode local uniquement):", e?.message || e);
+      _participationsHgWarned = true;
+    }
+    return false;
+  }
+}
+
 function ouvrirParticipation() {
   const list = elevesSalle
     .slice()
@@ -659,7 +698,7 @@ function ouvrirParticipation() {
 
   // précharge depuis Supabase si disponible, puis rend
   (async () => {
-    if (window.sb && contexte?.classe && contexte?.creneau) {
+    if (window.sb && contexte?.classe && contexte?.creneau && await canAccessParticipationsHg()) {
       await ensureSeanceSupabase(contexte, seanceId);
       const sb = window.sb.schema("agoram");
       const ids = list.map(e => String(e.id));
@@ -756,7 +795,7 @@ document.getElementById("savePart").onclick = async () => {
 
     // Supabase
     try {
-      if (window.sb) {
+     if (window.sb && await canAccessParticipationsHg()) {
         const sb = window.sb.schema("agoram");
 
         // ✅ 1) Garantit que seanceId existe bien dans agoram.seances (FK)
