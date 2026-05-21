@@ -670,7 +670,7 @@ function ouvrirParticipation() {
 
   // précharge depuis Supabase si disponible, puis rend
   (async () => {
-    if (window.sb && contexte?.classe && contexte?.creneau && await canAccessParticipationsHg()) {
+    if (false) {
       await ensureSeanceSupabase(contexte, seanceId);
       const sb = window.sb.schema("agoram");
       const ids = list.map(e => String(e.id));
