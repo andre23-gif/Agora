@@ -387,78 +387,53 @@ function saveLastContent(classe, groupe, code) {
   } catch {}
 }
 
-/* -------------------------------------------------------
-   BLOC 7 — INITIALISATION SALLE
-------------------------------------------------------- */
-
 export async function initSalle() {
   contexte = await getContexteSeanceCourante();
 
+  if (!window.sb) {
+    elevesSalle = [];
+    return;
+  }
+
   const sb = window.sb.schema("agoram");
 
-const { data: all, error } = await sb
-  .from("eleves")
-  .select("*");
+  const { data: all, error } = await sb
+    .from("eleves")
+    .select("*");
 
-if (error || !all) {
-  console.error("Erreur chargement élèves:", error);
-  elevesSalle = [];
-  return;
-}
+  if (error || !all) {
+    console.error("Erreur chargement élèves:", error);
+    elevesSalle = [];
+    return;
+  }
 
+  // ✅ Filtrer par classe
+  const filtered = all.filter(
+    e => String(e.classe_id) === String(contexte.classe_id)
+  );
 
- const sb = window.sb.schema("agoram");
+  // ✅ Charger les élèves
+  elevesSalle = filtered.map((e, idx) => ({
+    ...e,
+    id: e.id ?? String(idx),
+    place: e.place != null ? Number(e.place) : null,
+    suivi: {
+      absence: false,
+      retard: false,
+      devoir: false,
+      absentControle: false,
+      observation: ""
+    },
+    adaptations: Array.isArray(e.adaptations) ? e.adaptations : []
+  }));
 
-const { data: all, error } = await sb
-  .from("eleves")
-  .select("*");
-
-if (error || !all) {
-  console.error("Erreur chargement élèves:", error);
-  elevesSalle = [];
-  return;
-}
-
-// ✅ FILTRER PAR CLASSE
-const filtered = all.filter(
-  e => String(e.classe_id) === String(contexte.classe_id)
-);
-
-// ✅ UTILISER LES DONNÉES FILTRÉES
-elevesSalle = filtered.map((e, idx) => ({
-  ...e,
-  id: e.id ?? String(idx),
-  place: e.place != null ? Number(e.place) : null,
-  suivi: {
-    absence: false,
-    retard: false,
-    devoir: false,
-    absentControle: false,
-    observation: ""
-  },
-  adaptations: Array.isArray(e.adaptations) ? e.adaptations : []
-}));
-  
-  ...e,
-  id: e.id ?? String(idx),
-  place: e.place != null ? Number(e.place) : null,
-  suivi: {
-    absence: false,
-    retard: false,
-    devoir: false,
-    absentControle: false,
-    observation: ""
-  },
-  adaptations: Array.isArray(e.adaptations) ? e.adaptations : []
-}));
-
-  // fallback places séquentielles si rien n'est placé
+  // ✅ fallback placement
   const anyPlaced = elevesSalle.some(e => Number.isInteger(e.place));
   if (!anyPlaced) {
     elevesSalle.forEach((e, i) => { e.place = i + 1; });
   }
 
-  // contenu_code : dernier utilisé
+  // ✅ contenu
   if (contexte.classe) {
     const last = loadLastContent(contexte.classe, contexte.groupe);
     contenuCode = last || "";
