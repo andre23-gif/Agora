@@ -652,10 +652,9 @@ const PART_VALUES = ["Perturbateur", "Passif", "Impliqué", "Moteur"];
 let _canParticipationsHg = null;
 let _participationsHgWarned = false;
 
-function canAccessParticipationsHg() {
-  return false;
+async function canAccessParticipationsHg() {
+  return true;
 }
-
 
 function ouvrirParticipation() {
   const list = elevesSalle
