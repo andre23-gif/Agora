@@ -407,20 +407,35 @@ if (error || !all) {
 }
 
 
-  elevesSalle = elevesSalle.map((e, idx) => ({
-    ...e,
-    id: e.id ?? String(e._fallbackIndex ?? idx), // on force une clé stable
-    place: (Number.isInteger(e.place) ? e.place : null),
-    suivi: e.suivi ?? {
-      absence: false,
-      retard: false,
-      devoir: false,
-      absentControle: false,
-      observation: ""
-    },
-    adaptations: Array.isArray(e.adaptations) ? e.adaptations : [],
-    _fallbackIndex: idx
-  }));
+ const sb = window.sb.schema("agoram");
+
+const { data: all, error } = await sb
+  .from("eleves")
+  .select("*");
+
+if (error || !all) {
+  console.error("Erreur chargement élèves:", error);
+  elevesSalle = [];
+  return;
+}
+
+const filtered = all.filter(
+  e => String(e.classe_id) === String(contexte.classe_id)
+);
+
+elevesSalle = filtered.map((e, idx) => ({
+  ...e,
+  id: e.id ?? String(idx),
+  place: e.place != null ? Number(e.place) : null,
+  suivi: {
+    absence: false,
+    retard: false,
+    devoir: false,
+    absentControle: false,
+    observation: ""
+  },
+  adaptations: Array.isArray(e.adaptations) ? e.adaptations : []
+}));
 
   // fallback places séquentielles si rien n'est placé
   const anyPlaced = elevesSalle.some(e => Number.isInteger(e.place));
