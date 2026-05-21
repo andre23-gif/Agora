@@ -656,33 +656,6 @@ function canAccessParticipationsHg() {
   return false;
 }
 
-  try {
-    const sb = window.sb.schema("agoram");
-    const { error } = await sb
-      .from("participations_hg")
-      .select("id")
-      .limit(1);
-
-    if (error) {
-      _canParticipationsHg = false;
-      if (!_participationsHgWarned) {
-        console.warn("participations_hg inaccessible (mode local uniquement):", error.message || error);
-        _participationsHgWarned = true;
-      }
-      return false;
-    }
-
-    _canParticipationsHg = true;
-    return true;
-  } catch (e) {
-    _canParticipationsHg = false;
-    if (!_participationsHgWarned) {
-      console.warn("participations_hg inaccessible (exception, mode local uniquement):", e?.message || e);
-      _participationsHgWarned = true;
-    }
-    return false;
-  }
-}
 
 function ouvrirParticipation() {
   const list = elevesSalle
