@@ -80,7 +80,13 @@ function formatFR(d) {
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function getNowDateISO() {
-  return window.APP_SERVER_DATE_ISO || new Date().toISOString().slice(0, 10);
+  if (window.APP_SERVER_DATE_ISO) return window.APP_SERVER_DATE_ISO;
+
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 /* ======================================================
