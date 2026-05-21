@@ -177,11 +177,11 @@ function getCreneauCourant() {
 
 async function getContexteSeanceCourante() {
 
-  const now = new Date();
-  const isoLundi = toISODate(mondayOfWeek(now));
-  const dateISO = todayKeyISO();
-  const jour = getJourFR(now);
-  const creneau = getCreneauCourant();
+  // ✅ FORÇAGE POUR TEST (à enlever après)
+const isoLundi = "2026-05-18";
+const dateISO = "2026-05-21";
+const jour = "jeudi";
+const creneau = "S4";
 
   if (!window.sb) {
     return {
