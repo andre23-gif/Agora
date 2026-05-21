@@ -15,7 +15,6 @@ async function getActiveAnneeId() {
   if (error) throw new Error(error.message);
   return data ? data.id : null;
 }
-``
 
 /*
   Contrat Salle ↔ EDT (compat)
@@ -272,7 +271,7 @@ async function getContexteSeanceCourante() {
     };
   }
 
-
+}
 /* === AG_SALLE_CONTEXTE_SUPABASE_V1_END ======================= */
 
 /* =======================================================
