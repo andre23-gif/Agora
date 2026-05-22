@@ -598,6 +598,7 @@ function ouvrirFicheEleve(eleve) {
         <label><input id="chkAbs" type="checkbox" ${eleve.suivi.absence ? "checked" : ""}> Absence</label>
         <label><input id="chkRet" type="checkbox" ${eleve.suivi.retard ? "checked" : ""}> Retard</label>
         <label><input id="chkDev" type="checkbox" ${eleve.suivi.devoir ? "checked" : ""}> Devoir non fait</label>
+        <label><input id="chkMat" type="checkbox"> Oubli de matériel</label>
         <label><input id="chkCtrl" type="checkbox" ${eleve.suivi.absentControle ? "checked" : ""}> Absent au contrôle</label>
       </div>
 
