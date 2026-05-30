@@ -2,7 +2,7 @@
 import { getEleves } from "./importExport.js";
 import * as EDT from "./emploiDuTemps.js";
 
-// --- AJOUT : année active (pour filtrer edt_cells comme dans EDT)
+// --- année active (pour filtrer edt_cells comme dans EDT)
 async function getActiveAnneeId() {
   if (!window.sb) return null;
   const sb = window.sb.schema("agoram");
@@ -26,9 +26,6 @@ const CRENEAUX = EDT.CRENEAUX;
 
 const getEDT = (...args) => {
   if (typeof EDT.getEDT === "function") return EDT.getEDT(...args);
-
-  // Nouveau contrat : si tu exposes plus tard un getter explicite, branche-le ici.
-  // Pour l’instant, on renvoie une structure vide plutôt que casser Salle.
   return {};
 };
 /* === AG_SALLE_IMPORTS_V2_END =================================== */
@@ -42,11 +39,17 @@ const getEDT = (...args) => {
    LIT :
      - Import/Export : getEleves() (nom/prénom, genre, groupe, adaptations, place)
      - EDT : getEDT() + CRENEAUX (contexte séance : classe/groupe/créneau du moment)
-     - LocalStorage : dernier contenu par classe/groupe, événements locaux
-     - Supabase : window.sb (si configuré) pour persister la participation (agoram.participations_hg)
+     - LocalStorage : dernier contenu par classe/groupe (backup), événements locaux (backup)
+     - Supabase : window.sb — toutes les données sont persistées en priorité dans Supabase
    ÉCRIT :
-     - Local (toujours) : window.AG_EVENTS + localStorage("AG_EVENTS_V1")
-     - Supabase (participation fin de séance) : agoram.participations_hg (upsert)
+     - Supabase (priorité) :
+         agoram.seances          → contenu de séance (code_cours)
+         agoram.eleves_events    → assiduité + comportement (delete+insert par élève+séance)
+         agoram.participations_hg → participation (cumulatif, upsert eleve_id+seance_id)
+     - Local (backup / anti-perte) :
+         window.AG_EVENTS + localStorage("AG_EVENTS_V1")
+         localStorage("AG_LAST_CONTENU::...")
+         localStorage("AG_SEANCE_ID::...")
    ======================================================= */
 
 /* -------------------------------------------------------
@@ -106,7 +109,9 @@ function classeAdaptation(adapt) {
 }
 
 /* -------------------------------------------------------
-   BLOC 3 — STOCK LOCAL ÉVÉNÉMENTS (anti-perte)
+   BLOC 3 — STOCK LOCAL ÉVÉNEMENTS (backup anti-perte)
+   NOTE : le local est un filet de sécurité.
+          La source de vérité est Supabase.
 ------------------------------------------------------- */
 
 const LS_EVENTS_KEY = "AG_EVENTS_V1";
@@ -178,10 +183,10 @@ function getCreneauCourant() {
 async function getContexteSeanceCourante() {
 
   // ✅ FORÇAGE POUR TEST (à enlever après)
-const isoLundi = "2026-05-18";
-const dateISO = "2026-05-21";
-const jour = "jeudi";
-const creneau = "S4";
+  const isoLundi = "2026-05-18";
+  const dateISO = "2026-05-21";
+  const jour = "jeudi";
+  const creneau = "S4";
 
   if (!window.sb) {
     return {
@@ -190,42 +195,27 @@ const creneau = "S4";
       jour,
       creneau,
       classe: null,
+      classe_id: null,
       groupe: null
     };
   }
 
- const sb = window.sb.schema("agoram");
+  const sb = window.sb.schema("agoram");
 
   try {
-    // ✅ année active
     const anneeId = await getActiveAnneeId();
     if (!anneeId) {
-      return {
-        dateISO,
-        isoLundi,
-        jour,
-        creneau,
-        classe: null,
-        groupe: null
-      };
+      return { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
     }
 
-    // ✅ si hors créneau, inutile de requêter (évite eq("creneau", null))
     if (!creneau) {
-      return {
-        dateISO,
-        isoLundi,
-        jour,
-        creneau,
-        classe: null,
-        groupe: null
-      };
+      return { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
     }
 
     const { data: cell, error: errCell } = await sb
       .from("edt_cells")
       .select("classe_id, groupe")
-      .eq("annee_id", anneeId)         // ✅ AJOUT
+      .eq("annee_id", anneeId)
       .eq("iso_lundi", isoLundi)
       .eq("jour", jour)
       .eq("creneau", creneau)
@@ -234,49 +224,32 @@ const creneau = "S4";
     if (errCell) throw errCell;
 
     if (!cell || !cell.classe_id) {
-      return {
-        dateISO,
-        isoLundi,
-        jour,
-        creneau,
-        classe: null,
-        groupe: null
-      };
+      return { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
     }
 
     const { data: classeRow, error: errClasse } = await sb
       .from("classes")
       .select("nom")
-      .eq("annee_id", anneeId)         // ✅ AJOUT (sécurité si classes multi-années)
+      .eq("annee_id", anneeId)
       .eq("id", cell.classe_id)
       .maybeSingle();
 
     if (errClasse) throw errClasse;
 
-    
-return {
-  dateISO,
-  isoLundi,
-  jour,
-  creneau,
-  classe: classeRow ? classeRow.nom : null,
-  classe_id: cell.classe_id, // ✅ CRITICAL
-  groupe: cell.groupe || null
-};
-
-
-  } catch (e) {
-    console.error("Contexte salle (Supabase):", e.message || e);
     return {
       dateISO,
       isoLundi,
       jour,
       creneau,
-      classe: null,
-      groupe: null
+      classe: classeRow ? classeRow.nom : null,
+      classe_id: cell.classe_id,
+      groupe: cell.groupe || null
     };
-  }
 
+  } catch (e) {
+    console.error("Contexte salle (Supabase):", e.message || e);
+    return { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
+  }
 }
 /* === AG_SALLE_CONTEXTE_SUPABASE_V1_END ======================= */
 
@@ -321,7 +294,7 @@ async function ensureSeanceSupabase(ctx, seanceId) {
 
   if (!ctx?.classe || !ctx?.creneau || !ctx?.dateISO) return;
 
-const anneeId = await getActiveAnneeId();
+  const anneeId = await getActiveAnneeId();
 
   const { data: classeRow } = await sb
     .from("classes")
@@ -353,6 +326,153 @@ const anneeId = await getActiveAnneeId();
 /* === AG_SALLE_SEANCE_SUPABASE_END === */
 
 /* -------------------------------------------------------
+   BLOC 4b — CONTENU SÉANCE → Supabase (seances.code_cours)
+   Appelé depuis btnOK onclick
+   Stratégie : upsert sur id (la séance doit déjà exister)
+------------------------------------------------------- */
+
+async function saveContenuSupabase(seanceId, codeFinal) {
+  if (!window.sb || !seanceId) return;
+
+  const sb = window.sb.schema("agoram");
+
+  // ensureSeanceSupabase a déjà été appelé au init, mais on garantit ici
+  await ensureSeanceSupabase(contexte, seanceId);
+
+  const { error } = await sb
+    .from("seances")
+    .update({ code_cours: codeFinal || null })
+    .eq("id", seanceId);
+
+  if (error) console.error("Erreur update seances.code_cours:", error.message);
+}
+
+/* -------------------------------------------------------
+   BLOC 4c — ASSIDUITÉ + COMPORTEMENT → Supabase (eleves_events)
+   Stratégie DELETE + INSERT par (eleve_id, seance_id)
+   Types gérés :
+     "absence", "retard", "devoir", "oubli_materiel", "absent_controle"
+     "comportement"
+   Colonne "code" = contenu_code courant (optionnel)
+------------------------------------------------------- */
+
+const ASSIDUITE_TYPES = ["absence", "retard", "devoir", "oubli_materiel", "absent_controle", "comportement"];
+
+async function saveEleveEventsSupabase(eleveId, seanceId, events) {
+  /*
+    events = tableau d'objets { type, valeur, code? }
+    On supprime TOUS les events de cet élève sur cette séance,
+    puis on ré-insère uniquement ceux qui sont "actifs" (valeur != "false" ou texte non vide).
+  */
+  if (!window.sb || !eleveId || !seanceId) return;
+
+  // Vérifie que l'eleveId est un UUID valide (FK contrainte)
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eleveId);
+  if (!isUUID) {
+    console.warn("saveEleveEventsSupabase : eleveId non UUID, skip.", eleveId);
+    return;
+  }
+
+  const sb = window.sb.schema("agoram");
+
+  try {
+    // 1) DELETE tous les events de cet élève sur cette séance
+    const { error: errDel } = await sb
+      .from("eleves_events")
+      .delete()
+      .eq("eleve_id", eleveId)
+      .eq("seance_id", seanceId)
+      .in("type", ASSIDUITE_TYPES);
+
+    if (errDel) {
+      console.error("Erreur delete eleves_events:", errDel.message);
+      return;
+    }
+
+    // 2) INSERT uniquement les events actifs
+    const rowsToInsert = events.filter(ev => {
+      if (ev.type === "comportement") return ev.valeur && ev.valeur.trim().length > 0;
+      return ev.valeur === "true" || ev.valeur === true;
+    }).map(ev => ({
+      eleve_id: eleveId,
+      seance_id: seanceId,
+      type: ev.type,
+      valeur: String(ev.valeur),
+      code: ev.code || null
+    }));
+
+    if (rowsToInsert.length === 0) return; // rien à insérer, c'est normal
+
+    const { error: errIns } = await sb
+      .from("eleves_events")
+      .insert(rowsToInsert);
+
+    if (errIns) console.error("Erreur insert eleves_events:", errIns.message);
+
+  } catch (e) {
+    console.error("saveEleveEventsSupabase exception:", e?.message || e);
+  }
+}
+
+/* -------------------------------------------------------
+   BLOC 4d — CHARGEMENT assiduité depuis Supabase au retour
+   But : quand on rouvre la fiche élève, les checkboxes
+         reflètent ce qui est déjà en base.
+------------------------------------------------------- */
+
+async function loadEleveEventsSupabase(eleveId, seanceId) {
+  /*
+    Retourne un objet { absence, retard, devoir, oubli_materiel, absent_controle, observation }
+    avec les valeurs courantes en base.
+  */
+  const defaults = {
+    absence: false,
+    retard: false,
+    devoir: false,
+    oubli_materiel: false,
+    absent_controle: false,
+    observation: ""
+  };
+
+  if (!window.sb || !eleveId || !seanceId) return defaults;
+
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eleveId);
+  if (!isUUID) return defaults;
+
+  try {
+    const sb = window.sb.schema("agoram");
+
+    const { data, error } = await sb
+      .from("eleves_events")
+      .select("type, valeur")
+      .eq("eleve_id", eleveId)
+      .eq("seance_id", seanceId)
+      .in("type", ASSIDUITE_TYPES);
+
+    if (error) {
+      console.error("Erreur chargement eleves_events:", error.message);
+      return defaults;
+    }
+
+    const result = { ...defaults };
+
+    (data || []).forEach(row => {
+      if (row.type === "comportement") {
+        result.observation = row.valeur || "";
+      } else if (row.type in result) {
+        result[row.type] = row.valeur === "true";
+      }
+    });
+
+    return result;
+
+  } catch (e) {
+    console.error("loadEleveEventsSupabase exception:", e?.message || e);
+    return defaults;
+  }
+}
+
+/* -------------------------------------------------------
    BLOC 5 — ÉTAT SALLE
 ------------------------------------------------------- */
 
@@ -363,7 +483,7 @@ let contenuLibre = "";
 let lastContentKey = "";
 
 /* -------------------------------------------------------
-   BLOC 6 — DERNIER CONTENU
+   BLOC 6 — DERNIER CONTENU (backup local)
 ------------------------------------------------------- */
 
 function getLastContentStorageKey(classe, groupe) {
@@ -387,6 +507,10 @@ function saveLastContent(classe, groupe, code) {
   } catch {}
 }
 
+/* -------------------------------------------------------
+   BLOC 7 — INIT
+------------------------------------------------------- */
+
 export async function initSalle() {
   contexte = await getContexteSeanceCourante();
 
@@ -407,12 +531,12 @@ export async function initSalle() {
     return;
   }
 
-  // ✅ Filtrer par classe
+  // Filtrer par classe
   const filtered = all.filter(
     e => String(e.classe_id) === String(contexte.classe_id)
   );
 
-  // ✅ Charger les élèves
+  // Charger les élèves
   elevesSalle = filtered.map((e, idx) => ({
     ...e,
     id: e.id ?? String(idx),
@@ -421,22 +545,37 @@ export async function initSalle() {
       absence: false,
       retard: false,
       devoir: false,
+      oubli_materiel: false,
       absentControle: false,
       observation: ""
     },
     adaptations: Array.isArray(e.adaptations) ? e.adaptations : []
   }));
 
-  // ✅ fallback placement
+  // Fallback placement
   const anyPlaced = elevesSalle.some(e => Number.isInteger(e.place));
   if (!anyPlaced) {
     elevesSalle.forEach((e, i) => { e.place = i + 1; });
   }
 
-  // ✅ contenu
+  // Contenu : priorité Supabase, fallback local
+  const seanceId = getOrCreateSeanceId(contexte);
+  await ensureSeanceSupabase(contexte, seanceId);
+
   if (contexte.classe) {
-    const last = loadLastContent(contexte.classe, contexte.groupe);
-    contenuCode = last || "";
+    // Tente de charger code_cours depuis Supabase
+    let codeFromSupabase = "";
+    try {
+      const { data: seanceRow } = await sb
+        .from("seances")
+        .select("code_cours")
+        .eq("id", seanceId)
+        .maybeSingle();
+
+      codeFromSupabase = seanceRow?.code_cours || "";
+    } catch {}
+
+    contenuCode = codeFromSupabase || loadLastContent(contexte.classe, contexte.groupe);
     contenuLibre = "";
     lastContentKey = getLastContentStorageKey(contexte.classe, contexte.groupe);
   } else {
@@ -451,11 +590,10 @@ export async function initSalle() {
 ------------------------------------------------------- */
 
 export function renderSalle() {
-  
-if (!contexte) {
-  return `<div class="page">Chargement...</div>`;
-}
 
+  if (!contexte) {
+    return `<div class="page">Chargement...</div>`;
+  }
 
   const titreClasse = contexte.classe
     ? `${contexte.classe}${contexte.groupe ? " " + contexte.groupe : ""}`
@@ -560,14 +698,20 @@ export function bindSalleEvents() {
     contenuLibre = libre.value;
   };
 
-  if (btnOK) btnOK.onclick = () => {
+  if (btnOK) btnOK.onclick = async () => {
     const codeFinal = (contenuLibre && contenuLibre.trim()) ? contenuLibre.trim() : contenuCode;
 
+    // Backup local
     if (contexte && contexte.classe) {
       saveLastContent(contexte.classe, contexte.groupe, codeFinal);
     }
 
-    recordEvent("contenu", { contenu_code: codeFinal });
+    // Backup local événement
+    recordEventLocal("contenu", { contenu_code: codeFinal });
+
+    // ✅ Supabase : update seances.code_cours
+    const seanceId = getOrCreateSeanceId(contexte);
+    await saveContenuSupabase(seanceId, codeFinal);
   };
 
   document.querySelectorAll(".table").forEach(el => {
@@ -584,9 +728,24 @@ export function bindSalleEvents() {
 
 /* -------------------------------------------------------
    BLOC 10 — MODALE FICHE ÉLÈVE
+   - Charge les données depuis Supabase à l'ouverture
+   - Enregistre via DELETE + INSERT dans eleves_events
 ------------------------------------------------------- */
 
-function ouvrirFicheEleve(eleve) {
+async function ouvrirFicheEleve(eleve) {
+  const seanceId = getOrCreateSeanceId(contexte);
+
+  // Charge l'état courant depuis Supabase (ou defaults)
+  const etatActuel = await loadEleveEventsSupabase(String(eleve.id), seanceId);
+
+  // Met à jour le suivi en mémoire avec ce qu'on a en base
+  eleve.suivi.absence = etatActuel.absence;
+  eleve.suivi.retard = etatActuel.retard;
+  eleve.suivi.devoir = etatActuel.devoir;
+  eleve.suivi.oubli_materiel = etatActuel.oubli_materiel;
+  eleve.suivi.absentControle = etatActuel.absent_controle;
+  eleve.suivi.observation = etatActuel.observation;
+
   document.getElementById("modal").innerHTML = `
     <div class="fiche-eleve">
       <div class="fiche-head">
@@ -598,7 +757,7 @@ function ouvrirFicheEleve(eleve) {
         <label><input id="chkAbs" type="checkbox" ${eleve.suivi.absence ? "checked" : ""}> Absence</label>
         <label><input id="chkRet" type="checkbox" ${eleve.suivi.retard ? "checked" : ""}> Retard</label>
         <label><input id="chkDev" type="checkbox" ${eleve.suivi.devoir ? "checked" : ""}> Devoir non fait</label>
-        <label><input id="chkMat" type="checkbox"> Oubli de matériel</label>
+        <label><input id="chkMat" type="checkbox" ${eleve.suivi.oubli_materiel ? "checked" : ""}> Oubli de matériel</label>
         <label><input id="chkCtrl" type="checkbox" ${eleve.suivi.absentControle ? "checked" : ""}> Absent au contrôle</label>
       </div>
 
@@ -617,45 +776,66 @@ function ouvrirFicheEleve(eleve) {
     document.getElementById("modal").innerHTML = "";
   };
 
-  document.getElementById("saveFiche").onclick = () => {
-    eleve.suivi.absence = document.getElementById("chkAbs").checked;
-    eleve.suivi.retard = document.getElementById("chkRet").checked;
-    eleve.suivi.devoir = document.getElementById("chkDev").checked;
+  document.getElementById("saveFiche").onclick = async () => {
+    // Lecture des valeurs depuis le DOM
+    eleve.suivi.absence        = document.getElementById("chkAbs").checked;
+    eleve.suivi.retard         = document.getElementById("chkRet").checked;
+    eleve.suivi.devoir         = document.getElementById("chkDev").checked;
+    eleve.suivi.oubli_materiel = document.getElementById("chkMat").checked;
     eleve.suivi.absentControle = document.getElementById("chkCtrl").checked;
-    eleve.suivi.observation = document.getElementById("obs").value || "";
+    eleve.suivi.observation    = document.getElementById("obs").value || "";
 
-    recordEvent("assiduite", { eleveId: String(eleve.id), type: "absence", state: eleve.suivi.absence });
-    recordEvent("assiduite", { eleveId: String(eleve.id), type: "retard", state: eleve.suivi.retard });
-    recordEvent("assiduite", { eleveId: String(eleve.id), type: "devoir", state: eleve.suivi.devoir });
-    recordEvent("assiduite", { eleveId: String(eleve.id), type: "absentControle", state: eleve.suivi.absentControle });
+    const codeFinal = (contenuLibre && contenuLibre.trim()) ? contenuLibre.trim() : contenuCode;
+
+    // ─── Backup local ──────────────────────────────────────
+    recordEventLocal("assiduite", { eleveId: String(eleve.id), type: "absence",        state: eleve.suivi.absence });
+    recordEventLocal("assiduite", { eleveId: String(eleve.id), type: "retard",         state: eleve.suivi.retard });
+    recordEventLocal("assiduite", { eleveId: String(eleve.id), type: "devoir",         state: eleve.suivi.devoir });
+    recordEventLocal("assiduite", { eleveId: String(eleve.id), type: "oubli_materiel", state: eleve.suivi.oubli_materiel });
+    recordEventLocal("assiduite", { eleveId: String(eleve.id), type: "absentControle", state: eleve.suivi.absentControle });
 
     if (eleve.suivi.observation && eleve.suivi.observation.trim()) {
-      recordEvent("comportement", { eleveId: String(eleve.id), texte: eleve.suivi.observation.trim() });
+      recordEventLocal("comportement", { eleveId: String(eleve.id), texte: eleve.suivi.observation.trim() });
     }
+
+    // ─── Supabase : DELETE + INSERT (eleves_events) ────────
+    const events = [
+      { type: "absence",        valeur: String(eleve.suivi.absence),        code: codeFinal },
+      { type: "retard",         valeur: String(eleve.suivi.retard),         code: codeFinal },
+      { type: "devoir",         valeur: String(eleve.suivi.devoir),         code: codeFinal },
+      { type: "oubli_materiel", valeur: String(eleve.suivi.oubli_materiel), code: codeFinal },
+      { type: "absent_controle",valeur: String(eleve.suivi.absentControle), code: codeFinal },
+      { type: "comportement",   valeur: eleve.suivi.observation.trim(),     code: codeFinal },
+    ];
+
+    await saveEleveEventsSupabase(String(eleve.id), seanceId, events);
 
     document.getElementById("modal").innerHTML = "";
   };
 }
 
 /* -------------------------------------------------------
-   BLOC 11 — MODALE PARTICIPATION (fin de séance) — SUPABASE
+   BLOC 11 — MODALE PARTICIPATION (fin de séance)
    Valeurs : Perturbateur / Passif / Impliqué / Moteur
    Défaut : Passif
-   Stockage : agoram.participations_hg (upsert eleve_id + seance_id)
+   Stockage :
+     - agoram.participations_hg (upsert eleve_id + seance_id)
+     - CUMULATIF : chaque séance crée/met à jour une ligne
+     - Une autre page peut calculer la "moyenne" (score numérique)
+       en lisant toutes les lignes par eleve_id sur une période
+   Score de référence pour la moyenne :
+     Perturbateur = 0, Passif = 1, Impliqué = 2, Moteur = 3
 ------------------------------------------------------- */
 
 const PART_VALUES = ["Perturbateur", "Passif", "Impliqué", "Moteur"];
 
-// =======================================================
-// GARDE-FOU : certains projets refusent l'accès API à participations_hg (403)
-// → on teste une fois, puis on désactive proprement les appels API
-// =======================================================
-let _canParticipationsHg = null;
-let _participationsHgWarned = false;
-
-async function canAccessParticipationsHg() {
-  return true;
-}
+// Score numérique associé à chaque valeur (utile pour la page moyenne)
+export const PART_SCORES = {
+  "Perturbateur": 0,
+  "Passif": 1,
+  "Impliqué": 2,
+  "Moteur": 3
+};
 
 function ouvrirParticipation() {
   const list = elevesSalle
@@ -669,32 +849,35 @@ function ouvrirParticipation() {
   const currentByEleve = new Map();
   list.forEach(e => currentByEleve.set(String(e.id), "Passif"));
 
-  // précharge depuis Supabase si disponible, puis rend
+  // Précharge depuis Supabase si disponible, puis rend
   (async () => {
-    if (false) {
-      await ensureSeanceSupabase(contexte, seanceId);
-      const sb = window.sb.schema("agoram");
-      const ids = list.map(e => String(e.id));
+    if (window.sb) {
+      try {
+        await ensureSeanceSupabase(contexte, seanceId);
+        const sb = window.sb.schema("agoram");
+        const ids = list
+          .map(e => String(e.id))
+          .filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id));
 
-      const { data, error } = await sb
-        .from("participations_hg")
-        .select("eleve_id, valeur")
-        .eq("seance_id", seanceId)
-        .in("eleve_id", ids);
+        const { data, error } = await sb
+          .from("participations_hg")
+          .select("eleve_id, valeur")
+          .eq("seance_id", seanceId)
+          .in("eleve_id", ids);
 
-      if (!error && Array.isArray(data)) {
-        data.forEach(r => {
-          const k = String(r.eleve_id);
-          if (PART_VALUES.includes(r.valeur)) currentByEleve.set(k, r.valeur);
-        });
+        if (!error && Array.isArray(data)) {
+          data.forEach(r => {
+            const k = String(r.eleve_id);
+            if (PART_VALUES.includes(r.valeur)) currentByEleve.set(k, r.valeur);
+          });
+        }
+      } catch (e) {
+        console.error("Préchargement participations_hg:", e?.message || e);
       }
     }
 
     renderParticipationModal(list, seanceId, currentByEleve);
-  })().catch(e => {
-    console.error(e);
-    renderParticipationModal(list, seanceId, currentByEleve);
-  });
+  })();
 }
 
 function renderParticipationModal(list, seanceId, currentByEleve) {
@@ -738,7 +921,7 @@ function renderParticipationModal(list, seanceId, currentByEleve) {
     document.getElementById("modal").innerHTML = "";
   };
 
-  // clic : change l'état local + active visuel
+  // Clic : change l'état local + active visuel
   document.querySelectorAll(".btn-part").forEach(btn => {
     btn.addEventListener("click", () => {
       const eleveId = String(btn.dataset.id);
@@ -754,63 +937,62 @@ function renderParticipationModal(list, seanceId, currentByEleve) {
     });
   });
 
-  // valider : backup local + upsert supabase
-document.getElementById("savePart").onclick = async () => {
-    // backup local
+  // Valider : backup local + upsert Supabase (cumulatif)
+  document.getElementById("savePart").onclick = async () => {
+
+    // ─── Backup local ──────────────────────────────────────
     list.forEach(e => {
       const v = currentByEleve.get(String(e.id)) || "Passif";
-      recordEvent("participation", {
+      recordEventLocal("participation", {
         eleveId: String(e.id),
         seance_id: seanceId,
         valeur: v
       });
     });
 
-    // Supabase
-    try {
-     if (window.sb && await canAccessParticipationsHg()) {
+    // ─── Supabase : upsert cumulatif participations_hg ─────
+    if (window.sb) {
+      try {
         const sb = window.sb.schema("agoram");
 
-        // ✅ 1) Garantit que seanceId existe bien dans agoram.seances (FK)
+        // Garantit que seanceId existe dans agoram.seances (FK)
         await ensureSeanceSupabase(contexte, seanceId);
 
-        // ✅ 2) Filtre : on n’envoie à Supabase que des UUID valides
+        // Filtre : UUID valides uniquement (FK eleves)
         const rows = list
-          .filter(e => typeof e.id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(e.id))
+          .filter(e => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(e.id)))
           .map(e => ({
             eleve_id: e.id,
             seance_id: seanceId,
             valeur: currentByEleve.get(String(e.id)) || "Passif"
           }));
 
-     if (true) {
-        const { error } = await sb
-          .from("participations_hg")
-          .upsert(rows, { onConflict: "eleve_id,seance_id" });
+        if (rows.length > 0) {
+          const { error } = await sb
+            .from("participations_hg")
+            .upsert(rows, { onConflict: "eleve_id,seance_id" });
 
-        if (error) console.error("Supabase upsert participations_hg:", error.message);
+          if (error) console.error("Supabase upsert participations_hg:", error.message);
+        }
+
+      } catch (e) {
+        console.error("Supabase upsert participations_hg exception:", e?.message || e);
       }
+    }
 
-    } // ✅ ferme le if (window.sb && ...)
-
-  } catch (e) { // ✅ catch correspond bien au try
-    console.error("Supabase upsert exception:", e?.message || e);
-  }
-
-  document.getElementById("modal").innerHTML = "";
-};
+    document.getElementById("modal").innerHTML = "";
+  };
 }
-   function renderPartBtn(id, val, currentVal) {
+
+function renderPartBtn(id, val, currentVal) {
   const active = (val === currentVal) ? "active" : "";
 
-  // classes CSS (tu gères les couleurs dans ton style Art déco)
   const cls =
     (val === "Perturbateur") ? "part-perturbateur" :
     (val === "Passif") ? "part-passif" :
     (val === "Impliqué") ? "part-implique" :
     "part-moteur";
 
-  // labels courts mais compréhensibles
   const label =
     (val === "Perturbateur") ? "P" :
     (val === "Passif") ? "Pa" :
@@ -821,12 +1003,12 @@ document.getElementById("savePart").onclick = async () => {
 }
 
 /* -------------------------------------------------------
-   BLOC 12 — ENREGISTREMENT ÉVÉNÉMENTS (local)
-   But : toujours écrire local (AG_EVENTS + localStorage)
-   NOTE : la participation est aussi persistée en Supabase
+   BLOC 12 — ENREGISTREMENT LOCAL (backup)
+   Préfixé "Local" pour bien distinguer du flux Supabase.
+   Le local reste comme filet de sécurité uniquement.
 ------------------------------------------------------- */
 
-function recordEvent(kind, payload) {
+function recordEventLocal(kind, payload) {
   const store = getEventsStore();
 
   const codeFinal = (contenuLibre && contenuLibre.trim()) ? contenuLibre.trim() : contenuCode;
