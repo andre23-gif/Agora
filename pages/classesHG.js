@@ -564,7 +564,7 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
   if (existing) {
     const { error: errUp } = await sb
       .from("competences_hg")
-      .update({ val })
+      .update({ [col]: val })
       .eq("eleve_id", eleveId)
       .eq("annee_id", anneeId)
       .eq("periode", periode);
@@ -594,6 +594,50 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
 }
 
 /* === AG_HG_WRITE_COMPETENCE_SAFE_V1_END =========================== */
+
+async function writeInvestissement(eleveId, periode, val) {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) throw new Error("Aucune année active.");
+
+  const sb = sbAgoram();
+
+  const { data: existing, error: errSel } = await sb
+    .from("competences_hg")
+    .select("id")
+    .eq("eleve_id", eleveId)
+    .eq("annee_id", anneeId)
+    .eq("periode", periode)
+    .maybeSingle();
+
+  if (errSel) throw new Error(`Lecture competences_hg impossible. ${errSel.message}`);
+
+  if (existing) {
+    const { error: errUp } = await sb
+      .from("competences_hg")
+      .update({ investissement_maison: val })
+      .eq("eleve_id", eleveId)
+      .eq("annee_id", anneeId)
+      .eq("periode", periode);
+
+    if (errUp) throw new Error(`Écriture investissement impossible. ${errUp.message}`);
+    return;
+  }
+
+  // Ligne absente : INSERT avec toutes les colonnes à "I" par défaut
+  const payload = {
+    eleve_id: eleveId,
+    annee_id: anneeId,
+    periode: periode,
+    investissement_maison: val,
+  };
+  Object.values(COMP_COL).forEach(cname => { payload[cname] = "I"; });
+
+  const { error: errIns } = await sb
+    .from("competences_hg")
+    .insert([payload]);
+
+  if (errIns) throw new Error(`Écriture investissement impossible. ${errIns.message}`);
+}
 
 /* -------------------------------------------------------
    BLOC 11 — RENDU LIGNE COMPÉTENCE
@@ -639,6 +683,15 @@ async function renderProfilBody(eleve, tri) {
     current[label] = (row && row[col]) ? row[col] : "I";
   });
 
+  const INVEST_VALS = ["complet", "maison", "classe", "rien"];
+  const INVEST_LABELS = {
+    complet: "Complet (classe + maison)",
+    maison:  "Maison uniquement",
+    classe:  "Classe uniquement",
+    rien:    "Aucun investissement"
+  };
+  let currentInvest = (row && row.investissement_maison) ? row.investissement_maison : null;
+
   const body = document.getElementById("profilBody");
   if (!body) return;
 
@@ -649,6 +702,25 @@ async function renderProfilBody(eleve, tri) {
         ${COMPETENCES_HG.map(label =>
           renderCompetenceRow(eleve.id, tri, label, current[label])
         ).join("")}
+      </div>
+    </div>
+
+    <div class="bloc">
+      <h3>Investissement personnel</h3>
+      <div class="comp-row">
+        <div class="comp-btns">
+          ${INVEST_VALS.map(v => `
+            <button
+              type="button"
+              class="btn-invest ${v === currentInvest ? "active" : ""}"
+              data-eleveid="${escapeAttr(String(eleve.id))}"
+              data-tri="${escapeAttr(tri)}"
+              data-val="${v}"
+              title="${escapeAttr(INVEST_LABELS[v])}">
+              ${escapeHtml(v)}
+            </button>
+          `).join("")}
+        </div>
       </div>
     </div>
   `;
@@ -675,6 +747,26 @@ async function renderProfilBody(eleve, tri) {
       syncState = "dirty";
     });
   });
+
+  // Bind boutons investissement — update visuel immédiat + écriture Supabase
+  document.querySelectorAll(".btn-invest").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const eleveId = btn.dataset.eleveid;
+      const periode = btn.dataset.tri;
+      const val     = btn.dataset.val;
+
+      await writeInvestissement(eleveId, periode, val);
+
+      currentInvest = val;
+
+      document.querySelectorAll(".btn-invest").forEach(b => {
+        b.classList.toggle("active", b.dataset.val === val);
+      });
+
+      syncState = "dirty";
+    });
+  });
+
 } // ← fermeture correcte de renderProfilBody
 
 /* -------------------------------------------------------
