@@ -311,6 +311,170 @@ try { localStorage.setItem("eleves", JSON.stringify(eleves)); } catch {}
   return { countEleves: eleves.length, classesCreated, classesTotal };
 }
 
+
+// -------------------------------------------------------
+// BLOC 5B — IMPORT CSV SUIVI TRIMESTRE (PP)
+// CSV attendu : prenom;nom;absences;retards;punitions;sanctions;
+//              moyenne;francais;maths;hg;svt;techno;pc;eps;lv1;lv2;lcee;lcea;arts;musique
+// -------------------------------------------------------
+async function importerSuiviTrimestreCSV(contenuCSV, classeId, trimestre) {
+  const { headers, rows } = parseCSVSimple(contenuCSV);
+
+  const required = ["prenom", "nom"];
+  required.forEach(ch => {
+    if (!headers.includes(ch)) throw new Error(`Colonne obligatoire absente : ${ch}`);
+  });
+
+  const idx = (h) => headers.includes(h) ? headers.indexOf(h) : -1;
+  const anneeId = await ensureAnneeActive();
+
+  // Charger les élèves de la classe
+  const { data: elevesDB, error } = sbAgoram()
+    .from("eleves").select("id, prenom, nom").eq("classe_id", classeId);
+  if (error) throw new Error(`Lecture élèves impossible. ${error.message}`);
+
+  const eleveMap = new Map();
+  (elevesDB || []).forEach(e => eleveMap.set(`${e.prenom}|${e.nom}`, e.id));
+
+  const numOpt = (vals, i) => i >= 0 && vals[i] !== "" ? parseFloat(vals[i]) || null : null;
+  const intOpt = (vals, i) => i >= 0 && vals[i] !== "" ? parseInt(vals[i]) || null : null;
+
+  let count = 0;
+  for (const vals of rows) {
+    const prenom = norm(vals[idx("prenom")]);
+    const nom    = norm(vals[idx("nom")]);
+    if (!prenom || !nom) continue;
+
+    const eleveId = eleveMap.get(`${prenom}|${nom}`);
+    if (!eleveId) continue;
+
+    const payload = {
+      eleve_id:     eleveId,
+      annee_id:     anneeId,
+      trimestre,
+      absences:     intOpt(vals, idx("absences")),
+      retards:      intOpt(vals, idx("retards")),
+      punitions:    intOpt(vals, idx("punitions")),
+      sanctions:    intOpt(vals, idx("sanctions")),
+      moyenne:      numOpt(vals, idx("moyenne")),
+      moy_francais: numOpt(vals, idx("francais")),
+      moy_maths:    numOpt(vals, idx("maths")),
+      moy_hg:       numOpt(vals, idx("hg")),
+      moy_svt:      numOpt(vals, idx("svt")),
+      moy_techno:   numOpt(vals, idx("techno")),
+      moy_pc:       numOpt(vals, idx("pc")),
+      moy_eps:      numOpt(vals, idx("eps")),
+      moy_lv1:      numOpt(vals, idx("lv1")),
+      moy_lv2:      numOpt(vals, idx("lv2")),
+      moy_lcee:     numOpt(vals, idx("lcee")),
+      moy_lcea:     numOpt(vals, idx("lcea")),
+      moy_arts:     numOpt(vals, idx("arts")),
+      moy_musique:  numOpt(vals, idx("musique")),
+    };
+
+    const { error: errUp } = await sbAgoram()
+      .from("pp_suivi_trimestre")
+      .upsert(payload, { onConflict: "eleve_id,annee_id,trimestre" });
+
+    if (!errUp) count++;
+  }
+
+  return { count };
+}
+
+// -------------------------------------------------------
+// BLOC 5C — IMPORT CSV DNB BLANC (PP)
+// CSV attendu : prenom;nom;francais;maths;hg;sciences;resultat
+// -------------------------------------------------------
+async function importerDNBBlancCSV(contenuCSV, classeId) {
+  const { headers, rows } = parseCSVSimple(contenuCSV);
+  const required = ["prenom", "nom"];
+  required.forEach(ch => {
+    if (!headers.includes(ch)) throw new Error(`Colonne obligatoire absente : ${ch}`);
+  });
+
+  const idx = (h) => headers.includes(h) ? headers.indexOf(h) : -1;
+  const anneeId = await ensureAnneeActive();
+
+  const { data: elevesDB } = await sbAgoram()
+    .from("eleves").select("id, prenom, nom").eq("classe_id", classeId);
+
+  const eleveMap = new Map();
+  (elevesDB || []).forEach(e => eleveMap.set(`${e.prenom}|${e.nom}`, e.id));
+
+  const numOpt = (vals, i) => i >= 0 && vals[i] !== "" ? parseFloat(vals[i]) || null : null;
+
+  let count = 0;
+  for (const vals of rows) {
+    const prenom = norm(vals[idx("prenom")]);
+    const nom    = norm(vals[idx("nom")]);
+    if (!prenom || !nom) continue;
+
+    const eleveId = eleveMap.get(`${prenom}|${nom}`);
+    if (!eleveId) continue;
+
+    const payload = {
+      eleve_id:      eleveId,
+      annee_id:      anneeId,
+      dnb_francais:  numOpt(vals, idx("francais")),
+      dnb_maths:     numOpt(vals, idx("maths")),
+      dnb_hg:        numOpt(vals, idx("hg")),
+      dnb_sciences:  numOpt(vals, idx("sciences")),
+      dnb_resultat:  idx("resultat") >= 0 ? norm(vals[idx("resultat")]) : null,
+    };
+
+    const { error } = await sbAgoram()
+      .from("pp_suivi")
+      .upsert(payload, { onConflict: "eleve_id,annee_id" });
+
+    if (!error) count++;
+  }
+
+  return { count };
+}
+
+// -------------------------------------------------------
+// BLOC 5D — IMPORT CSV STAGE ORAL (PP)
+// CSV attendu : prenom;nom;note_oral
+// -------------------------------------------------------
+async function importerStageOralCSV(contenuCSV, classeId) {
+  const { headers, rows } = parseCSVSimple(contenuCSV);
+  const required = ["prenom", "nom", "note_oral"];
+  required.forEach(ch => {
+    if (!headers.includes(ch)) throw new Error(`Colonne obligatoire absente : ${ch}`);
+  });
+
+  const idx = (h) => headers.indexOf(h);
+  const anneeId = await ensureAnneeActive();
+
+  const { data: elevesDB } = await sbAgoram()
+    .from("eleves").select("id, prenom, nom").eq("classe_id", classeId);
+
+  const eleveMap = new Map();
+  (elevesDB || []).forEach(e => eleveMap.set(`${e.prenom}|${e.nom}`, e.id));
+
+  let count = 0;
+  for (const vals of rows) {
+    const prenom = norm(vals[idx("prenom")]);
+    const nom    = norm(vals[idx("nom")]);
+    const note   = parseInt(vals[idx("note_oral")]);
+    if (!prenom || !nom || isNaN(note)) continue;
+
+    const eleveId = eleveMap.get(`${prenom}|${nom}`);
+    if (!eleveId) continue;
+
+    const { error } = await sbAgoram()
+      .from("pp_suivi")
+      .upsert({ eleve_id: eleveId, annee_id: anneeId, stage_note_oral: note },
+               { onConflict: "eleve_id,annee_id" });
+
+    if (!error) count++;
+  }
+
+  return { count };
+}
+
+
 // -------------------------------------------------------
 // BLOC 6 — EXPORT CSV (depuis mémoire)
 // -------------------------------------------------------
@@ -354,6 +518,56 @@ export function renderImportExport() {
           <button id="exportElevesBtn" class="btn">Exporter élèves (CSV)</button>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Import PP — Suivi trimestre</h2>
+          <div class="hint">Colonnes : <code>prenom;nom;absences;retards;punitions;sanctions;moyenne;francais;maths;hg;svt;techno;pc;eps;lv1;lv2;lcee;lcea;arts;musique</code></div>
+        </div>
+        <div class="card-body">
+          <label>Classe PP :
+            <select id="ppClasseSuivi"><option value="">— choisir —</option></select>
+          </label>
+          <label>Trimestre :
+            <select id="ppTrimSuivi">
+              <option value="T1">T1</option>
+              <option value="T2">T2</option>
+              <option value="T3">T3</option>
+            </select>
+          </label>
+          <input type="file" id="csvSuiviInput" accept=".csv" class="input-file">
+          <div id="importSuiviStatus" class="status"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Import PP — DNB blanc</h2>
+          <div class="hint">Colonnes : <code>prenom;nom;francais;maths;hg;sciences;resultat</code></div>
+        </div>
+        <div class="card-body">
+          <label>Classe PP :
+            <select id="ppClasseDNB"><option value="">— choisir —</option></select>
+          </label>
+          <input type="file" id="csvDNBInput" accept=".csv" class="input-file">
+          <div id="importDNBStatus" class="status"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Import PP — Note oral de stage</h2>
+          <div class="hint">Colonnes : <code>prenom;nom;note_oral</code></div>
+        </div>
+        <div class="card-body">
+          <label>Classe PP :
+            <select id="ppClasseStage"><option value="">— choisir —</option></select>
+          </label>
+          <input type="file" id="csvStageInput" accept=".csv" class="input-file">
+          <div id="importStageStatus" class="status"></div>
+        </div>
+      </div>
+
     </section>
   `;
 }
@@ -398,6 +612,87 @@ export function bindImportExportEvents() {
       a.download = `eleves_${norm(window.appAnneeCourante) || "annee"}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+    });
+  }
+
+  // Charger les classes PP dans les selects
+  async function chargerClassesPP() {
+    try {
+      const anneeId = await ensureAnneeActive();
+      const { data } = await sbAgoram()
+        .from("classes").select("id, nom")
+        .eq("annee_id", anneeId).eq("is_pp", true).order("nom");
+      const opts = (data || []).map(c =>
+        `<option value="${c.id}">${c.nom}</option>`).join("");
+      ["ppClasseSuivi","ppClasseDNB","ppClasseStage"].forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) sel.innerHTML = '<option value="">— choisir —</option>' + opts;
+      });
+    } catch(e) { console.error("Erreur chargement classes PP:", e); }
+  }
+  chargerClassesPP();
+
+  // Import suivi trimestre
+  const csvSuiviInput = document.getElementById("csvSuiviInput");
+  const importSuiviStatus = document.getElementById("importSuiviStatus");
+  if (csvSuiviInput) {
+    csvSuiviInput.addEventListener("change", () => {
+      const file = csvSuiviInput.files[0];
+      const classeId = document.getElementById("ppClasseSuivi").value;
+      const trimestre = document.getElementById("ppTrimSuivi").value;
+      if (!file) return;
+      if (!classeId) { importSuiviStatus.textContent = "❌ Choisissez une classe PP."; return; }
+      importSuiviStatus.textContent = "⏳ Import en cours…";
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await importerSuiviTrimestreCSV(reader.result, classeId, trimestre);
+          importSuiviStatus.textContent = `✅ ${res.count} élèves mis à jour (${trimestre}).`;
+        } catch(e) { importSuiviStatus.textContent = "❌ " + e.message; }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // Import DNB blanc
+  const csvDNBInput = document.getElementById("csvDNBInput");
+  const importDNBStatus = document.getElementById("importDNBStatus");
+  if (csvDNBInput) {
+    csvDNBInput.addEventListener("change", () => {
+      const file = csvDNBInput.files[0];
+      const classeId = document.getElementById("ppClasseDNB").value;
+      if (!file) return;
+      if (!classeId) { importDNBStatus.textContent = "❌ Choisissez une classe PP."; return; }
+      importDNBStatus.textContent = "⏳ Import en cours…";
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await importerDNBBlancCSV(reader.result, classeId);
+          importDNBStatus.textContent = `✅ ${res.count} élèves mis à jour (DNB blanc).`;
+        } catch(e) { importDNBStatus.textContent = "❌ " + e.message; }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // Import stage oral
+  const csvStageInput = document.getElementById("csvStageInput");
+  const importStageStatus = document.getElementById("importStageStatus");
+  if (csvStageInput) {
+    csvStageInput.addEventListener("change", () => {
+      const file = csvStageInput.files[0];
+      const classeId = document.getElementById("ppClasseStage").value;
+      if (!file) return;
+      if (!classeId) { importStageStatus.textContent = "❌ Choisissez une classe PP."; return; }
+      importStageStatus.textContent = "⏳ Import en cours…";
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await importerStageOralCSV(reader.result, classeId);
+          importStageStatus.textContent = `✅ ${res.count} élèves mis à jour (note oral stage).`;
+        } catch(e) { importStageStatus.textContent = "❌ " + e.message; }
+      };
+      reader.readAsText(file);
     });
   }
 }
