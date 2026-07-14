@@ -639,6 +639,49 @@ async function writeInvestissement(eleveId, periode, val) {
   if (errIns) throw new Error(`Écriture investissement impossible. ${errIns.message}`);
 }
 
+async function writeColonne(eleveId, periode, colonne, val) {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) throw new Error("Aucune année active.");
+
+  const sb = sbAgoram();
+
+  const { data: existing, error: errSel } = await sb
+    .from("competences_hg")
+    .select("id")
+    .eq("eleve_id", eleveId)
+    .eq("annee_id", anneeId)
+    .eq("periode", periode)
+    .maybeSingle();
+
+  if (errSel) throw new Error(`Lecture competences_hg impossible. ${errSel.message}`);
+
+  if (existing) {
+    const { error: errUp } = await sb
+      .from("competences_hg")
+      .update({ [colonne]: val })
+      .eq("eleve_id", eleveId)
+      .eq("annee_id", anneeId)
+      .eq("periode", periode);
+
+    if (errUp) throw new Error(`Écriture ${colonne} impossible. ${errUp.message}`);
+    return;
+  }
+
+  const payload = {
+    eleve_id: eleveId,
+    annee_id: anneeId,
+    periode:  periode,
+    [colonne]: val,
+  };
+  Object.values(COMP_COL).forEach(cname => { payload[cname] = "I"; });
+
+  const { error: errIns } = await sb
+    .from("competences_hg")
+    .insert([payload]);
+
+  if (errIns) throw new Error(`Écriture ${colonne} impossible. ${errIns.message}`);
+}
+
 /* -------------------------------------------------------
    BLOC 11 — RENDU LIGNE COMPÉTENCE
    (portée module — hors renderProfilBody)
@@ -692,6 +735,32 @@ async function renderProfilBody(eleve, tri) {
   };
   let currentInvest = (row && row.investissement_maison) ? row.investissement_maison : null;
 
+  const POSTURE_VALS = ["acteur", "discret", "immature"];
+  const POSTURE_LABELS = {
+    acteur:   "Acteur — participe activement",
+    discret:  "Discret — s'implique peu à l'oral",
+    immature: "Immature — attitude inadaptée"
+  };
+  let currentPosture = (row && row.posture_classe) ? row.posture_classe : null;
+
+  const ETUDES_VALS = [
+    "regularite_rigueur",
+    "regularite_sans_rigueur",
+    "irregulier_rigueur",
+    "irregulier_sans_rigueur",
+    "negligees_rigueur",
+    "negligees_sans_rigueur"
+  ];
+  const ETUDES_LABELS = {
+    regularite_rigueur:      "Régulier + rigoureux",
+    regularite_sans_rigueur: "Régulier sans rigueur",
+    irregulier_rigueur:      "Irrégulier + rigoureux",
+    irregulier_sans_rigueur: "Irrégulier sans rigueur",
+    negligees_rigueur:       "Négligées + rigoureux",
+    negligees_sans_rigueur:  "Négligées sans rigueur"
+  };
+  let currentEtudes = (row && row.etudes_personnelles) ? row.etudes_personnelles : null;
+
   const body = document.getElementById("profilBody");
   if (!body) return;
 
@@ -718,6 +787,44 @@ async function renderProfilBody(eleve, tri) {
               data-val="${v}"
               title="${escapeAttr(INVEST_LABELS[v])}">
               ${escapeHtml(v)}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+
+    <div class="bloc">
+      <h3>Posture en classe</h3>
+      <div class="comp-row">
+        <div class="comp-btns">
+          ${POSTURE_VALS.map(v => `
+            <button
+              type="button"
+              class="btn-posture ${v === currentPosture ? "active" : ""}"
+              data-eleveid="${escapeAttr(String(eleve.id))}"
+              data-tri="${escapeAttr(tri)}"
+              data-val="${v}"
+              title="${escapeAttr(POSTURE_LABELS[v])}">
+              ${escapeHtml(v)}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+
+    <div class="bloc">
+      <h3>Études personnelles</h3>
+      <div class="comp-row">
+        <div class="comp-btns">
+          ${ETUDES_VALS.map(v => `
+            <button
+              type="button"
+              class="btn-etudes ${v === currentEtudes ? "active" : ""}"
+              data-eleveid="${escapeAttr(String(eleve.id))}"
+              data-tri="${escapeAttr(tri)}"
+              data-val="${v}"
+              title="${escapeAttr(ETUDES_LABELS[v])}">
+              ${escapeHtml(ETUDES_LABELS[v])}
             </button>
           `).join("")}
         </div>
@@ -760,6 +867,44 @@ async function renderProfilBody(eleve, tri) {
       currentInvest = val;
 
       document.querySelectorAll(".btn-invest").forEach(b => {
+        b.classList.toggle("active", b.dataset.val === val);
+      });
+
+      syncState = "dirty";
+    });
+  });
+
+  // Bind boutons posture — update visuel immédiat + écriture Supabase
+  document.querySelectorAll(".btn-posture").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const eleveId = btn.dataset.eleveid;
+      const periode = btn.dataset.tri;
+      const val     = btn.dataset.val;
+
+      await writeColonne(eleveId, periode, "posture_classe", val);
+
+      currentPosture = val;
+
+      document.querySelectorAll(".btn-posture").forEach(b => {
+        b.classList.toggle("active", b.dataset.val === val);
+      });
+
+      syncState = "dirty";
+    });
+  });
+
+  // Bind boutons études personnelles — update visuel immédiat + écriture Supabase
+  document.querySelectorAll(".btn-etudes").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const eleveId = btn.dataset.eleveid;
+      const periode = btn.dataset.tri;
+      const val     = btn.dataset.val;
+
+      await writeColonne(eleveId, periode, "etudes_personnelles", val);
+
+      currentEtudes = val;
+
+      document.querySelectorAll(".btn-etudes").forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
 
