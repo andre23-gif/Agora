@@ -72,9 +72,9 @@ async function inspectSupabaseState(isoLundi) {
    BLOC 4 — OUTILS DATE (Interrogation Base)
    ====================================================== */
 
-function formatFR(d) {
-  const date = new Date(d);
-  return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`;
+function formatFR(isoDate) {
+  const [, m, d] = String(isoDate).split("-");
+  return `${d}/${m}`;
 }
 
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -126,9 +126,8 @@ async function ensureCalendar() {
   }
 
   semaines = data.map(s => ({
-    isoLundi: s.date_lundi,          // "2025-09-01"
-    lundi: new Date(s.date_lundi),   // objet Date pour formatFR()
-    libelle: s.libelle               // "Semaine 36"
+    isoLundi: s.date_lundi,  // "2025-09-01" — chaîne ISO directe, pas de new Date()
+    libelle: s.libelle       // "Semaine 36"
   }));
 
   semaineRefIndex = 0;
@@ -723,7 +722,7 @@ function escapeHtml(s) {
 
 
 function weekLabel(s) {
-  return `${s.libelle} (${formatFR(s.lundi)})`;
+  return `${s.libelle} (${formatFR(s.isoLundi)})`;
 }
 
 /* === AG_EDT_WEEK_LABEL_FINAL_V3_END ======================= */
@@ -1263,5 +1262,4 @@ export function getEDTActiveWeek() {
 
   };
 
-} 
-
+}
