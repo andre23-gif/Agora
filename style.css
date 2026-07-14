@@ -1363,3 +1363,693 @@ textarea:focus{
     font-size: 12px;
   }
 }
+
+
+/* =====================================================
+   PAGE PP — STRUCTURE PRINCIPALE
+   ===================================================== */
+
+.page-pp {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pp-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(232,160,48,0.20);
+}
+
+.pp-topbar h1 { margin: 0; }
+
+.pp-topbar select {
+  font-family: 'Poiret One', sans-serif;
+  background: rgba(2,6,18,0.62);
+  color: var(--texte-clair);
+  border: 1px solid rgba(232,160,48,0.30);
+  padding: 6px 28px 6px 10px;
+  font-size: 0.90rem;
+  letter-spacing: 0.06em;
+}
+
+
+/* =====================================================
+   PAGE PP — LISTE ÉLÈVES
+   ===================================================== */
+
+.pp-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-left: 2px solid transparent;
+  background: rgba(255,255,255,0.02);
+  transition: background 0.15s, border-color 0.15s;
+  min-height: 52px;
+}
+
+.pp-row:hover {
+  background: rgba(232,160,48,0.05);
+  border-left-color: rgba(232,160,48,0.40);
+}
+
+.pp-row:nth-child(even) {
+  background: rgba(255,255,255,0.015);
+}
+
+.pp-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pp-nom {
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: 0.06em;
+  color: var(--texte-clair);
+}
+
+.pp-badges {
+  display: flex;
+  gap: 8px;
+  font-size: 0.80rem;
+}
+
+.pp-menu-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 1.10rem;
+  font-weight: 700;
+  padding: 8px 16px;
+  min-width: 48px;
+  min-height: 48px;
+  border-color: rgba(232,160,48,0.35);
+  clip-path: none;
+  flex-shrink: 0;
+}
+
+
+/* =====================================================
+   PAGE PP — BOTTOM SHEET (MENU ÉLÈVE)
+   Style natif iOS/iPadOS — glisse depuis le bas
+   ===================================================== */
+
+.pp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 3000;
+}
+
+.pp-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3001;
+  background: #06112a;
+  border-top: 2px solid rgba(232,160,48,0.55);
+  border-radius: 0;
+  padding: 0 0 env(safe-area-inset-bottom, 0);
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.80);
+  animation: pp-sheet-up 0.22s ease-out;
+}
+
+@keyframes pp-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.pp-sheet-inner {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 20px;
+  gap: 8px;
+}
+
+.pp-sheet-titre {
+  font-family: 'Cinzel', serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--accent-or-vif);
+  text-align: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(232,160,48,0.22);
+  margin-bottom: 4px;
+}
+
+.pp-sheet-btn {
+  font-family: 'Poiret One', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 14px 18px;
+  min-height: 52px;
+  border: 1px solid rgba(232,160,48,0.22);
+  background: rgba(255,255,255,0.03);
+  color: var(--texte-clair);
+  clip-path: none;
+  border-radius: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pp-sheet-btn:hover,
+.pp-sheet-btn:active {
+  background: rgba(232,160,48,0.10);
+  border-color: rgba(232,160,48,0.55);
+}
+
+.pp-sheet-fermer {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--texte-doux);
+  border-color: rgba(232,160,48,0.18);
+  padding: 12px;
+  min-height: 48px;
+}
+
+
+/* =====================================================
+   PAGE PP — MODALES
+   ===================================================== */
+
+.pp-modal-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: rgba(0,0,0,0.70);
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.pp-modal {
+  background: #040c1c;
+  border: 1px solid rgba(232,160,48,0.32);
+  border-top: 2px solid rgba(232,160,48,0.78);
+  width: 100%;
+  max-width: 720px;
+  min-height: 200px;
+  clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
+  box-shadow: 0 0 60px rgba(0,0,0,0.90), 0 0 30px rgba(232,160,48,0.10);
+  margin: auto;
+}
+
+.pp-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(232,160,48,0.22);
+}
+
+.pp-modal-head h2 {
+  margin: 0;
+  font-size: 0.90rem;
+  letter-spacing: 0.12em;
+  border: none;
+  padding: 0;
+}
+
+.pp-modal-close {
+  font-size: 1rem;
+  padding: 6px 12px;
+  min-width: 44px;
+  min-height: 44px;
+  clip-path: none;
+  border-color: rgba(232,160,48,0.30);
+}
+
+.pp-modal-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pp-modal-foot {
+  padding: 12px 20px 16px;
+  border-top: 1px solid rgba(232,160,48,0.16);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-save {
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.90rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 10px 24px;
+  min-height: 48px;
+  background: rgba(232,160,48,0.12);
+  border-color: var(--accent-or);
+  color: var(--accent-or-vif);
+  clip-path: polygon(7px 0%, 100% 0%, calc(100% - 7px) 100%, 0% 100%);
+}
+
+.btn-save:hover {
+  background: rgba(232,160,48,0.22);
+  box-shadow: 0 0 12px rgba(232,160,48,0.45);
+}
+
+
+/* =====================================================
+   PAGE PP — SECTIONS ET BOUTONS CHOIX
+   ===================================================== */
+
+.pp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pp-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+
+.pp-terminee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--texte-clair);
+}
+
+.choix-groupe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-choix {
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  padding: 8px 14px;
+  min-height: 44px;
+  border: 1px solid rgba(232,160,48,0.28);
+  background: rgba(255,255,255,0.03);
+  color: var(--texte-clair);
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+  transition: all 0.15s ease;
+}
+
+.btn-choix:hover {
+  border-color: rgba(232,160,48,0.55);
+  background: rgba(232,160,48,0.08);
+}
+
+.btn-choix.active {
+  background: rgba(232,160,48,0.20);
+  border-color: var(--accent-or-vif);
+  color: var(--accent-or-vif);
+  box-shadow: 0 0 8px rgba(232,160,48,0.35);
+}
+
+
+/* =====================================================
+   PAGE PP — DONNÉES IMPORTÉES (LECTURE SEULE)
+   ===================================================== */
+
+.pp-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(232,160,48,0.15);
+  padding: 8px 12px;
+  min-width: 64px;
+}
+
+.pp-stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+
+.pp-stat-val {
+  font-family: 'Poiret One', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: var(--texte-clair);
+}
+
+.pp-input-num {
+  font-family: 'Poiret One', sans-serif;
+  background: rgba(2,6,18,0.62);
+  color: var(--texte-clair);
+  border: 1px solid rgba(232,160,48,0.28);
+  padding: 8px 12px;
+  width: 120px;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.pp-hint {
+  font-size: 0.80rem;
+  color: var(--texte-doux);
+  font-style: italic;
+  margin: 0;
+}
+
+
+/* =====================================================
+   PAGE PP — ONGLETS TRIMESTRE (MODALE SUIVI)
+   ===================================================== */
+
+.pp-tri-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.pp-tri-tab {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  padding: 8px 20px;
+  min-height: 44px;
+  border-color: rgba(232,160,48,0.28);
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+}
+
+.pp-tri-tab.active {
+  background: rgba(232,160,48,0.16);
+  border-color: var(--accent-or-vif);
+  color: var(--accent-or-vif);
+  box-shadow: 0 0 8px rgba(232,160,48,0.30);
+}
+
+
+/* =====================================================
+   PAGE PP — RÉUNIONS PARENTS
+   ===================================================== */
+
+.pp-reunions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pp-reunion-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pp-reunion-label {
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--texte-doux);
+  width: 100px;
+  flex-shrink: 0;
+}
+
+
+/* =====================================================
+   PAGE PP — BILAN
+   ===================================================== */
+
+.pp-bilan-section {
+  border-top: 1px solid rgba(232,160,48,0.16);
+  padding-top: 14px;
+}
+
+.pp-bilan-section h3 {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: var(--accent-or);
+  margin-bottom: 10px;
+  border: none;
+  padding: 0;
+}
+
+.pp-bilan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.pp-bilan-grid > div {
+  font-size: 0.82rem;
+  color: var(--texte-doux);
+  padding: 4px 0;
+}
+
+.pp-bilan-grid > div b {
+  color: var(--texte-clair);
+  display: block;
+  font-size: 0.70rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.pp-bilan-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.pp-bilan-table th {
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(232,160,48,0.22);
+  text-align: center;
+  background: rgba(0,0,0,0.30);
+}
+
+.pp-bilan-table td {
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: var(--texte-clair);
+}
+
+.pp-bilan-table tr:first-child td {
+  color: var(--accent-or);
+}
+
+.pp-reunions-bilan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pp-reunion-bilan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.80rem;
+  color: var(--texte-doux);
+  min-width: 70px;
+}
+
+.pp-resultat {
+  font-size: 1rem;
+  color: var(--accent-or-vif);
+  padding: 8px 0;
+}
+
+
+/* =====================================================
+   BOUTONS IFST INVESTISSEMENT / POSTURE / ÉTUDES PP
+   (réutilisent .btn-invest, .btn-posture, .btn-etudes
+    dans classesHG — même style que btn-comp mais plus grands)
+   ===================================================== */
+
+.btn-invest,
+.btn-posture,
+.btn-etudes {
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  padding: 8px 14px;
+  min-height: 44px;
+  border: 1px solid rgba(232,160,48,0.28);
+  background: rgba(255,255,255,0.03);
+  color: var(--texte-clair);
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+  transition: all 0.15s ease;
+}
+
+.btn-invest:hover,
+.btn-posture:hover,
+.btn-etudes:hover {
+  border-color: rgba(232,160,48,0.55);
+  background: rgba(232,160,48,0.08);
+}
+
+.btn-invest.active,
+.btn-posture.active,
+.btn-etudes.active {
+  background: rgba(232,160,48,0.20);
+  border-color: var(--accent-or-vif);
+  color: var(--accent-or-vif);
+  box-shadow: 0 0 8px rgba(232,160,48,0.35);
+}
+
+
+/* =====================================================
+   RESPONSIVE — iPAD 9 PORTRAIT (≤ 820px)
+   ===================================================== */
+
+@media (max-width: 820px) {
+
+  /* Header : tabs plus compacts */
+  .ag-tabs button {
+    font-size: 0.62rem;
+    padding: 6px 10px 5px;
+    letter-spacing: 0.08em;
+  }
+
+  .ag-brand h1 {
+    font-size: 0.90rem;
+    letter-spacing: 0.14em;
+  }
+
+  /* App padding réduit */
+  #app { padding: 10px; }
+
+  /* Modales PP : plein écran sur portrait */
+  .pp-modal-wrap { padding: 0; align-items: flex-end; }
+  .pp-modal {
+    max-width: 100%;
+    min-height: 60vh;
+    max-height: 92vh;
+    overflow-y: auto;
+    border-left: none;
+    border-right: none;
+    clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
+  }
+
+  /* PP liste : plus grand pour le toucher */
+  .pp-row { padding: 12px 10px; min-height: 58px; }
+  .pp-nom { font-size: 1rem; }
+
+  /* Boutons de choix : plus hauts pour le doigt */
+  .btn-choix,
+  .btn-invest,
+  .btn-posture,
+  .btn-etudes {
+    min-height: 48px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+
+  /* Classes HG : plan salle moins de colonnes */
+  .page-classeshg .plan-salle {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Page salle : tables plus larges */
+  .page-salle .table {
+    width: 80px;
+    height: 64px;
+    font-size: 0.70rem;
+  }
+
+  /* Bulletins : plein largeur */
+  .page-bulletins,
+  .page-pp,
+  .page-archives { max-width: 100%; }
+}
+
+
+/* =====================================================
+   RESPONSIVE — iPAD 9 PAYSAGE (821px–1100px)
+   ===================================================== */
+
+@media (min-width: 821px) and (max-width: 1100px) {
+
+  /* Header : tabs légèrement réduits */
+  .ag-tabs button {
+    font-size: 0.65rem;
+    padding: 7px 12px 5px;
+    letter-spacing: 0.10em;
+  }
+
+  /* EDT en paysage */
+  :root { --edt-left-w: 260px; }
+
+  .page-edt .edt-cell {
+    height: 68px;
+    font-size: 13px;
+  }
+
+  /* Classes HG : 5 colonnes plan salle */
+  .page-classeshg .plan-salle {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  /* PP modal en paysage : centré, pas trop large */
+  .pp-modal { max-width: 680px; }
+}
+
+
+/* =====================================================
+   TOUCH — ZONES MINIMUM 44px (TOUTES PAGES)
+   ===================================================== */
+
+@media (pointer: coarse) {
+  button,
+  .btn,
+  .btn-comp,
+  .btn-choix,
+  .btn-invest,
+  .btn-posture,
+  .btn-etudes,
+  .pp-menu-btn,
+  .pp-sheet-btn,
+  .pp-tri-tab,
+  .ag-tabs button {
+    min-height: 44px;
+  }
+
+  /* Lignes élèves touchables */
+  .page-classeshg .eleve-row { min-height: 44px; }
+  .bulletin-row              { min-height: 48px; }
+  .pp-row                    { min-height: 52px; }
+}
