@@ -4,7 +4,7 @@
 // Sources : Supabase (élèves, compétences, participations) + phrasesBulletinsHG.js (local)
 // =======================================================
 
-import { ADAPTATIONS, NIVEAU_GLOBAL, BILAN, CONSEILS } from "./phrasesBulletinsHG.js";
+import { ADAPTATIONS, NIVEAU_GLOBAL, BILAN, CONSEILS } from "./phrasesBulletins.js";
 
 /* -------------------------------------------------------
    ÉTAT LOCAL
