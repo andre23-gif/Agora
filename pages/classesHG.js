@@ -564,7 +564,7 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
   if (existing) {
     const { error: errUp } = await sb
       .from("competences_hg")
-      .update({ val })
+      .update({ [col]: val })
       .eq("eleve_id", eleveId)
       .eq("annee_id", anneeId)
       .eq("periode", periode);
