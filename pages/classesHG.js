@@ -564,7 +564,7 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
   if (existing) {
     const { error: errUp } = await sb
       .from("competences_hg")
-      .update({ [col]: val })
+      .update({ val })
       .eq("eleve_id", eleveId)
       .eq("annee_id", anneeId)
       .eq("periode", periode);
@@ -594,93 +594,6 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
 }
 
 /* === AG_HG_WRITE_COMPETENCE_SAFE_V1_END =========================== */
-
-async function writeInvestissement(eleveId, periode, val) {
-  const anneeId = await getActiveAnneeId();
-  if (!anneeId) throw new Error("Aucune année active.");
-
-  const sb = sbAgoram();
-
-  const { data: existing, error: errSel } = await sb
-    .from("competences_hg")
-    .select("id")
-    .eq("eleve_id", eleveId)
-    .eq("annee_id", anneeId)
-    .eq("periode", periode)
-    .maybeSingle();
-
-  if (errSel) throw new Error(`Lecture competences_hg impossible. ${errSel.message}`);
-
-  if (existing) {
-    const { error: errUp } = await sb
-      .from("competences_hg")
-      .update({ investissement_maison: val })
-      .eq("eleve_id", eleveId)
-      .eq("annee_id", anneeId)
-      .eq("periode", periode);
-
-    if (errUp) throw new Error(`Écriture investissement impossible. ${errUp.message}`);
-    return;
-  }
-
-  // Ligne absente : INSERT avec toutes les colonnes à "I" par défaut
-  const payload = {
-    eleve_id: eleveId,
-    annee_id: anneeId,
-    periode: periode,
-    investissement_maison: val,
-  };
-  Object.values(COMP_COL).forEach(cname => { payload[cname] = "I"; });
-
-  const { error: errIns } = await sb
-    .from("competences_hg")
-    .insert([payload]);
-
-  if (errIns) throw new Error(`Écriture investissement impossible. ${errIns.message}`);
-}
-
-async function writeColonne(eleveId, periode, colonne, val) {
-  const anneeId = await getActiveAnneeId();
-  if (!anneeId) throw new Error("Aucune année active.");
-
-  const sb = sbAgoram();
-
-  const { data: existing, error: errSel } = await sb
-    .from("competences_hg")
-    .select("id")
-    .eq("eleve_id", eleveId)
-    .eq("annee_id", anneeId)
-    .eq("periode", periode)
-    .maybeSingle();
-
-  if (errSel) throw new Error(`Lecture competences_hg impossible. ${errSel.message}`);
-
-  if (existing) {
-    const { error: errUp } = await sb
-      .from("competences_hg")
-      .update({ [colonne]: val })
-      .eq("eleve_id", eleveId)
-      .eq("annee_id", anneeId)
-      .eq("periode", periode);
-
-    if (errUp) throw new Error(`Écriture ${colonne} impossible. ${errUp.message}`);
-    return;
-  }
-
-  const payload = {
-    eleve_id: eleveId,
-    annee_id: anneeId,
-    periode:  periode,
-    [colonne]: val,
-  };
-  Object.values(COMP_COL).forEach(cname => { payload[cname] = "I"; });
-
-  const { error: errIns } = await sb
-    .from("competences_hg")
-    .insert([payload]);
-
-  if (errIns) throw new Error(`Écriture ${colonne} impossible. ${errIns.message}`);
-}
 
 /* -------------------------------------------------------
    BLOC 11 — RENDU LIGNE COMPÉTENCE
@@ -744,12 +657,9 @@ async function renderProfilBody(eleve, tri) {
   let currentPosture = (row && row.posture_classe) ? row.posture_classe : null;
 
   const ETUDES_VALS = [
-    "regularite_rigueur",
-    "regularite_sans_rigueur",
-    "irregulier_rigueur",
-    "irregulier_sans_rigueur",
-    "negligees_rigueur",
-    "negligees_sans_rigueur"
+    "regularite_rigueur", "regularite_sans_rigueur",
+    "irregulier_rigueur", "irregulier_sans_rigueur",
+    "negligees_rigueur",  "negligees_sans_rigueur"
   ];
   const ETUDES_LABELS = {
     regularite_rigueur:      "Régulier + rigoureux",
@@ -779,8 +689,7 @@ async function renderProfilBody(eleve, tri) {
       <div class="comp-row">
         <div class="comp-btns">
           ${INVEST_VALS.map(v => `
-            <button
-              type="button"
+            <button type="button"
               class="btn-invest ${v === currentInvest ? "active" : ""}"
               data-eleveid="${escapeAttr(String(eleve.id))}"
               data-tri="${escapeAttr(tri)}"
@@ -798,8 +707,7 @@ async function renderProfilBody(eleve, tri) {
       <div class="comp-row">
         <div class="comp-btns">
           ${POSTURE_VALS.map(v => `
-            <button
-              type="button"
+            <button type="button"
               class="btn-posture ${v === currentPosture ? "active" : ""}"
               data-eleveid="${escapeAttr(String(eleve.id))}"
               data-tri="${escapeAttr(tri)}"
@@ -817,8 +725,7 @@ async function renderProfilBody(eleve, tri) {
       <div class="comp-row">
         <div class="comp-btns">
           ${ETUDES_VALS.map(v => `
-            <button
-              type="button"
+            <button type="button"
               class="btn-etudes ${v === currentEtudes ? "active" : ""}"
               data-eleveid="${escapeAttr(String(eleve.id))}"
               data-tri="${escapeAttr(tri)}"
@@ -832,18 +739,17 @@ async function renderProfilBody(eleve, tri) {
     </div>
   `;
 
-  // Bind boutons IFST — update visuel immédiat + écriture Supabase
+  // Bind boutons IFST — UI optimiste : visuel AVANT l'await, rollback si erreur
   document.querySelectorAll(".btn-comp").forEach(btn => {
     btn.addEventListener("click", async () => {
       const eleveId = btn.dataset.eleveid;
       const periode = btn.dataset.tri;
       const label   = btn.dataset.label;
       const val     = btn.dataset.val;
+      const prevVal = current[label];
 
-      await writeCompetence(eleveId, periode, label, val);
-
+      // Mise à jour visuelle immédiate
       current[label] = val;
-
       const compRow = btn.closest(".comp-row");
       if (compRow) {
         compRow.querySelectorAll(".btn-comp").forEach(b => {
@@ -851,64 +757,100 @@ async function renderProfilBody(eleve, tri) {
         });
       }
 
-      syncState = "dirty";
+      try {
+        await writeCompetence(eleveId, periode, label, val);
+        syncState = "dirty";
+      } catch(e) {
+        current[label] = prevVal;
+        if (compRow) {
+          compRow.querySelectorAll(".btn-comp").forEach(b => {
+            b.classList.toggle("active", b.dataset.val === prevVal);
+          });
+        }
+        console.error("Erreur compétence:", e);
+        alert("Erreur d'enregistrement : " + e.message);
+      }
     });
   });
 
-  // Bind boutons investissement — update visuel immédiat + écriture Supabase
+  // Bind boutons investissement — UI optimiste
   document.querySelectorAll(".btn-invest").forEach(btn => {
     btn.addEventListener("click", async () => {
       const eleveId = btn.dataset.eleveid;
       const periode = btn.dataset.tri;
       const val     = btn.dataset.val;
-
-      await writeInvestissement(eleveId, periode, val);
+      const prevVal = currentInvest;
 
       currentInvest = val;
-
       document.querySelectorAll(".btn-invest").forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
 
-      syncState = "dirty";
+      try {
+        await writeInvestissement(eleveId, periode, val);
+        syncState = "dirty";
+      } catch(e) {
+        currentInvest = prevVal;
+        document.querySelectorAll(".btn-invest").forEach(b => {
+          b.classList.toggle("active", b.dataset.val === prevVal);
+        });
+        console.error("Erreur investissement:", e);
+        alert("Erreur d'enregistrement : " + e.message);
+      }
     });
   });
 
-  // Bind boutons posture — update visuel immédiat + écriture Supabase
+  // Bind boutons posture — UI optimiste
   document.querySelectorAll(".btn-posture").forEach(btn => {
     btn.addEventListener("click", async () => {
       const eleveId = btn.dataset.eleveid;
       const periode = btn.dataset.tri;
       const val     = btn.dataset.val;
-
-      await writeColonne(eleveId, periode, "posture_classe", val);
+      const prevVal = currentPosture;
 
       currentPosture = val;
-
       document.querySelectorAll(".btn-posture").forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
 
-      syncState = "dirty";
+      try {
+        await writeColonne(eleveId, periode, "posture_classe", val);
+        syncState = "dirty";
+      } catch(e) {
+        currentPosture = prevVal;
+        document.querySelectorAll(".btn-posture").forEach(b => {
+          b.classList.toggle("active", b.dataset.val === prevVal);
+        });
+        console.error("Erreur posture:", e);
+        alert("Erreur d'enregistrement : " + e.message);
+      }
     });
   });
 
-  // Bind boutons études personnelles — update visuel immédiat + écriture Supabase
+  // Bind boutons études personnelles — UI optimiste
   document.querySelectorAll(".btn-etudes").forEach(btn => {
     btn.addEventListener("click", async () => {
       const eleveId = btn.dataset.eleveid;
       const periode = btn.dataset.tri;
       const val     = btn.dataset.val;
-
-      await writeColonne(eleveId, periode, "etudes_personnelles", val);
+      const prevVal = currentEtudes;
 
       currentEtudes = val;
-
       document.querySelectorAll(".btn-etudes").forEach(b => {
         b.classList.toggle("active", b.dataset.val === val);
       });
 
-      syncState = "dirty";
+      try {
+        await writeColonne(eleveId, periode, "etudes_personnelles", val);
+        syncState = "dirty";
+      } catch(e) {
+        currentEtudes = prevVal;
+        document.querySelectorAll(".btn-etudes").forEach(b => {
+          b.classList.toggle("active", b.dataset.val === prevVal);
+        });
+        console.error("Erreur études:", e);
+        alert("Erreur d'enregistrement : " + e.message);
+      }
     });
   });
 
