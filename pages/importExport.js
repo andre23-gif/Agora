@@ -499,6 +499,26 @@ export function renderImportExport() {
 
       <div class="card">
         <div class="card-head">
+          <h2>Année scolaire</h2>
+          <div class="hint">Année actuellement active : <strong id="anneeActiveLabel">${annee}</strong></div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <label>Nouvelle année :
+              <select id="nouvelleAnneeSelect">
+                ${["2024-2025","2025-2026","2026-2027","2027-2028","2028-2029"].map(a =>
+                  `<option value="${a}" ${a === annee ? "disabled" : ""}>${a}</option>`
+                ).join("")}
+              </select>
+            </label>
+            <button id="basculerAnneeBtn">🔄 Basculer vers cette année</button>
+          </div>
+          <div id="anneeStatus" class="status"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
           <h2>Importer des élèves (CSV)</h2>
           <div class="hint">Année active : <strong>${annee}</strong></div>
           <div class="hint">Colonnes attendues : <code>prenom;nom;classe;genre</code> (ou virgules)</div>
@@ -575,7 +595,77 @@ export function renderImportExport() {
 // -------------------------------------------------------
 // BLOC 8 — UI (Events)
 // -------------------------------------------------------
+async function basculerAnnee(nouveauLibelle) {
+  const sb = sbAgoram();
+
+  // 1. Désactiver toutes les années actives
+  const { error: errOff } = await sb
+    .from("annees")
+    .update({ active: false })
+    .eq("active", true);
+  if (errOff) throw new Error(`Désactivation année impossible. ${errOff.message}`);
+
+  // 2. Chercher si l'année cible existe déjà
+  const { data: existing, error: errSel } = await sb
+    .from("annees")
+    .select("id")
+    .eq("libelle", nouveauLibelle)
+    .maybeSingle();
+  if (errSel) throw new Error(`Lecture annees impossible. ${errSel.message}`);
+
+  if (existing) {
+    // 3a. Elle existe : l'activer
+    const { error: errOn } = await sb
+      .from("annees")
+      .update({ active: true })
+      .eq("id", existing.id);
+    if (errOn) throw new Error(`Activation année impossible. ${errOn.message}`);
+  } else {
+    // 3b. Elle n'existe pas : la créer active
+    const anneeStart = nouveauLibelle.split("-")[0];
+    const { error: errIns } = await sb
+      .from("annees")
+      .insert([{
+        libelle: nouveauLibelle,
+        active: true,
+        date_debut: `${anneeStart}-09-01`,
+        date_fin: `${parseInt(anneeStart) + 1}-08-31`
+      }]);
+    if (errIns) throw new Error(`Création année impossible. ${errIns.message}`);
+  }
+
+  // 4. Mettre à jour la variable globale
+  window.appAnneeCourante = nouveauLibelle;
+}
+
 export function bindImportExportEvents() {
+  // Basculement d'année scolaire
+  const basculerBtn = document.getElementById("basculerAnneeBtn");
+  const anneeStatus = document.getElementById("anneeStatus");
+  if (basculerBtn) {
+    basculerBtn.addEventListener("click", async () => {
+      const select = document.getElementById("nouvelleAnneeSelect");
+      const cible = select?.value;
+      if (!cible || cible === norm(window.appAnneeCourante)) {
+        anneeStatus.textContent = "❌ Choisissez une année différente de l'année active.";
+        return;
+      }
+      const confirm = window.confirm(
+        `Basculer vers l'année ${cible} ?\n\nCela changera l'année active pour toute l'application.\nLes données de l'année ${window.appAnneeCourante} restent conservées.`
+      );
+      if (!confirm) return;
+      anneeStatus.textContent = "⏳ Bascule en cours…";
+      try {
+        await basculerAnnee(cible);
+        anneeStatus.textContent = `✅ Année active : ${cible}. Rechargez la page pour appliquer.`;
+        document.getElementById("anneeActiveLabel").textContent = cible;
+        basculerBtn.disabled = true;
+      } catch(e) {
+        anneeStatus.textContent = "❌ " + e.message;
+      }
+    });
+  }
+
   const input = document.getElementById("csvInput");
   const status = document.getElementById("importStatus");
   const exportBtn = document.getElementById("exportElevesBtn");
