@@ -160,15 +160,58 @@ async function getParticipationsMoyenne(eleveId, seanceIds) {
   return scores.reduce((a, b) => a + b, 0) / scores.length;
 }
 
+async function getEventsEleve(eleveId, seanceIds) {
+  if (!seanceIds.length) return { absences: 0, retards: 0, devoirs: 0, observations: 0, textes: [] };
+
+  const { data, error } = await sbAgoram()
+    .from("eleves_events")
+    .select("type, valeur")
+    .eq("eleve_id", eleveId)
+    .in("seance_id", seanceIds);
+
+  if (error) throw new Error(`Lecture eleves_events impossible. ${error.message}`);
+
+  let absences = 0, retards = 0, devoirs = 0, observations = 0;
+  const textes = [];
+
+  (data || []).forEach(ev => {
+    if (ev.type === "absence"      && ev.valeur === "true") absences++;
+    if (ev.type === "retard"       && ev.valeur === "true") retards++;
+    if (ev.type === "devoir"       && ev.valeur === "true") devoirs++;
+    if (ev.type === "comportement" && ev.valeur?.trim())    { observations++; textes.push(ev.valeur); }
+  });
+
+  return { absences, retards, devoirs, observations, textes };
+}
+
+function appliquerModerateur(niveauGlobal, events) {
+  // Seuils déclenchant un déclassement d'un cran
+  const declasse =
+    events.absences    >= 10 ||
+    events.retards     >= 5  ||
+    events.devoirs     >= 4  ||
+    events.observations >= 3;
+
+  if (!declasse) return { niveau: niveauGlobal, modere: false };
+  return { niveau: declasserNiveau(niveauGlobal), modere: true };
+}
+
 /* -------------------------------------------------------
    CALCUL DES PARAMÈTRES
 ------------------------------------------------------- */
 
 function scoreToNiveauGlobal(score) {
   if (score < 1.75) return "insuffisant";
-  if (score < 2.5)  return "fragile";
+  if (score <= 2.5)  return "fragile";       // Règle A : ≤ 2.5 → fragile
   if (score < 3.25) return "satisfaisant";
   return "très satisfaisant";
+}
+
+const NIVEAUX_ORDRE = ["insuffisant", "fragile", "satisfaisant", "très satisfaisant"];
+
+function declasserNiveau(niveau) {
+  const idx = NIVEAUX_ORDRE.indexOf(niveau);
+  return idx > 0 ? NIVEAUX_ORDRE[idx - 1] : niveau;
 }
 
 function moyenneGroupe(row, cols) {
@@ -217,15 +260,20 @@ async function calculerParametresEleve(eleve) {
   const row       = await getCompetencesEleve(eleve.id, anneeId, periodeActive);
   const seanceIds = await getSeancesPeriode(classeActiveId, anneeId, periodeActive);
   const partScore = await getParticipationsMoyenne(eleve.id, seanceIds);
+  const events    = await getEventsEleve(eleve.id, seanceIds);
 
   // Niveau global = moyenne des 10 compétences
   let niveauGlobal = null;
+  let niveauModere = false;
   if (row) {
     const allCols = [...GROUPE_LECON, ...GROUPE_METHODES, ...GROUPE_COMPREHENSION];
     const scores  = allCols.map(c => IFST_SCORE[row[c]] || null).filter(Boolean);
     if (scores.length) {
       const moy = scores.reduce((a, b) => a + b, 0) / scores.length;
-      niveauGlobal = scoreToNiveauGlobal(moy);
+      const niveauBrut = scoreToNiveauGlobal(moy);
+      const { niveau, modere } = appliquerModerateur(niveauBrut, events);
+      niveauGlobal = niveau;
+      niveauModere = modere;
     }
   }
 
@@ -233,6 +281,8 @@ async function calculerParametresEleve(eleve) {
     prenom:              eleve.prenom,
     adaptations:         eleve.adaptations,
     niveauGlobal,
+    niveauModere,
+    events,
     trimestre:           periodeActive.replace("T", ""),
     niveauClasse:        niveauClasseFromNom(classeActive),
     sexe:                eleve.genre || "M",
@@ -436,7 +486,13 @@ function renderPanneauParametres(index) {
           <th>Adaptations</th>
           <td>${p.adaptations.length ? p.adaptations.join(", ") : "—"}</td>
         </tr>
-        <tr><th>Niveau global</th>         <td>${badge(p.niveauGlobal)}</td></tr>
+        <tr>
+          <th>Niveau global</th>
+          <td>
+            ${badge(p.niveauGlobal)}
+            ${p.niveauModere ? `<span class="badge-modere" title="Modéré par le comportement">⬇️ modéré</span>` : ""}
+          </td>
+        </tr>
         <tr>
           <th>Posture (participation)</th>
           <td>
@@ -459,9 +515,34 @@ function renderPanneauParametres(index) {
         <tr><th>Études personnelles</th>    <td>${badge(p.etudes_personnelles)}</td></tr>
       </table>
 
+      ${p.events ? `
+      <div class="params-events">
+        <h5>Données vie scolaire (${periodeActive})</h5>
+        <div class="events-row">
+          <span class="${p.events.absences >= 3 ? "event-alerte" : ""}">
+            🔴 Absences : <strong>${p.events.absences}</strong>
+          </span>
+          <span class="${p.events.retards >= 3 ? "event-alerte" : ""}">
+            🟠 Retards : <strong>${p.events.retards}</strong>
+          </span>
+          <span class="${p.events.devoirs >= 2 ? "event-alerte" : ""}">
+            📋 Devoirs NF : <strong>${p.events.devoirs}</strong>
+          </span>
+          <span class="${p.events.observations >= 2 ? "event-alerte" : ""}">
+            💬 Observations : <strong>${p.events.observations}</strong>
+          </span>
+        </div>
+        ${p.events.textes.length ? `
+          <div class="events-textes">
+            ${p.events.textes.map(t => `<div class="event-texte">— ${t}</div>`).join("")}
+          </div>
+        ` : ""}
+      </div>
+      ` : ""}
+
       <div class="panneau-actions">
         <button id="validerParamsBtn" class="${valid ? "btn-valid" : ""}">
-          ${valid ? "✅ Paramètres validés" : "Valider les paramètres"}
+          ${valid ? "✅ Caractéristiques validées" : "Valider les caractéristiques"}
         </button>
       </div>
 
