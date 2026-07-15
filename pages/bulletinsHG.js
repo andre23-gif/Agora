@@ -4,7 +4,7 @@
 // Sources : Supabase (élèves, compétences, participations) + phrasesBulletinsHG.js (local)
 // =======================================================
 
-import { ADAPTATIONS, NIVEAU_GLOBAL, BILAN, CONSEILS } from "./phrasesBulletins.js";
+import { ADAPTATIONS, NIVEAU_GLOBAL, BILAN, CONSEILS } from "./phrasesBulletinsHG.js";
 
 /* -------------------------------------------------------
    ÉTAT LOCAL
@@ -375,13 +375,11 @@ function renderListeEleves() {
     const actif   = eleveActifIndex === i;
 
     return `
-      <div class="bulletin-row ${actif ? "active" : ""}" data-index="${i}">
+      <div class="bulletin-row ${actif ? "active" : ""}" data-index="${i}" role="button" tabindex="0" style="cursor:pointer;">
         <div class="bulletin-row-head">
           <span class="statut">${statut}</span>
           <span class="eleve-nom">${e.prenom} ${e.nom}</span>
-          <button class="btn-params" data-index="${i}">
-            ${valide ? "✅ Paramètres" : "Paramètres ›"}
-          </button>
+          ${valide ? '<span class="badge-valide">✅</span>' : ""}
         </div>
         ${apercu ? `<div class="bulletin-apercu">${apercu}</div>` : ""}
       </div>
@@ -516,9 +514,9 @@ export function bindBulletinsHGEvents() {
 ------------------------------------------------------- */
 
 function bindBoutonsParams() {
-  document.querySelectorAll(".btn-params").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      await ouvrirPanneau(parseInt(btn.dataset.index));
+  document.querySelectorAll(".bulletin-row[data-index]").forEach(row => {
+    row.addEventListener("click", async () => {
+      await ouvrirPanneau(parseInt(row.dataset.index));
     });
   });
 }
