@@ -595,6 +595,56 @@ async function writeCompetence(eleveId, periode, competenceLabel, val) {
 
 /* === AG_HG_WRITE_COMPETENCE_SAFE_V1_END =========================== */
 
+async function writeInvestissement(eleveId, periode, val) {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) throw new Error("Aucune année active.");
+  const sb = sbAgoram();
+
+  const { data: existing, error: errSel } = await sb
+    .from("competences_hg").select("id")
+    .eq("eleve_id", eleveId).eq("annee_id", anneeId).eq("periode", periode)
+    .maybeSingle();
+  if (errSel) throw new Error(`Lecture competences_hg impossible. ${errSel.message}`);
+
+  if (existing) {
+    const { error } = await sb.from("competences_hg")
+      .update({ investissement_maison: val })
+      .eq("eleve_id", eleveId).eq("annee_id", anneeId).eq("periode", periode);
+    if (error) throw new Error(`Écriture investissement impossible. ${error.message}`);
+    return;
+  }
+
+  const payload = { eleve_id: eleveId, annee_id: anneeId, periode, investissement_maison: val };
+  Object.values(COMP_COL).forEach(c => { payload[c] = "I"; });
+  const { error } = await sb.from("competences_hg").insert([payload]);
+  if (error) throw new Error(`Écriture investissement impossible. ${error.message}`);
+}
+
+async function writeColonne(eleveId, periode, colonne, val) {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) throw new Error("Aucune année active.");
+  const sb = sbAgoram();
+
+  const { data: existing, error: errSel } = await sb
+    .from("competences_hg").select("id")
+    .eq("eleve_id", eleveId).eq("annee_id", anneeId).eq("periode", periode)
+    .maybeSingle();
+  if (errSel) throw new Error(`Lecture competences_hg impossible. ${errSel.message}`);
+
+  if (existing) {
+    const { error } = await sb.from("competences_hg")
+      .update({ [colonne]: val })
+      .eq("eleve_id", eleveId).eq("annee_id", anneeId).eq("periode", periode);
+    if (error) throw new Error(`Écriture ${colonne} impossible. ${error.message}`);
+    return;
+  }
+
+  const payload = { eleve_id: eleveId, annee_id: anneeId, periode, [colonne]: val };
+  Object.values(COMP_COL).forEach(c => { payload[c] = "I"; });
+  const { error } = await sb.from("competences_hg").insert([payload]);
+  if (error) throw new Error(`Écriture ${colonne} impossible. ${error.message}`);
+}
+
 /* -------------------------------------------------------
    BLOC 11 — RENDU LIGNE COMPÉTENCE
    (portée module — hors renderProfilBody)
