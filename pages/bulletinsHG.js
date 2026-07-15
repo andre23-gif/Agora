@@ -230,6 +230,7 @@ async function calculerParametresEleve(eleve) {
   }
 
   return {
+    prenom:              eleve.prenom,
     adaptations:         eleve.adaptations,
     niveauGlobal,
     trimestre:           periodeActive.replace("T", ""),
@@ -277,7 +278,10 @@ function assemblerBulletin(params) {
   if (params.posture_classe && invest && etudes && params.trimestre && params.niveauClasse && params.sexe) {
     const cle = `${params.trimestre}${params.niveauClasse}${params.sexe}${params.posture_classe}${invest}${etudes}`;
     const phrase = CONSEILS[cle];
-    if (phrase) blocs.push(phrase);
+    if (phrase) {
+      const sujet = params.prenom ? params.prenom + " " : (params.sexe === "F" ? "Elle " : "Il ");
+      blocs.push(sujet + phrase);
+    }
   }
 
   return blocs.join(" ").trim();
