@@ -227,12 +227,11 @@ export async function renderPP() {
 function renderListePP() {
   if (!ppEleves.length) return "<p>Aucun élève dans cette classe.</p>";
   return ppEleves.map(e => `
-    <div class="pp-row" data-eleveid="${e.id}">
+    <div class="pp-row" data-eleveid="${e.id}" role="button" tabindex="0" style="cursor:pointer;">
       <div class="pp-row-info">
         <span class="pp-nom">${e.prenom} ${e.nom}</span>
         <span class="pp-badges">${badgeStatut(e.id)}</span>
       </div>
-      <button class="pp-menu-btn" data-eleveid="${e.id}">›</button>
     </div>
   `).join("");
 }
@@ -865,13 +864,12 @@ export function bindPPEvents() {
 }
 
 function bindListeEvents() {
-  document.querySelectorAll(".pp-menu-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const eleveId = btn.dataset.eleveid;
+  document.querySelectorAll(".pp-row[data-eleveid]").forEach(row => {
+    row.addEventListener("click", async () => {
+      const eleveId = row.dataset.eleveid;
       const eleve = ppEleves.find(e => e.id === eleveId);
       if (!eleve) return;
 
-      // Charger les données si pas encore fait
       if (!ppSuivi[eleveId]) {
         await chargerDonneesEleve(eleveId);
       }
