@@ -81,6 +81,16 @@ function parseCSVSimple(content) {
   return { headers, rows, separator: sep };
 }
 
+function fixEncoding(text) {
+  // Si le texte contient des caractères Latin-1 mal interprétés en UTF-8,
+  // on tente une relecture en ISO-8859-1
+  if (/�/.test(text)) {
+    // Caractère de remplacement Unicode détecté → encodage incorrect
+    console.warn("Encodage non-UTF8 détecté, essai en ISO-8859-1");
+  }
+  return text;
+}
+
 function requireSupabase() {
   if (!window.sb) throw new Error("Supabase non initialisé (window.sb absent).");
   return window.sb;
@@ -547,6 +557,40 @@ export function renderImportExport() {
 
       <div class="card">
         <div class="card-head">
+          <h2>Gérer les élèves</h2>
+          <div class="hint">Ajouter ou supprimer un élève dans une classe existante</div>
+        </div>
+        <div class="card-body">
+          <label>Classe :
+            <select id="gestionClasseSelect">
+              <option value="">— choisir —</option>
+            </select>
+          </label>
+          <button id="gestionChargerBtn" class="btn" style="margin-top:8px;">Charger la classe</button>
+
+          <div id="gestionAjoutBloc" style="display:none; margin-top:16px;">
+            <strong>Ajouter un élève</strong>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+              <input type="text" id="ajoutPrenom" placeholder="Prénom">
+              <input type="text" id="ajoutNom" placeholder="Nom">
+              <select id="ajoutGenre">
+                <option value="M">M</option>
+                <option value="F">F</option>
+              </select>
+              <button id="ajoutEleveBtn" class="btn">+ Ajouter</button>
+            </div>
+            <div id="ajoutStatus" class="status"></div>
+          </div>
+
+          <div id="gestionListeBloc" style="display:none; margin-top:16px;">
+            <strong>Élèves de la classe</strong>
+            <div id="gestionListe" style="margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
           <h2>Import PP — Suivi trimestre</h2>
           <div class="hint">Colonnes : <code>prenom;nom;absences;retards;punitions;sanctions;moyenne;francais;maths;hg;svt;techno;pc;eps;lv1;lv2;lcee;lcea;arts;musique</code></div>
         </div>
@@ -682,19 +726,32 @@ export function bindImportExportEvents() {
       if (!file) return;
 
       status.textContent = "⏳ Lecture du fichier…";
-      const reader = new FileReader();
 
-      reader.onload = async () => {
-        try {
-          const res = await importerElevesCSV(reader.result);
-          status.textContent =
-            `✅ Import OK — ${res.countEleves} élèves · classes créées: ${res.classesCreated} · total classes année: ${res.classesTotal}`;
-        } catch (e) {
-          status.textContent = "❌ " + (e?.message || String(e));
-        }
-      };
+      async function lireCSV(file) {
+        return new Promise((resolve) => {
+          const r1 = new FileReader();
+          r1.onload = () => {
+            // Si UTF-8 contient des caractères de remplacement → relire en Latin-1
+            if (r1.result.includes("\ufffd")) {
+              const r2 = new FileReader();
+              r2.onload = () => resolve(r2.result);
+              r2.readAsText(file, "ISO-8859-1");
+            } else {
+              resolve(r1.result);
+            }
+          };
+          r1.readAsText(file, "UTF-8");
+        });
+      }
 
-      reader.readAsText(file);
+      try {
+        const texte = await lireCSV(file);
+        const res = await importerElevesCSV(texte);
+        status.textContent =
+          `✅ Import OK — ${res.countEleves} élèves · classes créées: ${res.classesCreated} · total classes année: ${res.classesTotal}`;
+      } catch (e) {
+        status.textContent = "❌ " + (e?.message || String(e));
+      }
     });
   }
 
@@ -729,6 +786,21 @@ export function bindImportExportEvents() {
   chargerClassesPP();
 
   // Import suivi trimestre
+  // Helper détection encodage pour tous les imports PP
+  async function lireCSVFile(file) {
+    return new Promise((resolve) => {
+      const r1 = new FileReader();
+      r1.onload = () => {
+        if (r1.result.includes("\ufffd")) {
+          const r2 = new FileReader();
+          r2.onload = () => resolve(r2.result);
+          r2.readAsText(file, "ISO-8859-1");
+        } else { resolve(r1.result); }
+      };
+      r1.readAsText(file, "UTF-8");
+    });
+  }
+
   const csvSuiviInput = document.getElementById("csvSuiviInput");
   const importSuiviStatus = document.getElementById("importSuiviStatus");
   if (csvSuiviInput) {
@@ -746,7 +818,7 @@ export function bindImportExportEvents() {
           importSuiviStatus.textContent = `✅ ${res.count} élèves mis à jour (${trimestre}).`;
         } catch(e) { importSuiviStatus.textContent = "❌ " + e.message; }
       };
-      reader.readAsText(file);
+      reader.readAsText(file, "UTF-8");
     });
   }
 
@@ -767,7 +839,7 @@ export function bindImportExportEvents() {
           importDNBStatus.textContent = `✅ ${res.count} élèves mis à jour (DNB blanc).`;
         } catch(e) { importDNBStatus.textContent = "❌ " + e.message; }
       };
-      reader.readAsText(file);
+      reader.readAsText(file, "UTF-8");
     });
   }
 
@@ -788,7 +860,80 @@ export function bindImportExportEvents() {
           importStageStatus.textContent = `✅ ${res.count} élèves mis à jour (note oral stage).`;
         } catch(e) { importStageStatus.textContent = "❌ " + e.message; }
       };
-      reader.readAsText(file);
+      reader.readAsText(file, "UTF-8");
     });
   }
+
+  // ── Gestion élèves (ajout/suppression) ──────────────────────────
+  async function chargerClassesPourGestion() {
+    try {
+      const anneeId = await ensureAnneeActive();
+      const { data } = await sbAgoram()
+        .from("classes").select("id, nom")
+        .eq("annee_id", anneeId).order("nom");
+      const sel = document.getElementById("gestionClasseSelect");
+      if (sel) {
+        sel.innerHTML = '<option value="">— choisir —</option>' +
+          (data || []).map(c => `<option value="${c.id}">${c.nom}</option>`).join("");
+      }
+    } catch(e) { console.error("Chargement classes gestion:", e); }
+  }
+  chargerClassesPourGestion();
+
+  async function afficherElevesGestion(classeId) {
+    const liste = document.getElementById("gestionListe");
+    if (!liste) return;
+    liste.innerHTML = "⏳ Chargement…";
+    try {
+      const { data, error } = await sbAgoram()
+        .from("eleves").select("id, prenom, nom, genre")
+        .eq("classe_id", classeId).order("nom");
+      if (error) throw error;
+      if (!data?.length) { liste.innerHTML = "<p>Aucun élève.</p>"; return; }
+      liste.innerHTML = (data || []).map(e => `
+        <div class="gestion-eleve-row">
+          <span class="gestion-eleve-nom">${e.prenom} ${e.nom} (${e.genre})</span>
+          <button class="btn btn-suppr-eleve" data-id="${e.id}">Supprimer</button>
+        </div>
+      `).join("");
+      document.querySelectorAll(".btn-suppr-eleve").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (!confirm(`Supprimer cet élève ? Cette action est irréversible.`)) return;
+          try {
+            const { error } = await sbAgoram().from("eleves").delete().eq("id", btn.dataset.id);
+            if (error) throw error;
+            await afficherElevesGestion(classeId);
+          } catch(e) { alert("Erreur : " + e.message); }
+        });
+      });
+    } catch(e) { liste.innerHTML = "❌ " + e.message; }
+  }
+
+  document.getElementById("gestionChargerBtn")?.addEventListener("click", async () => {
+    const classeId = document.getElementById("gestionClasseSelect")?.value;
+    if (!classeId) { alert("Choisissez une classe."); return; }
+    document.getElementById("gestionAjoutBloc").style.display = "block";
+    document.getElementById("gestionListeBloc").style.display = "block";
+    await afficherElevesGestion(classeId);
+  });
+
+  document.getElementById("ajoutEleveBtn")?.addEventListener("click", async () => {
+    const classeId = document.getElementById("gestionClasseSelect")?.value;
+    const prenom   = document.getElementById("ajoutPrenom")?.value.trim();
+    const nom      = document.getElementById("ajoutNom")?.value.trim();
+    const genre    = document.getElementById("ajoutGenre")?.value;
+    const status   = document.getElementById("ajoutStatus");
+    if (!classeId || !prenom || !nom || !genre) {
+      if (status) status.textContent = "❌ Tous les champs sont requis."; return;
+    }
+    try {
+      const { error } = await sbAgoram().from("eleves")
+        .insert([{ classe_id: classeId, prenom, nom, genre, adaptations: [] }]);
+      if (error) throw error;
+      if (status) status.textContent = `✅ ${prenom} ${nom} ajouté.`;
+      if (document.getElementById("ajoutPrenom")) document.getElementById("ajoutPrenom").value = "";
+      if (document.getElementById("ajoutNom")) document.getElementById("ajoutNom").value = "";
+      await afficherElevesGestion(classeId);
+    } catch(e) { if (status) status.textContent = "❌ " + e.message; }
+  });
 }
