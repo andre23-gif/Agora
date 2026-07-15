@@ -252,6 +252,9 @@ async function importerElevesCSV(contenuCSV) {
   for (let r = 0; r < rows.length; r++) {
     const vals = rows[r];
 
+    // Ignorer les lignes vides ou ne contenant que des séparateurs (fin de fichier Excel)
+    if (vals.every(v => !v || !String(v).trim())) continue;
+
     const prenom = norm(vals[idx("prenom")]);
     const nom = norm(vals[idx("nom")]);
     const classe = norm(vals[idx("classe")]);
@@ -341,6 +344,7 @@ async function importerSuiviTrimestreCSV(contenuCSV, classeId, trimestre) {
 
   let count = 0;
   for (const vals of rows) {
+    if (vals.every(v => !v || !String(v).trim())) continue;
     const prenom = norm(vals[idx("prenom")]);
     const nom    = norm(vals[idx("nom")]);
     if (!prenom || !nom) continue;
@@ -406,6 +410,7 @@ async function importerDNBBlancCSV(contenuCSV, classeId) {
 
   let count = 0;
   for (const vals of rows) {
+    if (vals.every(v => !v || !String(v).trim())) continue;
     const prenom = norm(vals[idx("prenom")]);
     const nom    = norm(vals[idx("nom")]);
     if (!prenom || !nom) continue;
@@ -455,6 +460,7 @@ async function importerStageOralCSV(contenuCSV, classeId) {
 
   let count = 0;
   for (const vals of rows) {
+    if (vals.every(v => !v || !String(v).trim())) continue;
     const prenom = norm(vals[idx("prenom")]);
     const nom    = norm(vals[idx("nom")]);
     const note   = parseInt(vals[idx("note_oral")]);
