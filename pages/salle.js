@@ -178,39 +178,24 @@ function getCreneauCourant() {
   return null;
 }
 
-/* === AG_SALLE_CONTEXTE_SUPABASE_V1_BEGIN ===================== */
+/* === AG_SALLE_CONTEXTE_SUPABASE_V2_BEGIN ===================== */
 
 async function getContexteSeanceCourante() {
+  const now     = new Date();
+  const dateISO = toISODate(now);
+  const isoLundi = toISODate(mondayOfWeek(now));
+  const jour    = getJourFR(now);
+  const creneau = getCreneauCourant();
 
-  // ✅ FORÇAGE POUR TEST (à enlever après)
-  const isoLundi = "2026-05-18";
-  const dateISO = "2026-05-21";
-  const jour = "jeudi";
-  const creneau = "S4";
+  const vide = { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
 
-  if (!window.sb) {
-    return {
-      dateISO,
-      isoLundi,
-      jour,
-      creneau,
-      classe: null,
-      classe_id: null,
-      groupe: null
-    };
-  }
+  if (!window.sb) return vide;
 
   const sb = window.sb.schema("agoram");
 
   try {
     const anneeId = await getActiveAnneeId();
-    if (!anneeId) {
-      return { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
-    }
-
-    if (!creneau) {
-      return { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
-    }
+    if (!anneeId || !creneau) return vide;
 
     const { data: cell, error: errCell } = await sb
       .from("edt_cells")
@@ -222,10 +207,7 @@ async function getContexteSeanceCourante() {
       .maybeSingle();
 
     if (errCell) throw errCell;
-
-    if (!cell || !cell.classe_id) {
-      return { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
-    }
+    if (!cell?.classe_id) return vide;
 
     const { data: classeRow, error: errClasse } = await sb
       .from("classes")
@@ -237,93 +219,82 @@ async function getContexteSeanceCourante() {
     if (errClasse) throw errClasse;
 
     return {
-      dateISO,
-      isoLundi,
-      jour,
-      creneau,
-      classe: classeRow ? classeRow.nom : null,
+      dateISO, isoLundi, jour, creneau,
+      classe:    classeRow?.nom || null,
       classe_id: cell.classe_id,
-      groupe: cell.groupe || null
+      groupe:    cell.groupe || null
     };
 
   } catch (e) {
     console.error("Contexte salle (Supabase):", e.message || e);
-    return { dateISO, isoLundi, jour, creneau, classe: null, classe_id: null, groupe: null };
+    return vide;
   }
 }
-/* === AG_SALLE_CONTEXTE_SUPABASE_V1_END ======================= */
+/* === AG_SALLE_CONTEXTE_SUPABASE_V2_END ======================= */
 
 /* =======================================================
-   AG_SALLE_SEANCE_ID_V1
-   But : fabriquer un seance_id UUID stable par créneau (EDT)
-   Clé : isoLundi|jour|creneau|classe|groupe
-   Stockage : localStorage (clé -> uuid)
+   AG_SALLE_SEANCE_ID_V2
+   Cherche d'abord en Supabase (évite les doublons),
+   crée seulement si absente, cache en localStorage.
    ======================================================= */
 
 function getSeanceKey(ctx) {
-  const c = ctx?.classe || "";
-  const g = ctx?.groupe || "";
-  const j = ctx?.jour || "";
-  const cr = ctx?.creneau || "";
-  const iso = ctx?.isoLundi || "";
-  return `${iso}|${j}|${cr}|${c}|${g}`;
+  return `${ctx?.isoLundi||""}|${ctx?.jour||""}|${ctx?.creneau||""}|${ctx?.classe||""}|${ctx?.groupe||""}`;
 }
 
-function getOrCreateSeanceId(ctx) {
-  const key = getSeanceKey(ctx);
-  const lsKey = `AG_SEANCE_ID::${key}`;
+async function getOrEnsureSeanceId(ctx) {
+  if (!ctx?.classe_id || !ctx?.dateISO) return null;
 
+  // 1. Cache localStorage
+  const lsKey = `AG_SEANCE_ID::${getSeanceKey(ctx)}`;
   try {
-    const existing = localStorage.getItem(lsKey);
-    if (existing) return existing;
+    const cached = localStorage.getItem(lsKey);
+    if (cached) return cached;
+  } catch {}
 
-    const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-    localStorage.setItem(lsKey, id);
-    return id;
-  } catch {
-    return (crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-  }
-}
-
-/* === AG_SALLE_SEANCE_SUPABASE_BEGIN === */
-
-async function ensureSeanceSupabase(ctx, seanceId) {
-  if (!window.sb) return;
-
-  const sb = window.sb.schema("agoram");
-
-  if (!ctx?.classe || !ctx?.creneau || !ctx?.dateISO) return;
-
-  const anneeId = await getActiveAnneeId();
-
-  const { data: classeRow } = await sb
-    .from("classes")
-    .select("id")
-    .eq("annee_id", anneeId)
-    .eq("nom", ctx.classe)
-    .maybeSingle();
-
-  if (!classeRow) {
-    console.error("Classe introuvable:", ctx.classe);
-    return;
-  }
+  const sb = window.sb?.schema("agoram");
+  if (!sb) return crypto.randomUUID();
 
   const cr = CRENEAUX.find(c => c.code === ctx.creneau);
 
-  const { error } = await sb
-    .from("seances")
-    .upsert([{
-      id: seanceId,
-      classe_id: classeRow.id,
-      date_seance: ctx.dateISO,
-      heure_debut: cr?.debut || null,
-      heure_fin: cr?.fin || null
-    }], { onConflict: "id" });
+  // 2. Chercher une séance existante en Supabase
+  try {
+    const query = sb
+      .from("seances")
+      .select("id")
+      .eq("classe_id", ctx.classe_id)
+      .eq("date_seance", ctx.dateISO);
 
-  if (error) console.error("Erreur seance supabase:", error.message);
+    if (cr?.debut) query.eq("heure_debut", cr.debut);
+
+    const { data: existing } = await query.maybeSingle();
+
+    if (existing?.id) {
+      try { localStorage.setItem(lsKey, existing.id); } catch {}
+      return existing.id;
+    }
+  } catch {}
+
+  // 3. Créer la séance si absente
+  const newId = crypto.randomUUID();
+  const anneeId = await getActiveAnneeId();
+
+  const { error } = await sb.from("seances").insert([{
+    id:          newId,
+    classe_id:   ctx.classe_id,
+    date_seance: ctx.dateISO,
+    annee_id:    anneeId,
+    jour:        ctx.jour   || null,
+    creneau:     ctx.creneau || null,
+    heure_debut: cr?.debut  || null,
+    heure_fin:   cr?.fin    || null,
+  }]);
+
+  if (error) console.error("Création séance impossible:", error.message);
+
+  try { localStorage.setItem(lsKey, newId); } catch {}
+  return newId;
 }
-
-/* === AG_SALLE_SEANCE_SUPABASE_END === */
 
 /* -------------------------------------------------------
    BLOC 4b — CONTENU SÉANCE → Supabase (seances.code_cours)
@@ -335,9 +306,6 @@ async function saveContenuSupabase(seanceId, codeFinal) {
   if (!window.sb || !seanceId) return;
 
   const sb = window.sb.schema("agoram");
-
-  // ensureSeanceSupabase a déjà été appelé au init, mais on garantit ici
-  await ensureSeanceSupabase(contexte, seanceId);
 
   const { error } = await sb
     .from("seances")
@@ -477,6 +445,7 @@ async function loadEleveEventsSupabase(eleveId, seanceId) {
 ------------------------------------------------------- */
 
 let contexte = null;
+let seanceId = null;      // calculé une seule fois dans initSalle
 let elevesSalle = [];
 let contenuCode = "";
 let contenuLibre = "";
@@ -559,8 +528,7 @@ export async function initSalle() {
   }
 
   // Contenu : priorité Supabase, fallback local
-  const seanceId = getOrCreateSeanceId(contexte);
-  await ensureSeanceSupabase(contexte, seanceId);
+  seanceId = await getOrEnsureSeanceId(contexte);
 
   if (contexte.classe) {
     // Tente de charger code_cours depuis Supabase
@@ -710,7 +678,6 @@ export function bindSalleEvents() {
     recordEventLocal("contenu", { contenu_code: codeFinal });
 
     // ✅ Supabase : update seances.code_cours
-    const seanceId = getOrCreateSeanceId(contexte);
     await saveContenuSupabase(seanceId, codeFinal);
   };
 
@@ -733,8 +700,6 @@ export function bindSalleEvents() {
 ------------------------------------------------------- */
 
 async function ouvrirFicheEleve(eleve) {
-  const seanceId = getOrCreateSeanceId(contexte);
-
   // Charge l'état courant depuis Supabase (ou defaults)
   const etatActuel = await loadEleveEventsSupabase(String(eleve.id), seanceId);
 
@@ -843,8 +808,6 @@ function ouvrirParticipation() {
     .filter(e => Number.isInteger(e.place))
     .sort((a, b) => a.place - b.place);
 
-  const seanceId = getOrCreateSeanceId(contexte);
-
   // état local : Passif par défaut
   const currentByEleve = new Map();
   list.forEach(e => currentByEleve.set(String(e.id), "Passif"));
@@ -853,7 +816,7 @@ function ouvrirParticipation() {
   (async () => {
     if (window.sb) {
       try {
-        await ensureSeanceSupabase(contexte, seanceId);
+        // seanceId déjà garanti par initSalle
         const sb = window.sb.schema("agoram");
         const ids = list
           .map(e => String(e.id))
@@ -956,7 +919,7 @@ function renderParticipationModal(list, seanceId, currentByEleve) {
         const sb = window.sb.schema("agoram");
 
         // Garantit que seanceId existe dans agoram.seances (FK)
-        await ensureSeanceSupabase(contexte, seanceId);
+        // seanceId déjà garanti par initSalle
 
         // Filtre : UUID valides uniquement (FK eleves)
         const rows = list
