@@ -141,7 +141,6 @@ async function getSeancesPeriode(classeId, anneeId, periode) {
     .from("seances")
     .select("id")
     .eq("classe_id", classeId)
-    .eq("annee_id", anneeId)
     .gte("date_seance", debut)
     .lte("date_seance", fin);
   if (error) throw new Error(`Lecture séances impossible. ${error.message}`);
@@ -434,7 +433,21 @@ function renderPanneauParametres(index) {
           <td>${p.adaptations.length ? p.adaptations.join(", ") : "—"}</td>
         </tr>
         <tr><th>Niveau global</th>         <td>${badge(p.niveauGlobal)}</td></tr>
-        <tr><th>Posture (participation)</th><td>${badge(p.posture)}</td></tr>
+        <tr>
+          <th>Posture (participation)</th>
+          <td>
+            ${p.posture ? badge(p.posture) : `
+              <span class="badge manquant">Non disponible — saisir manuellement :</span>
+              <div class="choix-groupe" style="margin-top:6px;">
+                ${["moteur","participe","passif","perturbateur"].map(v => `
+                  <button type="button"
+                    class="btn-choix btn-posture-manuel ${p._postureManuelle === v ? "active" : ""}"
+                    data-posture="${v}">${v}
+                  </button>`).join("")}
+              </div>
+            `}
+          </td>
+        </tr>
         <tr><th>Investissement</th>         <td>${badge(p.investissement)}</td></tr>
         <tr><th>Acquisition</th>            <td>${badge(p.acquisition)}</td></tr>
         <tr><th>Compréhension</th>          <td>${badge(p.comprehension)}</td></tr>
@@ -551,6 +564,20 @@ function bindPanneauEvents(index) {
   });
   document.getElementById("navNext")?.addEventListener("click", () => {
     if (index < elevesClasse.length - 1) ouvrirPanneau(index + 1);
+  });
+
+  // Posture manuelle — mémorisée dans parametres, pas dans Supabase
+  document.querySelectorAll(".btn-posture-manuel").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const val = btn.dataset.posture;
+      if (parametres[eleve.id]) {
+        parametres[eleve.id]._postureManuelle = val;
+        parametres[eleve.id].posture = val; // utilisé pour la génération
+      }
+      document.querySelectorAll(".btn-posture-manuel").forEach(b => {
+        b.classList.toggle("active", b.dataset.posture === val);
+      });
+    });
   });
 
   document.getElementById("validerParamsBtn")?.addEventListener("click", () => {
