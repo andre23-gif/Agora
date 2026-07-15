@@ -204,7 +204,7 @@ async function ensureClassesForAnnee(anneeId, nomsClasses) {
       annee_id: anneeId,
       nom,
       couleur: null,
-      est_pp: false
+      is_pp: false
     }));
 
   if (toUpsert.length) {
