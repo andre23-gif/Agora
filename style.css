@@ -2160,3 +2160,38 @@ textarea:focus{
   color: var(--accent-or);
   margin: 0 0 10px 0;
 }
+
+/* =====================================================
+   IMPORT/EXPORT — GESTION ÉLÈVES
+   ===================================================== */
+
+.gestion-eleve-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(232,160,48,0.10);
+}
+
+.gestion-eleve-nom {
+  flex: 1;
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.88rem;
+  color: var(--texte-clair);
+  letter-spacing: 0.04em;
+}
+
+.btn-suppr-eleve {
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  min-height: 36px;
+  border-color: rgba(192,48,32,0.55);
+  color: #f08080;
+}
+
+.btn-suppr-eleve:hover {
+  border-color: rgba(192,48,32,0.90);
+  background: rgba(192,48,32,0.12);
+  box-shadow: 0 0 8px rgba(192,48,32,0.35);
+  color: #ffaaaa;
+}
