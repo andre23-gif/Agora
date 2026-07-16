@@ -721,7 +721,7 @@ export function bindImportExportEvents() {
   const exportBtn = document.getElementById("exportElevesBtn");
 
   if (input) {
-    input.addEventListener("change", () => {
+    input.addEventListener("change", async () => {
       const file = input.files && input.files[0];
       if (!file) return;
 
