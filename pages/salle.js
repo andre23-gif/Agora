@@ -531,16 +531,29 @@ export async function initSalle() {
   seanceId = await getOrEnsureSeanceId(contexte);
 
   if (contexte.classe) {
-    // Tente de charger code_cours depuis Supabase
+    // Charger le dernier contenu utilisé pour cette classe (séance actuelle ou séance précédente)
     let codeFromSupabase = "";
     try {
+      // D'abord la séance courante
       const { data: seanceRow } = await sb
         .from("seances")
         .select("code_cours")
         .eq("id", seanceId)
         .maybeSingle();
-
       codeFromSupabase = seanceRow?.code_cours || "";
+
+      // Si vide, chercher la dernière séance avec un contenu pour cette classe
+      if (!codeFromSupabase && contexte.classe_id) {
+        const { data: lastSeance } = await sb
+          .from("seances")
+          .select("code_cours")
+          .eq("classe_id", contexte.classe_id)
+          .not("code_cours", "is", null)
+          .order("date_seance", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        codeFromSupabase = lastSeance?.code_cours || "";
+      }
     } catch {}
 
     contenuCode = codeFromSupabase || loadLastContent(contexte.classe, contexte.groupe);
