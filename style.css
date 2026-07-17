@@ -2464,3 +2464,57 @@ select option {
   border-bottom: 1px solid rgba(232,160,48,0.10);
   font-size: 0.88rem;
 }
+
+/* =====================================================
+   PAGE CLASSES HG — SELECTS ADAPTATION + PLACE
+   Contraste forcé pour Safari/iPad (texte visible)
+   ===================================================== */
+
+.page-classeshg .opt-adapt select,
+.page-classeshg .opt-place select {
+  background-color: #0a1628;
+  color: #f0f4ff;
+  border: 1px solid rgba(232,160,48,0.40);
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.78rem;
+  -webkit-text-fill-color: #f0f4ff;
+  opacity: 1;
+}
+
+.page-classeshg .opt-adapt select option,
+.page-classeshg .opt-place select option {
+  background-color: #0a1628;
+  color: #f0f4ff;
+  -webkit-text-fill-color: #f0f4ff;
+}
+
+/* Sélection active — valeur non vide visible */
+.page-classeshg .opt-adapt select:not([value=""]),
+.page-classeshg .opt-place select:not([value=""]) {
+  color: #f5c060;
+  -webkit-text-fill-color: #f5c060;
+  border-color: rgba(232,160,48,0.65);
+}
+
+/* =====================================================
+   PAGE CLASSES HG — SELECTS ADAPTATION + PLACE (v2)
+   Annule le bloc précédent, approche compatible Safari
+   ===================================================== */
+
+.page-classeshg .opt-adapt select,
+.page-classeshg .opt-place select {
+  background-color: transparent;
+  color: var(--texte-clair);
+  -webkit-text-fill-color: unset;
+  border: 1px solid rgba(232,160,48,0.40);
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.78rem;
+  opacity: 1;
+}
+
+.page-classeshg .opt-adapt select option,
+.page-classeshg .opt-place select option {
+  background-color: #0a1628;
+  color: #f0f4ff;
+  -webkit-text-fill-color: unset;
+}
