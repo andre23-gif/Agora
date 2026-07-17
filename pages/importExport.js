@@ -898,9 +898,18 @@ export function bindImportExportEvents() {
       `).join("");
       document.querySelectorAll(".btn-suppr-eleve").forEach(btn => {
         btn.addEventListener("click", async () => {
-          if (!confirm(`Supprimer cet élève ? Cette action est irréversible.`)) return;
+          if (!confirm(`Supprimer cet élève ? Toutes ses données (compétences, participations, événements) seront effacées. Cette action est irréversible.`)) return;
+          const id = btn.dataset.id;
           try {
-            const { error } = await sbAgoram().from("eleves").delete().eq("id", btn.dataset.id);
+            const sb = sbAgoram();
+            // Supprimer dans l'ordre pour respecter les contraintes FK
+            await sb.from("participations_hg").delete().eq("eleve_id", id);
+            await sb.from("eleves_events").delete().eq("eleve_id", id);
+            await sb.from("competences_hg").delete().eq("eleve_id", id);
+            await sb.from("pp_suivi").delete().eq("eleve_id", id);
+            await sb.from("pp_suivi_trimestre").delete().eq("eleve_id", id);
+            await sb.from("pp_reunions").delete().eq("eleve_id", id);
+            const { error } = await sb.from("eleves").delete().eq("id", id);
             if (error) throw error;
             await afficherElevesGestion(classeId);
           } catch(e) { alert("Erreur : " + e.message); }
