@@ -794,8 +794,8 @@ const sem = semaines[semaineRefIndex];
        <select id="anneeSelect">
           ${(() => {
             const currentYear = new Date().getFullYear();
-            const startYear = new Date().getMonth() < 8 ? currentYear - 1 : currentYear;
-            const options = [`${startYear-1}-${startYear}`, `${startYear}-${startYear+1}`, `${startYear+1}-${startYear+2}`];
+            const startYear = new Date().getMonth() < 7 ? currentYear - 1 : currentYear;
+            const options = [`${startYear}-${startYear+1}`, `${startYear+1}-${startYear+2}`, `${startYear+2}-${startYear+3}`];
             return options.map(a => `<option value="${a}" ${a === annee ? "selected" : ""}>${a}</option>`).join("");
           })()}
         </select>
