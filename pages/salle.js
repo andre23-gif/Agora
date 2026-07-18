@@ -73,7 +73,7 @@ function buildContenusCatalogue() {
   for (let n = 1; n <= 10; n++) addChapitre13("H", n);
   for (let n = 1; n <= 10; n++) addChapitre13("G", n);
   for (let n = 1; n <= 5; n++) addChapitre13("EMC", n);
-  for (let n = 1; n <= 25; n++) out.push(`AP${n}`);
+  for (let n = 0; n <= 25; n++) out.push(`AP${n}`);
 
   return out;
 }
