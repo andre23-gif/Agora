@@ -36,6 +36,9 @@ let bufferEdition = {
   grid: new Map()
 };
 
+let portee = "trimestre";   // "trimestre" ou "semestre"
+let propagerActif = false;  // case à cocher
+
 let classeActive = null;  // { classe_id, groupe, label } ou null
 
 let syncState = "unknown";
@@ -795,7 +798,41 @@ async function applyWeekToTargets(sourceIso, targetsIsoList) {
 
 }
 
+/* ======================================================
+   BLOC 7a — CALCUL DES SEMAINES CIBLES
+   ====================================================== */
 
+// Semaines jumelles à partir de la semaine courante (vers l'avant)
+function calculerCibles(isoSource) {
+  const periodes = calculerPeriodes();
+  const src = periodes.get(isoSource);
+  if (!src || src.type === "V") return [];
+
+  const clePeriode = portee === "semestre" ? "semestre" : "trimestre";
+  const valPeriode = src[clePeriode];
+
+  const cibles = [];
+  semaines.forEach(s => {
+    const iso = s.isoLundi;
+    if (iso <= isoSource) return;                   // uniquement vers l'avant
+    const p = periodes.get(iso);
+    if (!p) return;
+    if (p.type !== src.type) return;                // même type A ou B
+    if (p[clePeriode] !== valPeriode) return;       // même période
+    cibles.push(iso);
+  });
+
+  return cibles;
+}
+
+// Libellé de la case à cocher
+function libelleProfagation(isoSource) {
+  const periodes = calculerPeriodes();
+  const src = periodes.get(isoSource);
+  if (!src || src.type === "V") return "Semaine de vacances";
+  const p = portee === "semestre" ? src.semestre : src.trimestre;
+  return `Appliquer aux semaines ${src.type} du ${p} (à partir de celle-ci)`;
+}
 
 /* ======================================================
 
@@ -1010,22 +1047,16 @@ const sem = semaines[semaineRefIndex];
 
 
 
-        <span>Type</span>
+       <label class="edt-propag">
+          <input type="checkbox" id="propagCheck" ${propagerActif ? "checked" : ""}
+                 ${pSem.type === "V" ? "disabled" : ""}>
+          ${escapeHtml(libelleProfagation(sem.isoLundi))}
+        </label>
 
-        ${TYPES.map(v => metaButton("type", v, meta.type === v)).join("")}
-
-
-
-        <span>T</span>
-
-        ${TRIMESTRES.map(v => metaButton("trimestre", v, meta.trimestre === v)).join("")}
-
-
-
-        <span>S</span>
-
-        ${SEMESTRES.map(v => metaButton("semestre", v, meta.semestre === v)).join("")}
-
+        <select id="porteeSelect">
+          <option value="trimestre" ${portee === "trimestre" ? "selected" : ""}>Trimestre</option>
+          <option value="semestre" ${portee === "semestre" ? "selected" : ""}>Semestre</option>
+        </select>
 
 
         <span id="edtSyncState">
@@ -1174,25 +1205,14 @@ const anneeSelect = document.getElementById("anneeSelect");
 
   };
 
+const propagCheck = document.getElementById("propagCheck");
+  if (propagCheck) propagCheck.onchange = (e) => { propagerActif = e.target.checked; };
 
-
-  document.querySelectorAll(".edt-meta[data-k][data-v]").forEach(btn => {
-
-    btn.onclick = async () => {
-
-      const k = btn.dataset.k;
-
-      const v = btn.dataset.v;
-
-      bufferEdition.meta = { ...bufferEdition.meta, [k]: v };
-
-      syncState = "dirty";
-
-      await refresh();
-
-    };
-
-  });
+  const porteeSelect = document.getElementById("porteeSelect");
+  if (porteeSelect) porteeSelect.onchange = async (e) => {
+    portee = e.target.value;
+    await refresh();
+  };
 
 const allerSemaine = async (i) => {
     if (i < 0 || i >= semaines.length) return;
@@ -1447,7 +1467,89 @@ async function ouvrirModal(jour, creneau) {
 
 }
 
+/* ======================================================
+   BLOC 7b — MODALE DE CONFIRMATION DE PROPAGATION
+   ====================================================== */
 
+async function ouvrirModalConfirmation(sourceIso, cibles) {
+  const semSource = semaines.find(s => s.isoLundi === sourceIso);
+  const periodes = calculerPeriodes();
+  const p = periodes.get(sourceIso) || {};
+
+  const nomSemaine = (iso) => {
+    const s = semaines.find(x => x.isoLundi === iso);
+    return s ? weekLabel(s) : iso;
+  };
+
+  const dejaRemplies = cibles.filter(iso => {
+    const st = weekStatusIndex.get(String(iso));
+    return st && st.has_data;
+  });
+
+  let corps;
+  if (!cibles.length) {
+    corps = `<p>Aucune autre semaine ${p.type} dans ce ${portee}.<br>
+             Seule la semaine courante sera enregistrée.</p>`;
+  } else {
+    corps = `
+      <p><strong>${escapeHtml(weekLabel(semSource))}</strong> (${p.type}, ${p.trimestre})
+         + ${cibles.length} semaine(s) :</p>
+      <p>${cibles.map(iso => escapeHtml(nomSemaine(iso))).join("<br>")}</p>
+      ${dejaRemplies.length
+        ? `<p style="color:#c00">Dont ${dejaRemplies.length} déjà remplie(s), qui seront remplacée(s) :<br>
+           ${dejaRemplies.map(iso => escapeHtml(nomSemaine(iso))).join("<br>")}</p>`
+        : ""}
+    `;
+  }
+
+  document.getElementById("modal").innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <strong>Confirmer l'enregistrement</strong>
+        <button id="cfClose">✕</button>
+      </div>
+      <div style="height:10px"></div>
+      ${corps}
+      <div id="cfLog" style="font-size:0.9em"></div>
+      <div style="height:10px"></div>
+      <div style="display:flex;gap:10px;">
+        <button id="cfOk">Confirmer</button>
+        <button id="cfCancel">Annuler</button>
+      </div>
+    </div>
+  `;
+
+  const close = () => { document.getElementById("modal").innerHTML = ""; };
+  document.getElementById("cfClose").onclick = close;
+  document.getElementById("cfCancel").onclick = close;
+
+  document.getElementById("cfOk").onclick = async () => {
+    const btn = document.getElementById("cfOk");
+    const log = document.getElementById("cfLog");
+    btn.disabled = true;
+    log.textContent = "Enregistrement…";
+
+    try {
+      await saveWeek(sourceIso);
+      for (const iso of cibles) {
+        await saveWeek(iso);
+      }
+
+      semaineActive.iso_lundi = sourceIso;
+      await loadWeekStatusIndex();
+
+      syncState = "ok";
+      lastSyncAt = new Date();
+      close();
+      await refresh();
+
+    } catch (e) {
+      console.error(e);
+      log.textContent = `Erreur : ${e.message}`;
+      btn.disabled = false;
+    }
+  };
+}
 
 /* ======================================================
 
