@@ -135,6 +135,103 @@ async function ensureCalendar() {
 }
 
 /* ======================================================
+   BLOC 5bis — CALCUL DES TYPES A/B/V ET DES PÉRIODES
+   ====================================================== */
+
+let reperesAnnee = null;      // { premiere_semaine_a, debut_t2, debut_t3, debut_s2 }
+let joursVacances = new Set(); // dates ISO "2025-10-20"
+
+async function loadReperesAnnee() {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) return;
+
+  const sb = sbAgoram();
+  const { data, error } = await sb
+    .from("annees")
+    .select("premiere_semaine_a, debut_t2, debut_t3, debut_s2")
+    .eq("id", anneeId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Lecture repères impossible. ${error.message}`);
+  reperesAnnee = data || null;
+}
+
+async function loadJoursVacances() {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) return;
+
+  const sb = sbAgoram();
+  const { data, error } = await sb
+    .from("jours_speciaux")
+    .select("date, type")
+    .eq("annee_id", anneeId)
+    .eq("type", "vacances");
+
+  if (error) throw new Error(`Lecture jours spéciaux impossible. ${error.message}`);
+
+  joursVacances = new Set((data || []).map(r => String(r.date)));
+}
+
+// Ajoute n jours à une date ISO, renvoie une date ISO
+function addDaysISO(isoDate, n) {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().slice(0, 10);
+}
+
+// Une semaine est "vacances" si ses 5 jours ouvrés sont dans joursVacances
+function semaineEstVacances(isoLundi) {
+  for (let i = 0; i < 5; i++) {
+    if (!joursVacances.has(addDaysISO(isoLundi, i))) return false;
+  }
+  return true;
+}
+
+// Calcule type / trimestre / semestre pour toutes les semaines
+function calculerPeriodes() {
+  const out = new Map();
+  if (!semaines.length) return out;
+
+  const r = reperesAnnee || {};
+  const debutA = r.premiere_semaine_a ? String(r.premiere_semaine_a) : null;
+  const debutT2 = r.debut_t2 ? String(r.debut_t2) : null;
+  const debutT3 = r.debut_t3 ? String(r.debut_t3) : null;
+  const debutS2 = r.debut_s2 ? String(r.debut_s2) : null;
+
+  let compteur = 0;      // 0 = A, 1 = B
+  let alternanceDemarree = false;
+
+  semaines.forEach(s => {
+    const iso = s.isoLundi;
+
+    const trimestre =
+      debutT3 && iso >= debutT3 ? "T3" :
+      debutT2 && iso >= debutT2 ? "T2" : "T1";
+
+    const semestre = debutS2 && iso >= debutS2 ? "S2" : "S1";
+
+    let type;
+    if (semaineEstVacances(iso)) {
+      type = "V";                       // ne consomme pas de tour
+    } else if (!debutA || iso < debutA) {
+      type = "A";                       // avant le repère : par défaut
+    } else {
+      if (!alternanceDemarree) {
+        alternanceDemarree = true;
+        compteur = 0;
+      }
+      type = compteur % 2 === 0 ? "A" : "B";
+      compteur++;
+    }
+
+    out.set(iso, { type, trimestre, semestre, vacances: type === "V" });
+  });
+
+  return out;
+}
+window._dbg = { loadReperesAnnee, loadJoursVacances, calculerPeriodes };
+
+/* ======================================================
 
    BLOC 6 — DATA : classes sélectionnables (pour modale)
 
