@@ -229,7 +229,11 @@ function calculerPeriodes() {
 
   return out;
 }
-window._dbg = { loadReperesAnnee, loadJoursVacances, calculerPeriodes };
+window._dbg = {
+  loadReperesAnnee, loadJoursVacances, calculerPeriodes,
+  getSemaines: () => semaines,
+  calculerSemainesAnnee, genererSemaines
+};
 
 /* ======================================================
 
