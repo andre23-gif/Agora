@@ -2542,3 +2542,8 @@ select option {
 .edt-palette .edt-pastille {
   color: #222 !important;
 }
+
+<button id="valider">Valider${(() => {
+          const n = compterModifications();
+          return n ? ` (${n})` : "";
+        })()}</button>
