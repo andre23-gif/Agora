@@ -1352,12 +1352,11 @@ function numeroSemaineISO(isoDate) {
   return Math.ceil(((dt - debutAnnee) / 86400000 + 1) / 7);
 }
 
-// Premier lundi à partir du 1er septembre de l'année donnée
+// Lundi de la semaine contenant le 1er septembre
 function premierLundiSeptembre(annee) {
   const dt = new Date(Date.UTC(annee, 8, 1)); // 8 = septembre
-  while (dt.getUTCDay() !== 1) {
-    dt.setUTCDate(dt.getUTCDate() + 1);
-  }
+  const jour = dt.getUTCDay() || 7;           // dimanche = 7
+  dt.setUTCDate(dt.getUTCDate() - (jour - 1));
   return dt.toISOString().slice(0, 10);
 }
 
