@@ -813,7 +813,39 @@ function escapeHtml(s) {
 
 }
 
+/* ======================================================
+   BLOC 4a — COULEURS PAR NIVEAU
+   ====================================================== */
 
+// Teintes de base par niveau (HSL)
+const TEINTES_NIVEAU = {
+  "6": 0,    // rouge
+  "5": 45,   // jaune
+  "4": 120,  // vert
+  "3": 210   // bleu
+};
+
+// Extrait le niveau du nom de classe : "6A" -> "6", "3e2" -> "3"
+function niveauDeClasse(nom) {
+  const m = String(nom || "").match(/[3-6]/);
+  return m ? m[0] : null;
+}
+
+// Couleur de fond stable pour un nom de classe
+function couleurClasse(nom) {
+  const niveau = niveauDeClasse(nom);
+  if (niveau === null) return "#eeeeee";
+
+  const teinte = TEINTES_NIVEAU[niveau];
+
+  // Variation de clarté selon la lettre/chiffre qui suit le niveau
+  const suite = String(nom).replace(/[^A-Za-z0-9]/g, "").slice(1);
+  let somme = 0;
+  for (const c of suite) somme += c.charCodeAt(0);
+
+  const clarte = 80 + (somme % 4) * 4;  // entre 80% et 92%
+  return `hsl(${teinte}, 70%, ${clarte}%)`;
+}
 
 /* === AG_EDT_WEEK_LABEL_FINAL_V3_BEGIN ===================== */
 
@@ -827,17 +859,18 @@ function weekLabel(s) {
 
 
 function cellText(jour, creneau) {
-
   const key = `${jour}|${creneau}`;
-
-  const v = bufferEdition.grid.get(key); 
-
+  const v = bufferEdition.grid.get(key);
   if (!v || !v.classe_id) return "&nbsp;";
-
   const nom = escapeHtml(v.classe_nom || "—");
-
   return v.groupe ? `${nom} ${escapeHtml(v.groupe)}` : nom;
+}
 
+// Style de fond d'une cellule
+function cellStyle(jour, creneau) {
+  const v = bufferEdition.grid.get(`${jour}|${creneau}`);
+  if (!v || !v.classe_nom) return "";
+  return ` style="background:${couleurClasse(v.classe_nom)}"`;
 }
 
 
@@ -1014,7 +1047,7 @@ const sem = semaines[semaineRefIndex];
 
                     if (cr.code === "PM") return `<td class="edt-off">—</td>`;
 
-                    return `<td class="edt-cell" data-j="${j}" data-c="${cr.code}">${cellText(j, cr.code)}</td>`;
+                    return `<td class="edt-cell" data-j="${j}" data-c="${cr.code}"${cellStyle(j, cr.code)}>${cellText(j, cr.code)}</td>`;
 
                   }).join("")}
 
