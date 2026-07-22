@@ -1411,9 +1411,161 @@ async function genererSemaines(anneeScolaire) {
 window._dbg = {
   loadReperesAnnee, loadJoursVacances, calculerPeriodes,
   getSemaines: () => semaines,
-  calculerSemainesAnnee, genererSemaines
+  calculerSemainesAnnee, genererSemaines,
+  calculerCalendrier, importerCalendrier
 };
 
+/* ======================================================
+   BLOC 3b — IMPORT DU CALENDRIER (vacances + fériés)
+   ====================================================== */
+
+const ACADEMIE = "Versailles";
+const ZONE = "Zone C";
+
+// Date locale (Paris) d'un timestamp ISO renvoyé par l'API
+function dateLocaleDepuisISO(ts) {
+  return String(ts).slice(0, 10);
+}
+
+// Récupère les périodes de vacances d'une année scolaire
+async function fetchVacances(anneeScolaire) {
+  const where = encodeURIComponent(
+    `zones="${ZONE}" and annee_scolaire="${anneeScolaire}" and location="${ACADEMIE}"`
+  );
+  const url =
+    `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/` +
+    `fr-en-calendrier-scolaire/records?where=${where}&limit=100`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API vacances: HTTP ${res.status}`);
+  const json = await res.json();
+  return json.results || [];
+}
+
+// Développe les périodes en jours individuels
+function developperVacances(periodes, anneeScolaire) {
+  const finAnnee = `${anneeScolaire.split("-")[1]}-08-31`;
+  const out = new Map(); // date -> libelle
+
+  periodes.forEach(p => {
+    const debutSource = dateLocaleDepuisISO(p.start_date);
+    const finSource = dateLocaleDepuisISO(p.end_date);
+    const libelle = p.description || "Vacances";
+
+    // Les vacances commencent le lendemain du dernier jour de classe
+    const premier = addDaysISO(debutSource, 1);
+
+    let dernier;
+    if (libelle.includes("Été")) {
+      dernier = finAnnee;                       // jusqu'à la fin de l'année scolaire
+    } else if (debutSource === finSource) {
+      dernier = premier;                        // jour unique (pont)
+    } else {
+      dernier = addDaysISO(finSource, -1);      // veille de la reprise
+    }
+
+    let courant = premier;
+    while (courant <= dernier) {
+      out.set(courant, libelle);
+      courant = addDaysISO(courant, 1);
+    }
+  });
+
+  return out;
+}
+
+// Récupère les jours fériés d'une année civile
+async function fetchFeries(anneeCivile) {
+  const url = `https://calendrier.api.gouv.fr/jours-feries/metropole/${anneeCivile}.json`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API fériés ${anneeCivile}: HTTP ${res.status}`);
+  return await res.json(); // { "2027-01-01": "1er janvier", ... }
+}
+
+// Calcule tout, sans rien écrire en base
+async function calculerCalendrier(anneeScolaire) {
+  const [an1, an2] = anneeScolaire.split("-").map(Number);
+  const debutAnnee = `${an1}-08-01`;
+  const finAnnee = `${an2}-08-31`;
+
+  const periodes = await fetchVacances(anneeScolaire);
+  if (!periodes.length) {
+    throw new Error(`Aucune période trouvée pour ${anneeScolaire} / ${ACADEMIE}.`);
+  }
+  const vacances = developperVacances(periodes, anneeScolaire);
+
+  const feries = new Map();
+  for (const an of [an1, an2]) {
+    const data = await fetchFeries(an);
+    Object.entries(data).forEach(([date, nom]) => {
+      if (date >= debutAnnee && date <= finAnnee) feries.set(date, nom);
+    });
+  }
+
+  // Un férié pendant les vacances reste marqué "vacances"
+  const lignes = [];
+  vacances.forEach((libelle, date) => {
+    lignes.push({ date, type: "vacances", libelle });
+  });
+  feries.forEach((libelle, date) => {
+    if (!vacances.has(date)) {
+      lignes.push({ date, type: "ferie", libelle });
+    }
+  });
+
+  lignes.sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    lignes,
+    resume: {
+      periodes: periodes.length,
+      joursVacances: vacances.size,
+      feriesHorsVacances: lignes.filter(l => l.type === "ferie").length
+    }
+  };
+}
+
+// Écrit en base, en préservant les jours marqués "travaillé"
+async function importerCalendrier(anneeScolaire) {
+  const sb = sbAgoram();
+
+  const { data: annee, error: errA } = await sb
+    .from("annees").select("id").eq("libelle", anneeScolaire).maybeSingle();
+
+  if (errA) throw new Error(`Lecture année impossible. ${errA.message}`);
+  if (!annee) throw new Error(`Année ${anneeScolaire} introuvable.`);
+
+  const { lignes, resume } = await calculerCalendrier(anneeScolaire);
+
+  // Jours déjà marqués travaillés : à préserver
+  const { data: dejaTravailles } = await sb
+    .from("jours_speciaux")
+    .select("date")
+    .eq("annee_id", annee.id)
+    .eq("travaille", true);
+
+  const preserves = new Set((dejaTravailles || []).map(r => String(r.date)));
+
+  const payload = lignes.map(l => ({
+    annee_id: annee.id,
+    date: l.date,
+    type: l.type,
+    libelle: l.libelle,
+    travaille: preserves.has(l.date)
+  }));
+
+  const { error: errUp } = await sb
+    .from("jours_speciaux")
+    .upsert(payload, { onConflict: "annee_id,date" });
+
+  if (errUp) throw new Error(`Écriture jours_speciaux impossible. ${errUp.message}`);
+
+  await sb.from("annees")
+    .update({ calendrier_importe_le: new Date().toISOString() })
+    .eq("id", annee.id);
+
+  return { ...resume, ecrites: payload.length, preserves: preserves.size };
+}
 
 /* ======================================================
 
