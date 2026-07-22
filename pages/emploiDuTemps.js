@@ -229,11 +229,7 @@ function calculerPeriodes() {
 
   return out;
 }
-window._dbg = {
-  loadReperesAnnee, loadJoursVacances, calculerPeriodes,
-  getSemaines: () => semaines,
-  calculerSemainesAnnee, genererSemaines
-};
+
 
 /* ======================================================
 
@@ -1412,6 +1408,13 @@ async function genererSemaines(anneeScolaire) {
 
   return { crees: aCreer.length, existantes: dejaLa.size, total: toutes.length };
 }
+
+window._dbg = {
+  loadReperesAnnee, loadJoursVacances, calculerPeriodes,
+  getSemaines: () => semaines,
+  calculerSemainesAnnee, genererSemaines
+};
+
 
 /* ======================================================
 
