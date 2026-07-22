@@ -2551,3 +2551,10 @@ select option {
                               .edt-grid .edt-cell {
   color: #222 !important;
 }
+
+.edt-propag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9em;
+}
