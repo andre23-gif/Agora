@@ -2518,3 +2518,22 @@ select option {
   color: #f0f4ff;
   -webkit-text-fill-color: unset;
 }
+
+.edt-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  align-content: flex-start;
+  max-width: 180px;
+}
+.edt-pastille {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.85em;
+}
+.edt-pastille.active {
+  font-weight: bold;
+}
