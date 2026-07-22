@@ -1531,8 +1531,10 @@ async function ouvrirModalPreparerAnnee() {
         ajouter(`⚠ Calendrier non importé : ${e.message}`);
       }
 
-      ajouter("\nTerminé. Fermez pour recharger la page.");
-      document.getElementById("paCancel").textContent = "Fermer";
+ajouter("\nTerminé.");
+      const btnFermer = document.getElementById("paCancel");
+      btnFermer.textContent = "Fermer et recharger";
+      btnFermer.onclick = () => location.reload();
 
     } catch (e) {
       ajouter(`✖ ${e.message}`);
