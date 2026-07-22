@@ -2547,3 +2547,7 @@ select option {
           const n = compterModifications();
           return n ? ` (${n})` : "";
         })()}</button>
+
+                              .edt-grid .edt-cell {
+  color: #222 !important;
+}
