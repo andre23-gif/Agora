@@ -1297,61 +1297,27 @@ const allerSemaine = async (i) => {
 
 
 if (preparerAnnee) preparerAnnee.onclick = () => ouvrirModalPreparerAnnee();
-  if (valider) valider.onclick = async () => {
+ if (valider) valider.onclick = async () => {
+    const sourceIso = semaineActive.iso_lundi;
 
-    try {
-
-      const sourceIso = semaineActive.iso_lundi;
-
-      
-
-      // BRANCHEMENT FIXE 5 : On exécute d'abord l'écriture de la source depuis le buffer actif
-
-      await saveWeek(sourceIso);
-
-
-
-      const targets = Array.from(semainesCibles).filter(x => x !== sourceIso);
-
-      if (targets.length) {
-
-        await applyWeekToTargets(sourceIso, targets);
-
+    if (!propagerActif) {
+      try {
+        await saveWeek(sourceIso);
+        await loadWeekStatusIndex();
+        syncState = "ok";
+        lastSyncAt = new Date();
+      } catch (e) {
+        console.error(e);
+        syncState = "error";
       }
-
-
-
-      await loadWeekStatusIndex();
-
-      semainesCibles.clear();
-
-
-
-      // BRANCHEMENT FIXE 6 : On ne réappelle PAS loadWeek ici, l'état local a déjà été synchronisé proprement par saveWeek
-
-      syncState = "ok";
-
-      lastSyncAt = new Date();
-
       await refresh();
-
-
-
-    } catch (e) {
-
-      console.error(e);
-
-      syncState = "error";
-
-      await refresh();
-
+      return;
     }
 
+    const cibles = calculerCibles(sourceIso);
+    await ouvrirModalConfirmation(sourceIso, cibles);
   };
-
 }
-
-
 
 /* ======================================================
 
