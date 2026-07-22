@@ -869,13 +869,69 @@ function cellText(jour, creneau) {
 }
 
 // Style de fond d'une cellule
-function cellStyle(jour, creneau) {
-  const v = bufferEdition.grid.get(`${jour}|${creneau}`);
-  if (!v || !v.classe_nom) return "";
-  return ` style="background:${couleurClasse(v.classe_nom)}"`;
+// Une cellule diffère-t-elle de ce qui est enregistré ?
+function cellModifiee(jour, creneau) {
+  const key = `${jour}|${creneau}`;
+  const buf = bufferEdition.grid.get(key);
+  const sav = semaineActive.grid.get(key);
+
+  const bufId = buf && buf.classe_id ? String(buf.classe_id) : "";
+  const savId = sav && sav.classe_id ? String(sav.classe_id) : "";
+  const bufGr = buf && buf.groupe ? String(buf.groupe) : "";
+  const savGr = sav && sav.groupe ? String(sav.groupe) : "";
+
+  return bufId !== savId || bufGr !== savGr;
 }
 
+// Nombre total de cellules modifiées
+function compterModifications() {
+  let n = 0;
+  JOURS.forEach(j => {
+    CRENEAUX.forEach(cr => {
+      if (cr.code !== "PM" && cellModifiee(j, cr.code)) n++;
+    });
+  });
+  return n;
+}
 
+// Style de fond d'une cellule, plus liseré si modifiée
+function cellStyle(jour, creneau) {
+  const v = bufferEdition.grid.get(`${jour}|${creneau}`);
+  const fond = (v && v.classe_nom) ? `background:${couleurClasse(v.classe_nom)};` : "";
+  const liseré = cellModifiee(jour, creneau) ? "box-shadow:inset 4px 0 0 #e8880c;" : "";
+  if (!fond && !liseré) return "";
+  return ` style="${fond}${liseré}"`;
+}
+
+// Compte les créneaux par classe dans le buffer
+function compterCreneauxParClasse() {
+  const compte = new Map(); // nom -> nombre
+  bufferEdition.grid.forEach(v => {
+    if (!v || !v.classe_id) return;
+    const label = v.groupe ? `${v.classe_nom} ${v.groupe}` : v.classe_nom;
+    compte.set(label, (compte.get(label) || 0) + 1);
+  });
+  return Array.from(compte.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+// HTML du bandeau de totaux
+function bandeauTotaux() {
+  const lignes = compterCreneauxParClasse();
+  if (!lignes.length) return `<div class="edt-totaux"><em>Semaine vide</em></div>`;
+
+  const total = lignes.reduce((s, x) => s + x[1], 0);
+
+  const pastilles = lignes.map(([label, n]) => {
+    const nom = label.replace(" gr 1", "").replace(" gr 2", "");
+    return `<span class="edt-total-item" style="background:${couleurClasse(nom)}">
+              ${escapeHtml(label)} : ${n}
+            </span>`;
+  }).join("");
+
+  return `<div class="edt-totaux">${pastilles}
+            <span class="edt-total-general">Total : ${total} créneaux</span>
+          </div>`;
+}
 
 function metaButton(k, v, active) {
 
@@ -975,7 +1031,10 @@ const sem = semaines[semaineRefIndex];
         </span>
 
         <button id="preparerAnnee">Préparer une année</button>
-        <button id="valider">Valider</button>
+        <button id="valider">Valider${(() => {
+          const n = compterModifications();
+          return n ? ` (${n})` : "";
+        })()}</button>
 
       </div>
 
@@ -1075,7 +1134,9 @@ const sem = semaines[semaineRefIndex];
 
               `).join("")}
 
-            </table>
+           </table>
+
+            ${bandeauTotaux()}
 
           </div>
 
@@ -1084,7 +1145,6 @@ const sem = semaines[semaineRefIndex];
       </div>
 
       <div id="modal"></div>
-
     </section>
 
   `;
