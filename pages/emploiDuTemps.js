@@ -1337,7 +1337,77 @@ async function refresh() {
 
 }
 
+/* ======================================================
+   BLOC 3a — GÉNÉRATION DES SEMAINES D'UNE ANNÉE
+   ====================================================== */
 
+// Numéro de semaine ISO d'une date ISO "2027-01-04"
+function numeroSemaineISO(isoDate) {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  // jeudi de la semaine courante
+  const jour = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - jour);
+  const debutAnnee = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  return Math.ceil(((dt - debutAnnee) / 86400000 + 1) / 7);
+}
+
+// Premier lundi à partir du 1er septembre de l'année donnée
+function premierLundiSeptembre(annee) {
+  const dt = new Date(Date.UTC(annee, 8, 1)); // 8 = septembre
+  while (dt.getUTCDay() !== 1) {
+    dt.setUTCDate(dt.getUTCDate() + 1);
+  }
+  return dt.toISOString().slice(0, 10);
+}
+
+// Calcule la liste des semaines, sans rien écrire
+function calculerSemainesAnnee(anneeScolaire) {
+  const [debut, fin] = anneeScolaire.split("-").map(Number);
+  if (!debut || !fin) throw new Error(`Année scolaire invalide : ${anneeScolaire}`);
+
+  const premier = premierLundiSeptembre(debut);
+  const limite = `${fin}-08-31`;
+
+  const out = [];
+  let courant = premier;
+
+  while (courant <= limite) {
+    out.push({
+      libelle: `Semaine ${numeroSemaineISO(courant)}`,
+      date_lundi: courant,
+      annee_scolaire: anneeScolaire
+    });
+    courant = addDaysISO(courant, 7);
+  }
+
+  return out;
+}
+
+// Insère les semaines manquantes d'une année
+async function genererSemaines(anneeScolaire) {
+  const sb = sbAgoram();
+
+  const { data: existantes, error: errSel } = await sb
+    .from("semaines")
+    .select("date_lundi")
+    .eq("annee_scolaire", anneeScolaire);
+
+  if (errSel) throw new Error(`Lecture semaines impossible. ${errSel.message}`);
+
+  const dejaLa = new Set((existantes || []).map(s => String(s.date_lundi)));
+  const toutes = calculerSemainesAnnee(anneeScolaire);
+  const aCreer = toutes.filter(s => !dejaLa.has(s.date_lundi));
+
+  if (!aCreer.length) {
+    return { crees: 0, existantes: dejaLa.size, total: toutes.length };
+  }
+
+  const { error: errIns } = await sb.from("semaines").insert(aCreer);
+  if (errIns) throw new Error(`Insertion semaines impossible. ${errIns.message}`);
+
+  return { crees: aCreer.length, existantes: dejaLa.size, total: toutes.length };
+}
 
 /* ======================================================
 
