@@ -36,6 +36,8 @@ let bufferEdition = {
   grid: new Map()
 };
 
+let classeActive = null;  // { classe_id, groupe, label } ou null
+
 let syncState = "unknown";
 let lastSyncAt = null;
 let _calendarEnsuredOnce = false;
@@ -1021,7 +1023,25 @@ const sem = semaines[semaineRefIndex];
 
         </div>
 
-
+<div class="edt-palette">
+          ${(await getClassesOptions())
+            .filter(o => o.classe_id)
+            .map(o => {
+              const actif = classeActive
+                && String(classeActive.classe_id) === String(o.classe_id)
+                && String(classeActive.groupe || "") === String(o.groupe || "");
+              const nom = o.label.replace(" gr 1", "").replace(" gr 2", "");
+              return `<button class="edt-pastille${actif ? " active" : ""}"
+                        data-cid="${o.classe_id}"
+                        data-grp="${o.groupe || ""}"
+                        data-lab="${escapeHtml(o.label)}"
+                        style="background:${couleurClasse(nom)}${actif ? ";outline:2px solid #333" : ""}">
+                        ${escapeHtml(o.label)}
+                      </button>`;
+            }).join("")}
+          <button class="edt-pastille" id="pinceauGomme"
+                  style="background:#fff;border:1px dashed #999">Gomme</button>
+        </div>
 
         <div class="edt-rightpanel">
 
@@ -1170,14 +1190,64 @@ const anneeSelect = document.getElementById("anneeSelect");
 
 
 
-  document.querySelectorAll(".edt-cell[data-j][data-c]").forEach(td => {
+  // Sélection d'une classe dans la palette
+  document.querySelectorAll(".edt-pastille[data-cid]").forEach(btn => {
+    btn.onclick = async () => {
+      const cid = btn.dataset.cid;
+      const grp = btn.dataset.grp || null;
+      const deja = classeActive
+        && String(classeActive.classe_id) === String(cid)
+        && String(classeActive.groupe || "") === String(grp || "");
 
-    td.onclick = async () => {
-
-      await ouvrirModal(td.dataset.j, td.dataset.c);
-
+      classeActive = deja ? null : { classe_id: cid, groupe: grp, label: btn.dataset.lab };
+      await refresh();
     };
+  });
 
+  // Gomme
+  const gomme = document.getElementById("pinceauGomme");
+  if (gomme) gomme.onclick = async () => {
+    classeActive = (classeActive && classeActive.classe_id === "__gomme__")
+      ? null
+      : { classe_id: "__gomme__", groupe: null, label: "Gomme" };
+    await refresh();
+  };
+
+  // Clic sur une cellule
+  document.querySelectorAll(".edt-cell[data-j][data-c]").forEach(td => {
+    td.onclick = async () => {
+      const j = td.dataset.j;
+      const c = td.dataset.c;
+      const key = `${j}|${c}`;
+
+      if (!classeActive) {
+        await ouvrirModal(j, c);
+        return;
+      }
+
+      if (classeActive.classe_id === "__gomme__") {
+        bufferEdition.grid.set(key, { classe_id: null, classe_nom: null, groupe: null });
+      } else {
+        const actuel = bufferEdition.grid.get(key);
+        const memeClasse = actuel
+          && String(actuel.classe_id) === String(classeActive.classe_id)
+          && String(actuel.groupe || "") === String(classeActive.groupe || "");
+
+        if (memeClasse) {
+          bufferEdition.grid.set(key, { classe_id: null, classe_nom: null, groupe: null });
+        } else {
+          const nom = classeActive.label.replace(" gr 1", "").replace(" gr 2", "");
+          bufferEdition.grid.set(key, {
+            classe_id: classeActive.classe_id,
+            classe_nom: nom,
+            groupe: classeActive.groupe
+          });
+        }
+      }
+
+      syncState = "dirty";
+      await refresh();
+    };
   });
 
 
