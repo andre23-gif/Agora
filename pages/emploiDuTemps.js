@@ -948,6 +948,10 @@ export async function renderEmploiDuTemps() {
   const startYear = new Date().getMonth() < 8 ? currentYear - 1 : currentYear;
   const annee = window.appAnneeCourante || `${startYear}-${startYear + 1}`;
 
+if (!reperesAnnee) {
+    try { await loadReperesAnnee(); await loadJoursVacances(); } catch (e) { console.error(e); }
+  }
+   
   if (weekStatusIndex.size === 0) {
     try { await loadWeekStatusIndex(); } catch (e) { console.error(e); }
   }
@@ -974,10 +978,26 @@ const sem = semaines[semaineRefIndex];
 
   const meta = bufferEdition.meta; 
 
+  const periodes = calculerPeriodes();
+  const pSem = periodes.get(sem.isoLundi) || { type: "?", trimestre: "?", semestre: "?" };
+
   return `
     <section class="page page-edt">
       <div class="topbar">
-        <strong>${weekLabel(sem)}</strong>
+        <button id="semPrec" ${semaineRefIndex === 0 ? "disabled" : ""}>‹</button>
+        <select id="semSelect">
+          ${semaines.map((s, i) => {
+            const p = periodes.get(s.isoLundi) || {};
+            const st = weekStatusIndex.get(String(s.isoLundi));
+            const dot = (st && st.has_data) ? "🟦" : "⬜";
+            const suffixe = p.type === "V" ? "V" : (p.type || "?");
+            return `<option value="${i}" ${i === semaineRefIndex ? "selected" : ""}>
+                      ${dot} ${escapeHtml(weekLabel(s))} — ${suffixe}
+                    </option>`;
+          }).join("")}
+        </select>
+        <button id="semSuiv" ${semaineRefIndex >= semaines.length - 1 ? "disabled" : ""}>›</button>
+        <strong>${pSem.type} · ${pSem.trimestre} · ${pSem.semestre}</strong>
                 <span>Année</span>
        <select id="anneeSelect">
           ${(() => {
@@ -1041,46 +1061,6 @@ const sem = semaines[semaineRefIndex];
 
 
       <div class="edt-body">
-
-        <div class="edt-leftpanel">
-
-          <div class="edt-weeklist">
-
-            ${semaines.map((s, i) => {
-
-              const iso = s.isoLundi;
-
-              const checked = semainesCibles.has(iso) ? "checked" : "";
-
-              const st = weekStatusIndex.get(String(iso));
-
-              const hasData = st ? !!st.has_data : false;
-
-              const dot = hasData ? "🟦" : "⬜";
-
-
-
-              return `
-
-                <div class="edt-weekrow ${i === semaineRefIndex ? "active" : ""}">
-
-                  <input type="checkbox" class="edt-weekcheck" data-iso="${iso}" ${checked}>
-
-                  <span class="edt-weekbtn" data-week-index="${i}">
-
-                    ${dot} ${escapeHtml(weekLabel(s))}
-
-                  </span>
-
-                </div>
-
-              `;
-
-            }).join("")}
-
-          </div>
-
-        </div>
 
 <div class="edt-palette">
           ${(await getClassesOptions())
@@ -1214,39 +1194,24 @@ const anneeSelect = document.getElementById("anneeSelect");
 
   });
 
+const allerSemaine = async (i) => {
+    if (i < 0 || i >= semaines.length) return;
+    if (compterModifications() > 0) {
+      if (!confirm("Des modifications ne sont pas enregistrées. Changer de semaine quand même ?")) return;
+    }
+    syncState = "unknown";
+    semaineRefIndex = i;
+    await refresh();
+  };
 
+  const semSelect = document.getElementById("semSelect");
+  if (semSelect) semSelect.onchange = (e) => allerSemaine(Number(e.target.value));
 
-  document.querySelectorAll(".edt-weekbtn[data-week-index]").forEach(b => {
+  const semPrec = document.getElementById("semPrec");
+  if (semPrec) semPrec.onclick = () => allerSemaine(semaineRefIndex - 1);
 
-    b.onclick = async (e) => {
-
-      e.stopPropagation();
-
-      syncState = "unknown";
-
-      semaineRefIndex = Number(b.dataset.weekIndex);
-
-      await refresh();
-
-    };
-
-  });
-
-
-
-  document.querySelectorAll(".edt-weekcheck[data-iso]").forEach(cb => {
-
-    cb.onclick = (e) => {
-
-      e.stopPropagation();
-
-      if (cb.checked) semainesCibles.add(cb.dataset.iso);
-
-      else semainesCibles.delete(cb.dataset.iso);
-
-    };
-
-  });
+  const semSuiv = document.getElementById("semSuiv");
+  if (semSuiv) semSuiv.onclick = () => allerSemaine(semaineRefIndex + 1);
 
 
 
