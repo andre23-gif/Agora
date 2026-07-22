@@ -2533,7 +2533,12 @@ select option {
   padding: 4px 8px;
   cursor: pointer;
   font-size: 0.85em;
+  color: #222;
 }
 .edt-pastille.active {
   font-weight: bold;
+}
+
+.edt-palette .edt-pastille {
+  color: #222 !important;
 }
