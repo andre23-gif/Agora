@@ -1581,7 +1581,8 @@ window._dbg = {
   loadReperesAnnee, loadJoursVacances, calculerPeriodes,
   getSemaines: () => semaines,
   calculerSemainesAnnee, genererSemaines,
-  calculerCalendrier, importerCalendrier
+  calculerCalendrier, importerCalendrier,
+  couleurClasse
 };
 
 /* ======================================================
