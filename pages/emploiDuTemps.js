@@ -939,6 +939,7 @@ const sem = semaines[semaineRefIndex];
 
         </span>
 
+        <button id="preparerAnnee">Préparer une année</button>
         <button id="valider">Valider</button>
 
       </div>
@@ -1052,6 +1053,7 @@ export function bindEmploiDuTempsEvents() {
 const anneeSelect = document.getElementById("anneeSelect");
 
   const valider = document.getElementById("valider");
+  const preparerAnnee = document.getElementById("preparerAnnee");
 
 
 
@@ -1146,7 +1148,7 @@ const anneeSelect = document.getElementById("anneeSelect");
   });
 
 
-
+if (preparerAnnee) preparerAnnee.onclick = () => ouvrirModalPreparerAnnee();
   if (valider) valider.onclick = async () => {
 
     try {
@@ -1406,6 +1408,138 @@ async function genererSemaines(anneeScolaire) {
   if (errIns) throw new Error(`Insertion semaines impossible. ${errIns.message}`);
 
   return { crees: aCreer.length, existantes: dejaLa.size, total: toutes.length };
+}
+
+/* ======================================================
+   BLOC 3c — MODALE "PRÉPARER UNE ANNÉE"
+   ====================================================== */
+
+async function ouvrirModalPreparerAnnee() {
+  const sb = sbAgoram();
+
+  const { data: annees, error } = await sb
+    .from("annees")
+    .select("id, libelle, premiere_semaine_a, debut_t2, debut_t3, debut_s2, calendrier_importe_le")
+    .order("libelle");
+
+  if (error) { alert(`Lecture années impossible. ${error.message}`); return; }
+
+  const optAnnees = (annees || [])
+    .map(a => `<option value="${a.libelle}">${escapeHtml(a.libelle)}</option>`)
+    .join("");
+
+  document.getElementById("modal").innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <strong>Préparer une année</strong>
+        <button id="paClose">✕</button>
+      </div>
+      <div style="height:10px"></div>
+
+      <label>Année scolaire</label>
+      <select id="paAnnee">${optAnnees}</select>
+      <div style="height:10px"></div>
+
+      <label>1re semaine A (lundi)</label>
+      <input type="date" id="paSemA">
+      <div style="height:6px"></div>
+
+      <label>Début T2 (lundi)</label>
+      <input type="date" id="paT2">
+      <div style="height:6px"></div>
+
+      <label>Début T3 (lundi)</label>
+      <input type="date" id="paT3">
+      <div style="height:6px"></div>
+
+      <label>Début S2 (lundi)</label>
+      <input type="date" id="paS2">
+      <div style="height:10px"></div>
+
+      <div id="paLog" style="font-size:0.9em;white-space:pre-line;"></div>
+      <div style="height:10px"></div>
+
+      <div style="display:flex;gap:10px;">
+        <button id="paOk">Lancer</button>
+        <button id="paCancel">Annuler</button>
+      </div>
+    </div>
+  `;
+
+  const close = () => { document.getElementById("modal").innerHTML = ""; };
+  document.getElementById("paClose").onclick = close;
+  document.getElementById("paCancel").onclick = close;
+
+  const selAnnee = document.getElementById("paAnnee");
+  const log = document.getElementById("paLog");
+
+  // Pré-remplit les champs avec les valeurs déjà en base
+  const remplirChamps = () => {
+    const a = (annees || []).find(x => x.libelle === selAnnee.value);
+    document.getElementById("paSemA").value = a?.premiere_semaine_a || "";
+    document.getElementById("paT2").value = a?.debut_t2 || "";
+    document.getElementById("paT3").value = a?.debut_t3 || "";
+    document.getElementById("paS2").value = a?.debut_s2 || "";
+    log.textContent = a?.calendrier_importe_le
+      ? `Calendrier importé le ${new Date(a.calendrier_importe_le).toLocaleDateString("fr-FR")}`
+      : "Calendrier jamais importé.";
+  };
+  selAnnee.onchange = remplirChamps;
+  remplirChamps();
+
+  document.getElementById("paOk").onclick = async () => {
+    const anneeScolaire = selAnnee.value;
+    const repere = {
+      premiere_semaine_a: document.getElementById("paSemA").value || null,
+      debut_t2: document.getElementById("paT2").value || null,
+      debut_t3: document.getElementById("paT3").value || null,
+      debut_s2: document.getElementById("paS2").value || null
+    };
+
+    // Contrôle : toutes les dates doivent être des lundis
+    const mauvais = Object.entries(repere)
+      .filter(([, v]) => v && new Date(v + "T12:00:00").getDay() !== 1)
+      .map(([k]) => k);
+
+    if (mauvais.length) {
+      log.textContent = `⚠ Ces dates ne sont pas des lundis : ${mauvais.join(", ")}`;
+      return;
+    }
+
+    const btn = document.getElementById("paOk");
+    btn.disabled = true;
+    log.textContent = "";
+
+    const ajouter = (txt) => { log.textContent += txt + "\n"; };
+
+    try {
+      // 1. Semaines
+      const rs = await genererSemaines(anneeScolaire);
+      ajouter(`✔ Semaines : ${rs.crees} créées, ${rs.existantes} déjà présentes.`);
+
+      // 2. Repères
+      const { error: errRep } = await sb
+        .from("annees").update(repere).eq("libelle", anneeScolaire);
+      if (errRep) throw new Error(`Enregistrement repères impossible. ${errRep.message}`);
+      ajouter("✔ Repères enregistrés.");
+
+      // 3. Calendrier
+      try {
+        const rc = await importerCalendrier(anneeScolaire);
+        ajouter(`✔ Calendrier : ${rc.joursVacances} jours de vacances, ${rc.feriesHorsVacances} fériés.`);
+      } catch (e) {
+        ajouter(`⚠ Calendrier non importé : ${e.message}`);
+      }
+
+      ajouter("\nTerminé. Fermez pour recharger la page.");
+      document.getElementById("paCancel").textContent = "Fermer";
+
+    } catch (e) {
+      ajouter(`✖ ${e.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  };
 }
 
 window._dbg = {
