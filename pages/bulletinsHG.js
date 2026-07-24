@@ -160,6 +160,55 @@ async function getParticipationsMoyenne(eleveId, seanceIds) {
   return scores.reduce((a, b) => a + b, 0) / scores.length;
 }
 
+/* -------------------------------------------------------
+   BULLETINS EN BASE (agoram.bulletins_hg)
+------------------------------------------------------- */
+
+async function chargerBulletinsClasse(classeId, periode) {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId || !classeId) return {};
+
+  // Récupère les ids des élèves de la classe
+  const ids = elevesClasse.map(e => e.id);
+  if (!ids.length) return {};
+
+  const { data, error } = await sbAgoram()
+    .from("bulletins_hg")
+    .select("eleve_id, texte, statut")
+    .eq("annee_id", anneeId)
+    .eq("periode", periode)
+    .in("eleve_id", ids);
+
+  if (error) {
+    console.error("Lecture bulletins impossible :", error.message);
+    return {};
+  }
+
+  const out = {};
+  (data || []).forEach(b => {
+    out[b.eleve_id] = { texte: b.texte, statut: b.statut };
+  });
+  return out;
+}
+
+async function sauverBulletin(eleveId, periode, texte, statut) {
+  const anneeId = await getActiveAnneeId();
+  if (!anneeId) throw new Error("Aucune année active.");
+
+  const { error } = await sbAgoram()
+    .from("bulletins_hg")
+    .upsert({
+      eleve_id: eleveId,
+      annee_id: anneeId,
+      periode,
+      texte,
+      statut,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "eleve_id,annee_id,periode" });
+
+  if (error) throw new Error(`Sauvegarde bulletin impossible. ${error.message}`);
+}
+
 async function getEventsEleve(eleveId, seanceIds) {
   if (!seanceIds.length) return { absences: 0, retards: 0, devoirs: 0, observations: 0, textes: [] };
 
@@ -346,7 +395,8 @@ async function chargerElevesClasse() {
   elevesClasse    = await getElevesFromSupabase(classeActiveId);
   parametres      = {};
   parametresValid = {};
-  bulletins       = {};
+  bulletins       = await chargerBulletinsClasse(classeActiveId, periodeActive);
+}
   eleveActifIndex = null;
 }
 
@@ -591,12 +641,12 @@ export function bindBulletinsHGEvents() {
     document.getElementById("bulletinsPanneau").style.display = "none";
   });
 
-  document.getElementById("bulletinTrimestre")?.addEventListener("change", e => {
+ document.getElementById("bulletinTrimestre")?.addEventListener("change", async e => {
     periodeActive   = e.target.value;
     parametres      = {};
     parametresValid = {};
-    bulletins       = {};
     eleveActifIndex = null;
+    bulletins       = await chargerBulletinsClasse(classeActiveId, periodeActive);
     refreshListe();
     document.getElementById("bulletinsPanneau").style.display = "none";
   });
@@ -687,6 +737,8 @@ function bindModuleEcritureEvents(index) {
     const texte = document.getElementById("bulletinTexteEdit")?.value.trim();
     if (!texte) return;
     bulletins[eleve.id] = { texte, statut: "valide" };
+    sauverBulletin(eleve.id, periodeActive, texte, "valide")
+      .catch(err => console.error("Sauvegarde bulletin :", err));
     document.getElementById("moduleEcriture")?.remove();
     const panneau = document.getElementById("bulletinsPanneau");
     panneau.innerHTML = renderPanneauParametres(index);
@@ -716,9 +768,15 @@ async function genererTous() {
         continue;
       }
     }
-    const texte = assemblerBulletin(parametres[eleve.id]);
-    if (texte) bulletins[eleve.id] = { texte, statut: "genere" };
-  }
+   const texte = assemblerBulletin(parametres[eleve.id]);
+    if (texte) {
+      bulletins[eleve.id] = { texte, statut: "genere" };
+      try {
+        await sauverBulletin(eleve.id, periodeActive, texte, "genere");
+      } catch (err) {
+        console.error(`Sauvegarde bulletin ${eleve.nom} :`, err);
+      }
+    }
 
   if (btn) { btn.disabled = false; btn.textContent = "⚡ Générer tous"; }
   refreshListe();
