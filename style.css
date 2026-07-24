@@ -2755,3 +2755,23 @@ button:disabled:hover,
   /* Exception : les pastilles doivent rester compactes */
   .edt-pastille{ min-height: 32px; }
 }
+/* Bandeau semaine hors série */
+.edt-horsserie{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  color: var(--texte-doux);
+  background: rgba(192,80,20,0.10);
+  border: 1px solid rgba(232,160,48,0.35);
+  border-left: 3px solid var(--accent-bronze);
+}
+
+.edt-horsserie button{
+  font-size: 0.76rem;
+  padding: 5px 12px;
+  min-height: 0;
+}
