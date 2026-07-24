@@ -194,13 +194,11 @@ function listeClasses() {
 }
 
 export async function renderProfilEleve() {
-  if (!tousEleves.length) {
-    try {
-      tousEleves = await chargerTousEleves();
-    } catch (e) {
-      console.error(e);
-      return `<div class="page"><h1>Profil élève</h1><p>Erreur de chargement.</p></div>`;
-    }
+  try {
+    tousEleves = await chargerTousEleves();
+  } catch (e) {
+    console.error(e);
+    return `<div class="page"><h1>Profil élève</h1><p>Erreur de chargement.</p></div>`;
   }
 
   if (!tousEleves.length) {
