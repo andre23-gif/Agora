@@ -349,7 +349,18 @@ async function loadWeekStatusIndex() {
   weekStatusIndex = new Map();
 
   (data || []).forEach(r => {
+// Marqueur hors_serie, lu directement dans edt_weeks
+  const { data: weeks } = await sb
+    .from("edt_weeks")
+    .select("iso_lundi, hors_serie")
+    .eq("annee_id", anneeId);
 
+  (weeks || []).forEach(w => {
+    const key = String(w.iso_lundi);
+    const prev = weekStatusIndex.get(key) || { has_data: false };
+    prev.hors_serie = !!w.hors_serie;
+    weekStatusIndex.set(key, prev);
+  });
     weekStatusIndex.set(String(r.iso_lundi), {
 
       has_data: !!r.has_data,
@@ -620,7 +631,7 @@ async function loadWeek(isoLundi) {
 
 
 
-async function saveWeek(isoLundi) {
+async function saveWeek(isoLundi, horsSerie = false) {
 
   const anneeId = await getActiveAnneeId();
 
@@ -640,22 +651,15 @@ async function saveWeek(isoLundi) {
 
 
 
-  const { error: errUpW } = await sb
-
+const { error: errUpW } = await sb
     .from("edt_weeks")
-
     .upsert([{
-
       annee_id: anneeId,
-
       iso_lundi: isoLundi,
-
       type: meta.type,
-
       trimestre: meta.trimestre,
-
-      semestre: meta.semestre
-
+      semestre: meta.semestre,
+      hors_serie: horsSerie
     }], { onConflict: "annee_id,iso_lundi" });
 
 
@@ -1028,8 +1032,9 @@ const sem = semaines[semaineRefIndex];
             const st = weekStatusIndex.get(String(s.isoLundi));
             const dot = (st && st.has_data) ? "🟦" : "⬜";
             const suffixe = p.type === "V" ? "V" : (p.type || "?");
+            const etoile = (st && st.hors_serie) ? " *" : "";
             return `<option value="${i}" ${i === semaineRefIndex ? "selected" : ""}>
-                      ${dot} ${escapeHtml(weekLabel(s))} — ${suffixe}
+                      ${dot} ${escapeHtml(weekLabel(s))} — ${suffixe}${etoile}
                     </option>`;
           }).join("")}
         </select>
@@ -1089,7 +1094,14 @@ const sem = semaines[semaineRefIndex];
 
       </div>
 
-
+${(() => {
+        const st = weekStatusIndex.get(String(sem.isoLundi));
+        if (!st || !st.hors_serie) return "";
+        return `<div class="edt-horsserie">
+                  Cette semaine a été modifiée seule — elle diffère de ses semaines jumelles.
+                  <button id="resyncBtn">Resynchroniser</button>
+                </div>`;
+      })()}
 
       <div class="edt-body">
 
@@ -1300,9 +1312,9 @@ if (preparerAnnee) preparerAnnee.onclick = () => ouvrirModalPreparerAnnee();
  if (valider) valider.onclick = async () => {
     const sourceIso = semaineActive.iso_lundi;
 
-    if (!propagerActif) {
+   if (!propagerActif) {
       try {
-        await saveWeek(sourceIso);
+        await saveWeek(sourceIso, true);   // modification isolée → hors série
         await loadWeekStatusIndex();
         syncState = "ok";
         lastSyncAt = new Date();
@@ -1496,9 +1508,9 @@ async function ouvrirModalConfirmation(sourceIso, cibles) {
     log.textContent = "Enregistrement…";
 
     try {
-      await saveWeek(sourceIso);
+      await saveWeek(sourceIso, false);
       for (const iso of cibles) {
-        await saveWeek(iso);
+        await saveWeek(iso, false);
       }
 
       semaineActive.iso_lundi = sourceIso;
@@ -1515,6 +1527,61 @@ async function ouvrirModalConfirmation(sourceIso, cibles) {
       btn.disabled = false;
     }
   };
+}
+
+/* ======================================================
+   BLOC 8 — RESYNCHRONISATION D'UNE SEMAINE HORS SÉRIE
+   ====================================================== */
+
+// Semaine jumelle la plus proche en amont
+function trouverJumelleAmont(isoCible) {
+  const periodes = calculerPeriodes();
+  const p = periodes.get(isoCible);
+  if (!p || p.type === "V") return null;
+
+  const cle = portee === "semestre" ? "semestre" : "trimestre";
+
+  let trouvee = null;
+  semaines.forEach(s => {
+    const iso = s.isoLundi;
+    if (iso >= isoCible) return;
+    const q = periodes.get(iso);
+    if (!q || q.type !== p.type || q[cle] !== p[cle]) return;
+    const st = weekStatusIndex.get(String(iso));
+    if (!st || !st.has_data) return;
+    if (st.hors_serie) return;              // on ne copie pas une autre exception
+    trouvee = iso;                          // la boucle avance, on garde la dernière
+  });
+
+  return trouvee;
+}
+
+async function resynchroniserSemaine(isoCible) {
+  const source = trouverJumelleAmont(isoCible);
+  if (!source) {
+    alert("Aucune semaine jumelle enregistrée avant celle-ci.");
+    return;
+  }
+
+  const semSource = semaines.find(s => s.isoLundi === source);
+  const nom = semSource ? weekLabel(semSource) : source;
+
+  if (!confirm(`Reprendre le contenu de ${nom} ?\nLa saisie actuelle sera remplacée.`)) return;
+
+  try {
+    // Charge la source dans le buffer, puis réécrit sur la cible
+    await loadWeek(source);
+    await saveWeek(isoCible, false);
+    await loadWeek(isoCible);
+    await loadWeekStatusIndex();
+
+    syncState = "ok";
+    lastSyncAt = new Date();
+    await refresh();
+  } catch (e) {
+    console.error(e);
+    alert(`Resynchronisation impossible : ${e.message}`);
+  }
 }
 
 /* ======================================================
