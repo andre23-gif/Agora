@@ -1,33 +1,67 @@
 /* =====================================================
    AGORAMOSAÏQUE — style.css
    Thème : Mosaïque Foundation · Art Déco Futuriste
+
    Typographie :
-     - Bandeau / h1-h3 : Cinzel (géométrique, Porsche-like)
+     - Bandeau / titres : Cinzel (géométrique)
      - Corps / interface : Poiret One
+
+   SOMMAIRE
+     1.  Variables et base
+     2.  Fond animé
+     3.  Bandeau et navigation
+     4.  Écran de connexion
+     5.  Typographie
+     6.  Formulaires
+     7.  Boutons
+     8.  Cartes
+     9.  Modales (global)
+     10. Modale profil élève (Classes HG)
+     11. Page Import / Export
+     12. Page Classes HG
+     13. Page Salle
+     14. Page EDT
+     15. Page Bulletins HG
+     16. Page PP
+     17. Page Profil élève
+     18. Responsive
    ===================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Poiret+One&display=swap');
 
 
 /* =====================================================
-   GLOBAL — VARIABLES
+   1. VARIABLES ET BASE
    ===================================================== */
 
 :root{
   --header-h: 76px;
   --app-pad: 16px;
 
+  /* Fonds */
   --bleu-fond:     #020710;
   --bleu-fond-alt: #06112a;
+  --panneau-bg:    rgba(6,14,32,0.82);
+  --surface-bg:    rgba(255,255,255,0.03);
 
-  --texte-clair: #eaeef8;
-  --texte-doux:  #7a92b8;
+  /* Texte */
+  --texte-clair: #f0f4ff;
+  --texte-doux:  #a0b8d8;
 
+  /* Accents */
   --accent-or:     #e8a030;
   --accent-or-vif: #f5c060;
   --accent-rouge:  #c03020;
   --accent-bleu:   #2a6acc;
   --accent-bronze: #b06818;
+
+  /* Bordures or, par intensité */
+  --or-10: rgba(232,160,48,0.10);
+  --or-16: rgba(232,160,48,0.16);
+  --or-22: rgba(232,160,48,0.22);
+  --or-30: rgba(232,160,48,0.30);
+  --or-45: rgba(232,160,48,0.45);
+  --or-55: rgba(232,160,48,0.55);
 
   --cadre-bg:     rgba(240,160,48,0.04);
   --cadre-border: rgba(240,160,48,0.22);
@@ -35,7 +69,7 @@
   --shadow-or:   0 0 14px rgba(232,160,48,0.28);
   --shadow-soft: 0 2px 18px rgba(0,0,0,0.60);
 
-  /* Largeur panneau EDT — élargi pour 1 semaine = 1 ligne */
+  /* Largeur panneau EDT */
   --edt-left-w: 300px;
 }
 
@@ -43,22 +77,21 @@
 
 
 /* =====================================================
-   GLOBAL — TYPOGRAPHIE & FOND
-   Fond : cosmos Foundation — rouge, bleu, or, grain
+   2. FOND ANIMÉ
    ===================================================== */
 
 body{
   margin: 0;
   font-family: 'Poiret One', system-ui, sans-serif;
+  font-size: 15px;
   color: var(--texte-clair);
   letter-spacing: 0.03em;
 
-  /* Fond fixe : base sombre + losanges statiques + grain */
   background-color: var(--bleu-fond);
   background-image:
-    /* Grain granuleux texturé */
+    /* Grain texturé */
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
-    /* Trame losange or très légère */
+    /* Trame losange or */
     repeating-linear-gradient(
       58deg,
       rgba(232,160,48,0.040) 0, rgba(232,160,48,0.040) 1px,
@@ -75,7 +108,7 @@ body{
   background-size: 200px 200px, 100% 100%, 100% 100%, 100% 100%;
 }
 
-/* Halos animés du fond — couche fixe derrière tout */
+/* Halos animés — couche fixe derrière tout */
 body::before{
   content: "";
   position: fixed;
@@ -122,11 +155,7 @@ body::before{
 
 
 /* =====================================================
-   GLOBAL — BANDEAU MOSAÏQUE FOUNDATION
-   Effet : nuage de pixels or fins et denses autour
-   de la marque (gauche), qui se dispersent et
-   s'effacent progressivement vers la droite.
-   Le fond rouge/bleu émerge côté onglets → lisibilité.
+   3. BANDEAU ET NAVIGATION
    ===================================================== */
 
 .ag-header{
@@ -139,23 +168,18 @@ body::before{
   align-items: center;
   gap: 24px;
 
-  /*
-     Fond : sombre à gauche (pixels or sur fond neutre),
-     glissement rouge profond au centre,
-     bleu marine à droite (onglets bien contrastés).
-  */
   background: linear-gradient(
     to right,
     #04091a  0%,
     #04091a 18%,
-    #3a0c08  45%,
-    #071430  75%,
+    #3a0c08 45%,
+    #071430 75%,
     #040d24 100%
   );
 
-  border-bottom: 1.5px solid rgba(232,160,48,0.55);
+  border-bottom: 1.5px solid var(--or-55);
   box-shadow:
-    0 1px 0   rgba(232,160,48,0.15),
+    0 1px 0    rgba(232,160,48,0.15),
     0 6px 40px rgba(0,0,0,0.80),
     inset 0 -1px 0 rgba(192,48,32,0.22);
   overflow: hidden;
@@ -163,13 +187,7 @@ body::before{
 
 .ag-header > *{ position: relative; z-index: 3; }
 
-/* ——— COUCHE 1 : cercles concentriques dorés — source gauche ——— */
-/*
-   Principe : conic-gradient rayonnant depuis un point ancré
-   à ~10% gauche + repeating-radial-gradient pour les anneaux
-   fins concentriques. Rotation lente = spirale vivante.
-   Halos rouge/bleu en fond pour la profondeur Foundation.
-*/
+/* Couche 1 — cercles concentriques dorés, source à gauche */
 .ag-header::before{
   content: "";
   position: absolute;
@@ -178,28 +196,20 @@ body::before{
   z-index: 0;
 
   background:
-    /* Anneaux concentriques dorés — fins, serrés, depuis gauche */
+    /* Anneaux concentriques */
     repeating-radial-gradient(
       circle at 12% 50%,
-      transparent                       0px,
-      transparent                      18px,
-      rgba(232,160,48,0.22)            19px,
-      rgba(255,200,80,0.28)            20px,
-      transparent                      21px,
-      transparent                      38px,
-      rgba(232,160,48,0.18)            39px,
-      rgba(255,200,80,0.22)            40px,
-      transparent                      41px,
-      transparent                      58px,
-      rgba(232,160,48,0.14)            59px,
-      rgba(255,215,90,0.18)            60px,
-      transparent                      61px,
-      transparent                      78px,
-      rgba(232,160,48,0.10)            79px,
-      rgba(255,215,90,0.14)            80px,
-      transparent                      81px
+      transparent            0px, transparent           18px,
+      rgba(232,160,48,0.22) 19px, rgba(255,200,80,0.28) 20px,
+      transparent           21px, transparent           38px,
+      rgba(232,160,48,0.18) 39px, rgba(255,200,80,0.22) 40px,
+      transparent           41px, transparent           58px,
+      rgba(232,160,48,0.14) 59px, rgba(255,215,90,0.18) 60px,
+      transparent           61px, transparent           78px,
+      rgba(232,160,48,0.10) 79px, rgba(255,215,90,0.14) 80px,
+      transparent           81px
     ),
-    /* Conic — volute dorée depuis gauche */
+    /* Volute dorée */
     conic-gradient(
       from 200deg at 10% 55%,
       rgba(232,160,48,0.40),
@@ -209,9 +219,9 @@ body::before{
       rgba(200,80,20,0.08),
       rgba(232,160,48,0.40)
     ),
-    /* Halo rouge fond — centre */
+    /* Halo rouge, centre */
     radial-gradient(60% 100% at 35% 50%, rgba(180,32,14,0.45), transparent 65%),
-    /* Halo bleu fond — droite */
+    /* Halo bleu, droite */
     radial-gradient(50% 100% at 90% 50%, rgba(14,44,150,0.55), transparent 60%);
 
   filter: blur(1.2px) saturate(1.5) contrast(1.1);
@@ -221,13 +231,13 @@ body::before{
 }
 
 @keyframes bandeau-volute{
-  0%   { transform: rotate(-3deg) translateX(-0.5%) translateY(0%);  }
-  40%  { transform: rotate( 2.5deg) translateX(1.5%) translateY(-0.8%); }
-  70%  { transform: rotate(-1deg)   translateX(0.5%) translateY(0.6%);  }
-  100% { transform: rotate(-3deg) translateX(-0.5%) translateY(0%);  }
+  0%   { transform: rotate(-3deg)   translateX(-0.5%) translateY(0%);    }
+  40%  { transform: rotate( 2.5deg) translateX( 1.5%) translateY(-0.8%); }
+  70%  { transform: rotate(-1deg)   translateX( 0.5%) translateY( 0.6%); }
+  100% { transform: rotate(-3deg)   translateX(-0.5%) translateY(0%);    }
 }
 
-/* ——— COUCHE 2 : canvas particules (bandeau.js) ——— */
+/* Couche 2 — canvas particules (bandeau.js) */
 #bandeauCanvas{
   position: absolute;
   inset: 0;
@@ -237,12 +247,7 @@ body::before{
   z-index: 1;
 }
 
-
-/* =====================================================
-   GLOBAL — MARQUE
-   Cinzel : géométrique Porsche-like
-   ===================================================== */
-
+/* Marque */
 .ag-brand{
   display: flex;
   align-items: center;
@@ -265,12 +270,7 @@ body::before{
     0 0 48px rgba(192,48,32,0.22);
 }
 
-
-/* =====================================================
-   GLOBAL — NAVIGATION ONGLETS
-   Cinzel + coin biseauté — lisibles sur fond bleu
-   ===================================================== */
-
+/* Onglets de navigation */
 .ag-tabs{
   margin-left: auto;
   display: flex;
@@ -279,15 +279,16 @@ body::before{
 
 .ag-tabs button{
   font-family: 'Cinzel', serif;
-  font-size: 0.70rem;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  background: transparent;
-  border: none;
-  border-bottom: 1.5px solid rgba(232,160,48,0.22);
-  color: var(--texte-clair);   /* clair sur fond bleu foncé */
-  padding: 8px 14px 6px;
+  color: var(--texte-clair);
+  background: rgba(232,160,48,0.06);
+  border: 1px solid var(--or-30);
+  border-bottom: 2px solid var(--or-30);
+  padding: 8px 14px 7px;
+  min-height: 38px;
   cursor: pointer;
   transition: all 0.22s ease;
   clip-path: polygon(4px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 4px);
@@ -295,18 +296,12 @@ body::before{
 
 .ag-tabs button:hover{
   color: var(--accent-or-vif);
-  border-bottom-color: var(--accent-or-vif);
-  background: rgba(232,160,48,0.08);
-  box-shadow:
-    0 0  8px rgba(232,160,48,0.38),
-    0 0 20px rgba(232,160,48,0.16);
+  background: rgba(232,160,48,0.14);
+  border-color: var(--or-55);
+  box-shadow: 0 0 10px var(--or-30);
 }
 
-
-/* =====================================================
-   GLOBAL — CONTENEUR APP
-   ===================================================== */
-
+/* Conteneur application */
 #app{
   min-height: calc(100vh - var(--header-h));
   padding: var(--app-pad);
@@ -314,7 +309,7 @@ body::before{
 
 
 /* =====================================================
-   GLOBAL — AUTH
+   4. ÉCRAN DE CONNEXION
    ===================================================== */
 
 #authScreen{
@@ -328,17 +323,19 @@ body::before{
   justify-content: center;
   background: rgba(2,7,16,0.96);
   background-image:
-    repeating-linear-gradient(50deg,  rgba(232,160,48,0.05) 0,rgba(232,160,48,0.05) 1px, transparent 1px, transparent 20px),
-    repeating-linear-gradient(-50deg, rgba(42,106,204,0.04) 0,rgba(42,106,204,0.04) 1px, transparent 1px, transparent 20px);
+    repeating-linear-gradient(50deg,  rgba(232,160,48,0.05) 0, rgba(232,160,48,0.05) 1px, transparent 1px, transparent 20px),
+    repeating-linear-gradient(-50deg, rgba(42,106,204,0.04) 0, rgba(42,106,204,0.04) 1px, transparent 1px, transparent 20px);
 }
 
 #authScreen input{ width: 320px; padding: 10px; }
 
 #authDot{
-  width: 10px; height: 10px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #c0392b;
 }
+
 #authDot.ok{
   background: #1db87a;
   box-shadow: 0 0 10px rgba(29,184,122,0.65);
@@ -346,7 +343,7 @@ body::before{
 
 
 /* =====================================================
-   GLOBAL — TITRES & TEXTE
+   5. TYPOGRAPHIE
    ===================================================== */
 
 h1, h2, h3{
@@ -354,95 +351,380 @@ h1, h2, h3{
   font-family: 'Cinzel', serif;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--texte-clair);
+}
+
+h1{
+  font-size: 1.25rem;
+  color: var(--accent-or-vif);
+  text-shadow: 0 0 18px rgba(232,160,48,0.35);
 }
 
 h2{
+  font-size: 1rem;
+  color: var(--texte-clair);
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(232,160,48,0.28);
+  border-bottom: 1px solid rgba(232,160,48,0.40);
+}
+
+h3{
+  font-size: 0.88rem;
+  color: var(--accent-or);
 }
 
 p{
   font-family: 'Poiret One', sans-serif;
+  font-size: 0.95rem;
   color: var(--texte-doux);
+  letter-spacing: 0.04em;
+}
+
+label{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.92rem;
+  color: var(--texte-clair);
   letter-spacing: 0.04em;
 }
 
 
 /* =====================================================
-   GLOBAL — FORMULAIRES (héritage police)
+   6. FORMULAIRES
    ===================================================== */
 
 input, select, textarea, button{
   font-family: 'Poiret One', system-ui, sans-serif;
 }
 
+input, select, textarea{
+  font-size: 0.92rem;
+  color: var(--texte-clair);
+}
+
+input::placeholder,
+textarea::placeholder{
+  color: rgba(160,184,216,0.55);
+}
+
+select option{
+  background: var(--bleu-fond-alt);
+  color: var(--texte-clair);
+}
+
+/* Champs des pages principales */
+.page-importexport input,
+.page-importexport textarea,
+.page-importexport select,
+.page-salle input,
+.page-salle textarea,
+.page-salle select,
+.page-bulletins input,
+.page-bulletins textarea,
+.page-bulletins select,
+.page-edt input,
+.page-edt textarea,
+.page-edt select,
+.page-profil input,
+.page-profil select{
+  appearance: none;
+  font-family: 'Poiret One', sans-serif;
+  letter-spacing: 0.06em;
+  background: rgba(2,6,18,0.62);
+  color: var(--texte-clair);
+  border: 1px solid var(--or-22);
+  border-radius: 0;
+  padding: 6px 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.page-importexport input:focus,
+.page-importexport textarea:focus,
+.page-salle input:focus,
+.page-salle textarea:focus,
+.page-bulletins input:focus,
+.page-bulletins textarea:focus,
+.page-edt input:focus,
+.page-edt textarea:focus,
+.page-profil input:focus{
+  border-color: var(--accent-or);
+  box-shadow: 0 0 8px rgba(232,160,48,0.40);
+  outline: none;
+}
+
+/* Flèche personnalisée des listes déroulantes */
+.page-importexport select,
+.page-salle select,
+.page-bulletins select,
+.page-edt select,
+.page-profil select{
+  background:
+    rgba(2,6,18,0.62)
+    url("data:image/svg+xml,%3Csvg fill='%23e8a030' height='18' viewBox='0 0 20 20' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 5 5-5z'/%3E%3C/svg%3E")
+    no-repeat right 6px center;
+  padding-right: 28px;
+}
+
+/* Zones de texte */
+textarea{
+  background: rgba(2,6,18,0.58);
+  color: var(--texte-clair);
+  border: 1px solid var(--or-22);
+  border-radius: 0;
+  padding: 6px 10px;
+  font-family: 'Poiret One', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+textarea:focus{
+  border-color: var(--accent-or);
+  box-shadow: 0 0 7px rgba(232,160,48,0.40);
+  outline: none;
+}
+
+/* Cases à cocher */
+input[type="checkbox"]{
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--or-45);
+  border-radius: 0;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+input[type="checkbox"]:checked{
+  background: var(--accent-or);
+  border-color: var(--accent-or);
+  box-shadow: 0 0 7px rgba(232,160,48,0.52);
+}
+
+input[type="checkbox"]:checked::after{
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid #0a0800;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 
 /* =====================================================
-   GLOBAL — BOUTONS
-   Art déco : coins biseautés + halo or/rouge
-   BALISE : AG_GLOBAL_BTN_V1
+   7. BOUTONS
+   Art déco : coins biseautés, fond or discret, halo au survol
    ===================================================== */
 
 button,
 .btn{
   font-family: 'Poiret One', sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.10em;
-  font-size: 0.875rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: transparent;
-  color: var(--texte-clair);
-  border: 1.5px solid rgba(232,160,48,0.50);
+  padding: 10px 20px;
+  min-height: 40px;
+
+  background: rgba(232,160,48,0.10);
+  color: var(--accent-or-vif);
+  border: 1.5px solid var(--or-55);
   border-radius: 0;
   clip-path: polygon(7px 0%, 100% 0%, calc(100% - 7px) 100%, 0% 100%);
-  padding: 8px 18px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.06);
   cursor: pointer;
-  transition: box-shadow 0.25s ease, border-color 0.25s ease, background 0.20s ease, transform 0.10s ease;
   outline: none;
+  transition: all 0.18s ease;
 }
 
 button:hover,
 .btn:hover{
+  background: rgba(232,160,48,0.22);
   border-color: var(--accent-or-vif);
-  background: rgba(232,160,48,0.08);
+  color: #fff;
   box-shadow:
-    0 0  8px rgba(232,160,48,0.48),
-    0 0 20px rgba(232,160,48,0.26),
-    0 0 36px rgba(192,48,32,0.14);
+    0 0 10px rgba(232,160,48,0.55),
+    0 0 24px rgba(232,160,48,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.10);
 }
 
 button:active,
 .btn:active{
+  background: rgba(232,160,48,0.30);
   transform: translateY(1px);
-  background: rgba(232,160,48,0.14);
-  box-shadow:
-    0 0  4px rgba(232,160,48,0.68),
-    0 0 12px rgba(232,160,48,0.52);
+  box-shadow: 0 0 6px rgba(232,160,48,0.70);
+}
+
+button:disabled,
+.btn:disabled{
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+button:disabled:hover,
+.btn:disabled:hover{
+  background: rgba(232,160,48,0.10);
+  border-color: var(--or-55);
+  color: var(--accent-or-vif);
+  box-shadow: none;
+}
+
+/* Boutons d'action principaux */
+.btn-save,
+#valider,
+#genererTousBtn,
+#exportCsvBtn{
+  background: linear-gradient(135deg, rgba(232,160,48,0.25), rgba(192,80,20,0.18));
+  border-color: var(--accent-or);
+  color: var(--accent-or-vif);
+  font-weight: 700;
+}
+
+.btn-save{
+  font-size: 0.90rem;
+  letter-spacing: 0.10em;
+  padding: 10px 24px;
+  min-height: 48px;
+}
+
+.btn-save:hover{
+  background: rgba(232,160,48,0.22);
+  box-shadow: 0 0 12px rgba(232,160,48,0.45);
+}
+
+/*
+   Boutons de choix : IFST, investissement, posture, études, PP.
+   Même apparence partout — un seul jeu de règles.
+*/
+.btn-comp,
+.btn-invest,
+.btn-posture,
+.btn-etudes,
+.btn-choix{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  padding: 8px 14px;
+  min-height: 40px;
+  background: rgba(10,22,50,0.80);
+  color: var(--texte-doux);
+  border: 1.5px solid var(--or-30);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
+  transition: all 0.15s ease;
+}
+
+.btn-comp:hover,
+.btn-invest:hover,
+.btn-posture:hover,
+.btn-etudes:hover,
+.btn-choix:hover{
+  background: rgba(232,160,48,0.12);
+  color: var(--texte-clair);
+  border-color: rgba(232,160,48,0.60);
+}
+
+.btn-comp.active,
+.btn-invest.active,
+.btn-posture.active,
+.btn-etudes.active,
+.btn-choix.active{
+  background: rgba(232,160,48,0.28);
+  border-color: var(--accent-or-vif);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(232,160,48,0.50), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+/* Bouton de fermeture (croix) */
+.btn-close{
+  font-size: 1rem;
+  padding: 4px 10px;
+  border-color: var(--or-30);
+  clip-path: none;
+  border-radius: 0;
+}
+
+/* Bouton de suppression */
+.btn-suppr-eleve{
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  min-height: 36px;
+  border-color: rgba(192,48,32,0.55);
+  color: #f08080;
+}
+
+.btn-suppr-eleve:hover{
+  border-color: rgba(192,48,32,0.90);
+  background: rgba(192,48,32,0.12);
+  box-shadow: 0 0 8px rgba(192,48,32,0.35);
+  color: #ffaaaa;
 }
 
 
 /* =====================================================
-   GLOBAL — MODALES
+   8. CARTES
+   Tesselle mosaïque + liseré animé
+   ===================================================== */
+
+.card{
+  position: relative;
+  z-index: 0;
+  background: rgba(3,8,22,0.62);
+  border-radius: 0;
+  clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px);
+  padding: 14px;
+  box-shadow: var(--shadow-soft), var(--shadow-or);
+}
+
+.card::before{
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(232,160,48,0.92) 30%,
+    rgba(200,96,24,0.72)  55%,
+    rgba(245,192,96,0.92) 78%,
+    transparent 100%
+  );
+  background-size: 300% 100%;
+  animation: ag-card-glow 10s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+}
+
+@keyframes ag-card-glow{
+  0%   { background-position:  300% 0; }
+  100% { background-position: -300% 0; }
+}
+
+
+/* =====================================================
+   9. MODALES (GLOBAL)
    ===================================================== */
 
 #modal{
   position: fixed;
   inset: 0;
+  z-index: 2000;
   background: rgba(0,0,0,0.72);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
-  padding: 16px;          /* évite que la modale touche les bords */
+  padding: 16px;
 }
 
 #modal:empty{ display: none; }
 
-/* Modale large : 85% de l'écran, hauteur max 90vh avec scroll interne */
 #modal > *{
   background: #0a1628;
-  border: 1px solid rgba(232,160,48,0.45);
+  border: 1px solid var(--or-45);
   border-top: 2px solid rgba(232,160,48,0.90);
   padding: 20px 24px;
   border-radius: 0;
@@ -456,37 +738,28 @@ button:active,
   box-shadow: 0 0 60px rgba(0,0,0,0.90), 0 0 30px rgba(232,160,48,0.14);
 }
 
-/* Scrollbar interne modale */
 #modal > *::-webkit-scrollbar{ width: 4px; }
-#modal > *::-webkit-scrollbar-track{ background: rgba(232,160,48,0.04); }
-#modal > *::-webkit-scrollbar-thumb{ background: rgba(232,160,48,0.45); border-radius: 0; }
+#modal > *::-webkit-scrollbar-track{ background: var(--cadre-bg); }
+#modal > *::-webkit-scrollbar-thumb{ background: var(--or-45); border-radius: 0; }
+
 
 /* =====================================================
-   MODALE PROFIL ÉLÈVE — STRUCTURE INTERNE
+   10. MODALE PROFIL ÉLÈVE (CLASSES HG)
    ===================================================== */
 
-/* En-tête modale : nom + bouton fermer */
 .modal-head{
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(232,160,48,0.22);
+  border-bottom: 1px solid var(--or-22);
 }
 
 .modal-head h2{
   margin: 0;
   font-size: 1rem;
   letter-spacing: 0.12em;
-}
-
-.btn-close{
-  font-size: 1rem;
-  padding: 4px 10px;
-  border-color: rgba(232,160,48,0.35);
-  clip-path: none;
-  border-radius: 0;
 }
 
 /* Onglets trimestre */
@@ -501,7 +774,7 @@ button:active,
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   padding: 5px 14px;
-  border-color: rgba(232,160,48,0.28);
+  border-color: var(--or-30);
   clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
 }
 
@@ -509,17 +782,16 @@ button:active,
   background: rgba(232,160,48,0.16);
   border-color: var(--accent-or-vif);
   color: var(--accent-or-vif);
-  box-shadow: 0 0 8px rgba(232,160,48,0.30);
+  box-shadow: 0 0 8px var(--or-30);
 }
 
-/* Grille compétences : 2 colonnes */
+/* Grille des compétences, deux colonnes */
 .competences{
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px 20px;
 }
 
-/* Ligne compétence */
 .comp-row{
   display: flex;
   align-items: center;
@@ -544,40 +816,12 @@ button:active,
   color: #c8d8f0;
 }
 
-/* Boutons IFST */
 .comp-btns{
   display: flex;
   gap: 3px;
   flex-shrink: 0;
 }
 
-.btn-comp{
-  font-family: 'Cinzel', serif;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  padding: 3px 7px;
-  border: 1px solid rgba(232,160,48,0.28);
-  clip-path: none;
-  border-radius: 0;
-  color: var(--texte-doux);
-  transition: all 0.15s ease;
-}
-
-.btn-comp:hover{
-  border-color: var(--accent-or);
-  color: var(--accent-or-vif);
-  box-shadow: 0 0 6px rgba(232,160,48,0.30);
-}
-
-.btn-comp.active{
-  background: rgba(232,160,48,0.22);
-  border-color: var(--accent-or-vif);
-  color: var(--accent-or-vif);
-  box-shadow: 0 0 8px rgba(232,160,48,0.40);
-}
-
-/* Bloc h3 dans la modale */
 .bloc h3{
   font-size: 0.80rem;
   letter-spacing: 0.10em;
@@ -588,69 +832,111 @@ button:active,
 
 
 /* =====================================================
-   PAGE IMPORT
+   11. PAGE IMPORT / EXPORT
    ===================================================== */
 
 .page-import{ max-width: 800px; margin: 0 auto; }
 
-
-/* =====================================================
-   PAGE EDT
-   ===================================================== */
-
-.page-edt{
-  min-height: calc(100vh - var(--header-h));
+.page-importexport{
+  max-width: 780px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
+  gap: 14px;
 }
 
-.page-edt .topbar{
+.page-importexport .card{ padding: 12px 16px; }
+
+.page-importexport .card-head{
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(232,160,48,0.18);
+}
+
+.page-importexport .card-head h2{
+  font-size: 0.88rem;
+  margin-bottom: 4px;
+  border: none;
+  padding: 0;
+}
+
+.page-importexport .card-body{
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.page-importexport .hint{
+  font-size: 0.78rem;
+  color: var(--texte-doux);
+  font-style: italic;
+}
+
+.page-importexport .status{
+  font-size: 0.85rem;
+  min-height: 22px;
+  color: var(--texte-doux);
+}
+
+/* Sélecteur de fichier */
+.page-importexport input[type="file"]{
+  color: var(--texte-doux);
+  margin-top: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.page-importexport input[type="file"]::file-selector-button{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.875rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  background: rgba(232,160,48,0.10);
+  color: var(--accent-or-vif);
+  border: 1.5px solid var(--or-55);
+  border-radius: 0;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  padding: 8px 16px;
+  margin-right: 12px;
+  cursor: pointer;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.1s ease;
+}
+
+.page-importexport input[type="file"]::file-selector-button:hover{
+  border-color: var(--accent-or-vif);
+  box-shadow: 0 0 8px rgba(232,160,48,0.52), 0 0 18px rgba(232,160,48,0.28);
+}
+
+.page-importexport input[type="file"]::file-selector-button:active{
+  transform: translateY(1px);
+  box-shadow: 0 0 4px rgba(232,160,48,0.68), 0 0 10px rgba(232,160,48,0.55);
+}
+
+/* Gestion des élèves */
+.gestion-eleve-row{
+  display: flex;
   align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(232,160,48,0.20);
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--or-10);
 }
 
-.page-edt .edt-body{
+.gestion-eleve-nom{
   flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-/*
-   Panneau gauche EDT élargi :
-   --edt-left-w = 300px par défaut
-   Objectif : chaque ligne "semaine" tient sur une seule ligne
-   sans débordement ni troncature.
-*/
-.page-edt .edt-leftpanel{
-  width: var(--edt-left-w);
-  min-width: 260px;
-  max-width: 340px;
-  overflow-y: auto;
-  padding-right: 6px;
-  max-height: calc(100vh - 160px);
-  scroll-snap-type: y mandatory;
-  scroll-padding-top: 4px;
-}
-
-.page-edt .edt-rightpanel{
-  flex: 1;
-  min-width: 0;
-  overflow: auto;
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.88rem;
+  color: var(--texte-clair);
+  letter-spacing: 0.04em;
 }
 
 
 /* =====================================================
-   PAGE CLASSES HG
+   12. PAGE CLASSES HG
    ===================================================== */
 
 .page-classeshg{ max-width: 1200px; margin: 0 auto; }
 
+/* Onglets de classe */
 .page-classeshg .classes-tabs{
   display: flex;
   gap: 8px;
@@ -663,7 +949,7 @@ button:active,
   letter-spacing: 0.08em;
   text-transform: uppercase;
   background: rgba(0,0,0,0.30);
-  border: 1px solid rgba(232,160,48,0.22);
+  border: 1px solid var(--or-22);
   color: var(--texte-clair);
   padding: 6px 14px;
   cursor: pointer;
@@ -689,9 +975,154 @@ button:active,
   gap: 8px;
 }
 
+/*
+   Une ligne = un élève.
+   .eleve-ident prend l'espace restant, .eleve-options reste compact.
+*/
+.page-classeshg .eleve-row{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  margin-bottom: 2px;
+  border-left: 2px solid transparent;
+  min-height: 34px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.page-classeshg .eleve-row:hover{
+  background: rgba(232,160,48,0.05);
+  border-left-color: rgba(232,160,48,0.48);
+}
+
+.page-classeshg .eleve-row:nth-child(even){
+  background: rgba(255,255,255,0.018);
+}
+
+.page-classeshg .eleve-row:nth-child(even):hover{
+  background: rgba(232,160,48,0.06);
+}
+
+/* Groupe manquant : ligne signalée en rouge */
+.page-classeshg .eleve-row.missing-groupe{
+  border: 1px solid rgba(200,40,32,0.75);
+  background: rgba(160,24,18,0.14);
+}
+
+.page-classeshg .eleve-row.missing-groupe .eleve-open{
+  color: rgba(255,150,150,1);
+}
+
+.page-classeshg .eleve-ident{
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.page-classeshg .eleve-open{
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  padding: 2px 6px;
+  min-height: 0;
+  background: transparent;
+  color: var(--texte-clair);
+  border-color: transparent;
+  box-shadow: none;
+  clip-path: none;
+}
+
+.page-classeshg .eleve-open:hover{
+  border-color: var(--or-30);
+  background: rgba(232,160,48,0.06);
+  color: var(--accent-or-vif);
+  box-shadow: none;
+}
+
+.page-classeshg .eleve-options{
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.page-classeshg .opt-groupe{
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.page-classeshg .opt-groupe label{
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.74rem;
+  color: var(--texte-doux);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.page-classeshg .opt-adapt,
+.page-classeshg .opt-place{ flex-shrink: 0; }
+
+/*
+   Listes déroulantes adaptation et place.
+   Fond transparent : nécessaire pour que Safari/iPad
+   affiche correctement le texte sélectionné.
+*/
+.page-classeshg .opt-adapt select,
+.page-classeshg .opt-place select{
+  background-color: transparent;
+  color: var(--texte-clair);
+  -webkit-text-fill-color: unset;
+  border: 1px solid rgba(232,160,48,0.40);
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.78rem;
+  opacity: 1;
+}
+
+.page-classeshg .opt-adapt select{
+  width: 130px;
+  padding: 3px 22px 3px 6px;
+}
+
+.page-classeshg .opt-place select{
+  width: 88px;
+  padding: 3px 20px 3px 6px;
+}
+
+.page-classeshg .opt-adapt select option,
+.page-classeshg .opt-place select option{
+  background-color: #0a1628;
+  color: var(--texte-clair);
+  -webkit-text-fill-color: unset;
+}
+
+/* Barre de synchronisation */
+.classeshg-syncbar{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  color: var(--texte-doux);
+}
+
 
 /* =====================================================
-   PAGE SALLE
+   13. PAGE SALLE
    ===================================================== */
 
 .page-salle{
@@ -709,7 +1140,7 @@ button:active,
   gap: 16px;
   flex-wrap: wrap;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(232,160,48,0.16);
+  border-bottom: 1px solid var(--or-16);
 }
 
 .page-salle .salle-contexte{ flex: 1; }
@@ -728,6 +1159,7 @@ button:active,
   padding: 4px 8px;
 }
 
+/* Plan de la salle */
 .page-salle .salle-plein-ecran{
   flex: 1;
   min-height: 0;
@@ -738,8 +1170,14 @@ button:active,
   gap: 20px;
 }
 
-.page-salle .colonne{ display: flex; flex-direction: column-reverse; gap: 12px; }
+.page-salle .colonne{
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 12px;
+}
+
 .page-salle .allee{ width: 30px; }
+
 .page-salle .rangee{ display: flex; gap: 6px; }
 
 /* Table — tesselle mosaïque */
@@ -784,46 +1222,76 @@ button:active,
   text-shadow: 0 1px 3px rgba(0,0,0,0.70);
   line-height: 1.2;
 }
-.page-salle .nom.vide{ opacity: 0.30; font-weight: 400; text-shadow: none; }
 
-/* Couleurs tables (INCHANGÉES) */
-.page-salle .table.vert  { background:#1a5218; border:1px solid rgba(76,175,80,0.50);   box-shadow:inset 0 0 12px rgba(76,175,80,0.12); }
-.page-salle .table.violet{ background:#3d0e78; border:1px solid rgba(156,39,176,0.50);  box-shadow:inset 0 0 12px rgba(120,48,200,0.14);}
+.page-salle .nom.vide{
+  opacity: 0.30;
+  font-weight: 400;
+  text-shadow: none;
+}
+
+/* Couleurs des tables par zone */
+.page-salle .table.vert  { background:#1a5218; border:1px solid rgba(76,175,80,0.50);  box-shadow:inset 0 0 12px rgba(76,175,80,0.12); }
+.page-salle .table.violet{ background:#3d0e78; border:1px solid rgba(156,39,176,0.50); box-shadow:inset 0 0 12px rgba(120,48,200,0.14); }
 .page-salle .table.jaune { background:#e09820; color:#0a0800; border:1px solid rgba(240,200,60,0.75); font-weight:700; }
-.page-salle .table.jaune .nom { text-shadow: 0 1px 2px rgba(255,255,255,0.30); }
-.page-salle .table.bleu  { background:#0c3880; border:1px solid rgba(42,106,204,0.55);  box-shadow:inset 0 0 12px rgba(42,106,204,0.15);}
-.page-salle .table.rouge { background:#8c1410; border:1px solid rgba(200,40,32,0.55);   box-shadow:inset 0 0 12px rgba(192,48,32,0.18);}
+.page-salle .table.jaune .nom{ text-shadow: 0 1px 2px rgba(255,255,255,0.30); }
+.page-salle .table.bleu  { background:#0c3880; border:1px solid rgba(42,106,204,0.55); box-shadow:inset 0 0 12px rgba(42,106,204,0.15); }
+.page-salle .table.rouge { background:#8c1410; border:1px solid rgba(200,40,32,0.55);  box-shadow:inset 0 0 12px rgba(192,48,32,0.18); }
 .page-salle .table.noir  { background:#141414; border:1px solid rgba(255,255,255,0.12); }
 
-/* Adaptations */
+/* Pastille d'adaptation */
 .page-salle .adaptation-dot{
-  position: absolute; bottom: 4px; left: 4px;
-  width: 10px; height: 10px;
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   box-shadow: 0 0 5px currentColor;
 }
-.page-salle .adapt-pps      { background:#ef5350; }
-.page-salle .adapt-pap      { background:#ffd740; }
-.page-salle .adapt-ppre     { background:#42a5f5; }
-.page-salle .adapt-vert-fonce{ background:#2e7d32; }
-.page-salle .adapt-vert-clair{ background:#81c784; }
 
-/* Modales salle */
+.page-salle .adapt-pps        { background:#ef5350; }
+.page-salle .adapt-pap        { background:#ffd740; }
+.page-salle .adapt-ppre       { background:#42a5f5; }
+.page-salle .adapt-vert-fonce { background:#2e7d32; }
+.page-salle .adapt-vert-clair { background:#81c784; }
+
+/* Modales de la page Salle */
 .page-salle .fiche-eleve,
 .page-salle .participation{
   background: #030a18;
-  border: 1px solid rgba(232,160,48,0.30);
+  border: 1px solid var(--or-30);
   border-top: 2px solid rgba(232,160,48,0.72);
   padding: 18px;
   clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
 }
 
-.page-salle .fiche-head{ display:flex; justify-content:space-between; align-items:center; }
-.page-salle .fiche-bloc{ margin-top:10px; display:flex; flex-direction:column; gap:6px; }
-.page-salle textarea{ background:rgba(0,0,0,0.40); color:#fff; border:1px solid rgba(232,160,48,0.22); }
+.page-salle .fiche-head{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-.page-salle .part-row{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
-.page-salle .part-btns button{ margin-right:4px; }
+.page-salle .fiche-bloc{
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.page-salle textarea{
+  background: rgba(0,0,0,0.40);
+  color: #fff;
+  border: 1px solid var(--or-22);
+}
+
+.page-salle .part-row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.page-salle .part-btns button{ margin-right: 4px; }
 
 .page-salle .btn-part.active{
   background: rgba(232,160,48,0.18);
@@ -834,552 +1302,513 @@ button:active,
 
 
 /* =====================================================
-   PAGE BULLETINS / PP / ARCHIVES
+   14. PAGE EDT
    ===================================================== */
 
-.page-bulletins{ max-width: 900px;  margin: 0 auto; }
-.page-pp        { max-width: 1000px; margin: 0 auto; }
-.page-archives  { max-width: 1000px; margin: 0 auto; }
-
-
-/* =====================================================
-   PAGE IMPORT — FILE INPUT
-   BALISE : AG_IMPORT_FILE_V1
-   ===================================================== */
-
-.page-importexport input[type="file"]{
-  color: var(--texte-doux);
-  margin-top: 8px;
-  position: relative;
-  z-index: 2;
-}
-
-.page-importexport input[type="file"]::file-selector-button{
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.875rem;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  background: transparent;
-  color: var(--texte-clair);
-  border: 1.5px solid rgba(232,160,48,0.55);
-  border-radius: 0;
-  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
-  padding: 8px 16px;
-  margin-right: 12px;
-  cursor: pointer;
-  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.1s ease;
-}
-
-.page-importexport input[type="file"]::file-selector-button:hover{
-  border-color: var(--accent-or-vif);
-  box-shadow: 0 0 8px rgba(232,160,48,0.52), 0 0 18px rgba(232,160,48,0.28);
-}
-
-.page-importexport input[type="file"]::file-selector-button:active{
-  transform: translateY(1px);
-  box-shadow: 0 0 4px rgba(232,160,48,0.68), 0 0 10px rgba(232,160,48,0.55);
-}
-
-
-/* =====================================================
-   PAGE IMPORT — BOUTONS
-   BALISE : AG_IMPORT_BTN_OR_V1
-   ===================================================== */
-
-.page-importexport .btn{
-  background: transparent;
-  color: var(--texte-clair);
-  border: 1.5px solid rgba(232,160,48,0.55);
-  border-radius: 0;
-  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
-  padding: 10px 22px;
-  font-weight: 400;
-  font-size: 0.875rem;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  cursor: pointer;
-  position: relative;
-  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.1s ease;
-}
-
-.page-importexport .btn:hover{
-  border-color: var(--accent-or-vif);
-  background: rgba(232,160,48,0.07);
-  box-shadow: 0 0 8px rgba(232,160,48,0.52), 0 0 20px rgba(232,160,48,0.28), 0 0 36px rgba(192,48,32,0.14);
-}
-
-.page-importexport .btn:active{
-  transform: translateY(1px);
-  box-shadow: 0 0 4px rgba(232,160,48,0.68), 0 0 12px rgba(232,160,48,0.55);
-}
-
-
-/* =====================================================
-   GLOBAL — CARD
-   Tesselle mosaïque + liseré animé
-   BALISE : AG_CARD_V2_SAFE
-   ===================================================== */
-
-.card{
-  position: relative;
-  z-index: 0;
-  background: rgba(3,8,22,0.62);
-  border-radius: 0;
-  clip-path: polygon(12px 0%, 100% 0%, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0% 100%, 0% 12px);
-  padding: 14px;
-  box-shadow: var(--shadow-soft), var(--shadow-or);
-}
-
-.card::before{
-  pointer-events: none;
-  content: "";
-  position: absolute;
-  inset: 0;
-  padding: 1.5px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(232,160,48,0.92) 30%,
-    rgba(200,96,24,0.72)  55%,
-    rgba(245,192,96,0.92) 78%,
-    transparent 100%
-  );
-  background-size: 240% 100%;
-  animation: ag-card-glow 4s linear infinite;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-}
-
-@keyframes ag-card-glow{
-  0%  { background-position:  240% 0; }
-  100%{ background-position: -240% 0; }
-}
-
-
-/* =====================================================
-   PAGES — INPUTS
-   BALISE : AG_FORM_V2_SAFE
-   ===================================================== */
-
-.page-importexport input,
-.page-importexport textarea,
-.page-importexport select,
-.page-salle input,
-.page-salle textarea,
-.page-salle select,
-.page-bulletins input,
-.page-bulletins textarea,
-.page-bulletins select,
-.page-edt input,
-.page-edt textarea,
-.page-edt select{
-  appearance: none;
-  font-family: 'Poiret One', sans-serif;
-  letter-spacing: 0.06em;
-  background: rgba(2,6,18,0.62);
-  color: var(--texte-clair);
-  border: 1px solid rgba(232,160,48,0.22);
-  border-radius: 0;
-  padding: 6px 10px;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.page-importexport input:focus,
-.page-salle input:focus,
-.page-bulletins input:focus,
-.page-edt input:focus,
-.page-importexport textarea:focus,
-.page-salle textarea:focus,
-.page-bulletins textarea:focus,
-.page-edt textarea:focus{
-  border-color: var(--accent-or);
-  box-shadow: 0 0 8px rgba(232,160,48,0.40);
-  outline: none;
-}
-
-
-/* =====================================================
-   PAGES — SELECT CUSTOM
-   BALISE : AG_SELECT_V2_SAFE
-   ===================================================== */
-
-.page-importexport select,
-.page-salle select,
-.page-bulletins select,
-.page-edt select{
-  background:
-    rgba(2,6,18,0.62)
-    url("data:image/svg+xml,%3Csvg fill='%23e8a030' height='18' viewBox='0 0 20 20' width='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 7l5 5 5-5z'/%3E%3C/svg%3E")
-    no-repeat right 6px center;
-  padding-right: 28px;
-}
-
-
-/* =====================================================
-   GLOBAL — CHECKBOX
-   BALISE : AG_CHECKBOX_V2_SAFE
-   ===================================================== */
-
-input[type="checkbox"]{
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid rgba(232,160,48,0.45);
-  border-radius: 0;
-  position: relative;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-input[type="checkbox"]:checked{
-  background: var(--accent-or);
-  border-color: var(--accent-or);
-  box-shadow: 0 0 7px rgba(232,160,48,0.52);
-}
-
-input[type="checkbox"]:checked::after{
-  content: "";
-  position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 4px;
-  height: 8px;
-  border: solid #0a0800;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-
-/* =====================================================
-   PAGE EDT — STRUCTURE VISUELLE
-   BALISE : AG_EDT_VISUAL_V2_SAFE
-   ===================================================== */
-
-.page-edt .topbar{ margin-bottom: 12px; }
-
-.page-edt .edt-leftpanel,
-.page-edt .edt-rightpanel{
-  background: rgba(6,14,32,0.82);
-  border: 1px solid rgba(232,160,48,0.28);
-  border-top: 1px solid rgba(232,160,48,0.55);
-  padding: 10px;
-}
-
-
-/* =====================================================
-   PAGE EDT — SCROLL
-   BALISE : AG_EDT_SCROLL_V2_SAFE
-   ===================================================== */
-
-.page-edt .edt-leftpanel::-webkit-scrollbar{ width: 4px; }
-.page-edt .edt-leftpanel::-webkit-scrollbar-track{ background: rgba(232,160,48,0.04); }
-.page-edt .edt-leftpanel::-webkit-scrollbar-thumb{ background: rgba(232,160,48,0.55); border-radius: 0; }
-
-
-/* =====================================================
-   TEXTAREA GLOBAL
-   BALISE : AG_TEXTAREA_SAFE
-   ===================================================== */
-
-textarea{
-  background: rgba(2,6,18,0.58);
-  color: var(--texte-clair);
-  border: 1px solid rgba(232,160,48,0.22);
-  border-radius: 0;
-  padding: 6px 10px;
-  font-family: 'Poiret One', sans-serif;
-  letter-spacing: 0.05em;
-}
-
-textarea:focus{
-  border-color: var(--accent-or);
-  box-shadow: 0 0 7px rgba(232,160,48,0.40);
-  outline: none;
-}
-
-
-/* =====================================================
-   PAGE EDT — SCROLL FIX
-   BALISE : AG_EDT_SCROLL_FIX_V1
-   ===================================================== */
-
-.page-edt .edt-leftpanel{ max-height: calc(100vh - 160px); }
-
-
-/* =====================================================
-   PAGE EDT — SEMAINES EN LIGNES (1 semaine = 1 ligne)
-   BALISE : AG_EDT_SPAN_FIX_V1
-   Panneau élargi à --edt-left-w (300px) pour que
-   "Semaine 12 — 18/03 au 22/03" tienne sans coupure.
-   ===================================================== */
-
-.page-edt .edt-leftpanel span{
-  display: block;
-  width: 100%;
-  white-space: nowrap;        /* ← empêche le retour à la ligne */
-  overflow: hidden;
-  text-overflow: ellipsis;    /* ← sécurité si label très long  */
-  font-family: 'Poiret One', sans-serif;
-  letter-spacing: 0.06em;
-  font-size: 0.82rem;         /* ← légèrement réduit pour tenir sur 300px */
-  padding: 7px 10px;
-  margin-bottom: 3px;
-  border-left: 2px solid rgba(232,160,48,0.30);
-  transition: background 0.15s, border-color 0.15s;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-}
-
-.page-edt .edt-leftpanel span:hover{
-  background: rgba(232,160,48,0.06);
-  border-left-color: var(--accent-or-vif);
-}
-
-
-/* =====================================================
-   PAGE CLASSES HG — LIGNE ROUGE GROUPE MANQUANT
-   BALISE : AG_CLASSeshg_MISSING_GROUP_RED_V1
-   ===================================================== */
-
-.page-classeshg .eleve-row.missing-groupe{
-  border: 1px solid rgba(200,40,32,0.75);
-  background: rgba(160,24,18,0.14);
-}
-
-.page-classeshg .eleve-row.missing-groupe .eleve-open{
-  color: rgba(255,150,150,1);
-}
-
-
-/* =====================================================
-   PAGE CLASSES HG — 1 ÉLÈVE = 1 LIGNE COMPACTE
-   Structure HTML attendue :
-     .eleve-row
-       .eleve-ident        → col 1 nom
-       .eleve-options      → flex row contenant les 3 opts
-         .opt-groupe       → radios gr1/gr2
-         .opt-adapt        → select adaptation
-         .opt-place        → select place
-   BALISE : AG_CLASSeshg_ONE_LINE_V1
-   ===================================================== */
-
-/*
-   La ligne = flexbox horizontal strict.
-   .eleve-ident prend l'espace disponible (flex:1).
-   .eleve-options est un flex-row compact fixe.
-   → garantit 1 seule ligne quelle que soit la largeur écran.
-*/
-.page-classeshg .eleve-row{
+.page-edt{
+  min-height: calc(100vh - var(--header-h));
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  padding: 3px 8px;
-  margin-bottom: 2px;
-  border-left: 2px solid transparent;
-  min-height: 34px;
-  transition: background 0.15s, border-color 0.15s;
+  flex-direction: column;
 }
 
-.page-classeshg .eleve-row:hover{
-  background: rgba(232,160,48,0.05);
-  border-left-color: rgba(232,160,48,0.48);
-}
-
-/* Zébrage */
-.page-classeshg .eleve-row:nth-child(even){
-  background: rgba(255,255,255,0.018);
-}
-.page-classeshg .eleve-row:nth-child(even):hover{
-  background: rgba(232,160,48,0.06);
-}
-
-/* Col nom : prend tout l'espace restant */
-.page-classeshg .eleve-ident{
-  flex: 1;
-  min-width: 0;
+/* Barre supérieure */
+.page-edt .topbar{
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(232,160,48,0.20);
 }
 
-.page-classeshg .eleve-open{
-  width: 100%;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.84rem;
-  letter-spacing: 0.04em;
-  padding: 2px 6px;
-  border-color: transparent;
+.page-edt .topbar select{ font-size: 13px; }
+
+/* Navigation entre semaines */
+#semPrec,
+#semSuiv{
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  padding: 6px 12px;
+  min-width: 40px;
   clip-path: none;
 }
 
-.page-classeshg .eleve-open:hover{
-  border-color: rgba(232,160,48,0.35);
-  background: rgba(232,160,48,0.06);
+#semSelect{
+  min-width: 260px;
+  font-size: 0.85rem;
 }
 
-/* Zone options : flex-row, ne rétrécit pas */
-.page-classeshg .eleve-options{
-  display: flex;
-  flex-direction: row;
+/* Case à cocher de propagation */
+.edt-propag{
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-/* Radios groupe — côte à côte, compacts */
-.page-classeshg .opt-groupe{
-  display: flex;
   gap: 6px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.page-classeshg .opt-groupe label{
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.74rem;
+  font-size: 0.82rem;
   color: var(--texte-doux);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-/* Select adaptation — largeur fixe */
-.page-classeshg .opt-adapt{
-  flex-shrink: 0;
-}
-
-.page-classeshg .opt-adapt select{
-  width: 130px;
-  font-size: 0.76rem;
-  padding: 3px 22px 3px 6px;
-}
-
-/* Select place — largeur fixe serrée, juste assez pour "Table 10" */
-.page-classeshg .opt-place{
-  flex-shrink: 0;
-}
-
-.page-classeshg .opt-place select{
-  width: 88px;
-  font-size: 0.76rem;
-  padding: 3px 20px 3px 6px;
-}
-
-
-/* =====================================================
-   PAGE EDT — UX AMÉLIORÉE (BOUTONS + PANNEAUX + iPAD 9)
-   BALISE : AG_EDT_UI_V3_IPAD_SAFE
-   ===================================================== */
-
-/* 1. BOUTONS TYPE / TRIMESTRE / SEMESTRE = PASTILLES */
-.page-edt .edt-meta{
-  border-radius: 999px;
   padding: 4px 10px;
-  min-width: 32px;
-  text-align: center;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(232,160,48,0.30);
+  border-left: 2px solid var(--or-30);
+}
+
+.edt-propag:hover{ color: var(--texte-clair); }
+
+/* Corps de page */
+.page-edt .edt-body{
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.page-edt .edt-rightpanel{
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: var(--panneau-bg);
+  border: 1px solid var(--or-30);
+  border-top: 1px solid var(--or-55);
+  padding: 10px;
+}
+
+/*
+   Palette de classes (mode pinceau).
+   Le fond de chaque pastille est calculé par le JS
+   selon le niveau ; ici on ne fixe que la structure.
+*/
+.edt-palette{
+  flex: 0 0 170px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  padding: 10px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  background: var(--panneau-bg);
+  border: 1px solid var(--or-30);
+  border-top: 1px solid var(--or-55);
+}
+
+.edt-pastille{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  padding: 5px 10px;
+  min-height: 0;
+  color: #1a1208;                     /* lisible sur fond pastel */
+  border: 1px solid var(--or-30);
+  border-radius: 0;
+  clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+  box-shadow: none;
+  cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.page-edt .edt-meta[data-active="1"]{
-  background: linear-gradient(160deg, rgba(232,160,48,0.9), rgba(192,48,32,0.6));
-  color: #120800;
-  border-color: rgba(245,192,96,1);
-  font-weight: 600;
-  box-shadow:
-    0 0 8px rgba(232,160,48,0.6),
-    0 0 20px rgba(232,160,48,0.25);
+.edt-pastille:hover{
+  border-color: var(--accent-or-vif);
+  color: #1a1208;
+  box-shadow: 0 0 8px rgba(232,160,48,0.45);
+  transform: translateY(-1px);
 }
 
-/* 2. LIGNES SEMAINES */
-.page-edt .edt-weekrow{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px;
-  cursor: pointer;
+.edt-pastille.active{
+  border-color: var(--accent-or-vif);
+  border-width: 2px;
+  box-shadow: 0 0 12px rgba(232,160,48,0.70);
 }
 
-.page-edt .edt-weekrow.active{
-  background: rgba(42,106,204,0.18);
-  border-left: 2px solid var(--accent-bleu);
+/* Gomme : pas de couleur de classe, style neutre */
+#pinceauGomme{
+  background: rgba(10,22,50,0.80);
+  color: var(--texte-doux);
+  border: 1px dashed var(--or-45);
 }
 
-/* 3. GRILLE EDT */
+#pinceauGomme:hover{
+  background: rgba(232,160,48,0.12);
+  color: var(--texte-clair);
+}
+
+/* Grille horaire */
+.page-edt .edt-gridwrap{ overflow-x: auto; }
+
 .page-edt .edt-grid{
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
+.page-edt .edt-grid th{
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  padding: 6px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid var(--or-22);
+}
+
+.page-edt .edt-grid th small{
+  display: block;
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  opacity: 0.75;
+}
+
+/*
+   Cellule : le fond est posé par le JS (couleur de classe),
+   d'où le texte foncé. Les cellules vides restent sombres
+   et prennent la couleur claire via .edt-cell:empty plus bas.
+*/
 .page-edt .edt-cell{
   height: 72px;
   min-width: 110px;
-  border: 1px solid rgba(232,160,48,0.28);
+  border: 1px solid var(--or-30);
   text-align: center;
   vertical-align: middle;
-  font-size: 14px;
   font-family: 'Poiret One', sans-serif;
-  color: #e0eaf8;
+  font-size: 0.86rem;
   font-weight: 600;
   letter-spacing: 0.04em;
+  color: #1a1208;
   padding: 4px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .page-edt .edt-cell:hover{
-  background: rgba(232,160,48,0.08);
+  box-shadow: inset 0 0 0 2px var(--accent-or-vif);
 }
 
-.page-edt .edt-grid th{
-  font-size: 13px;
-  padding: 6px;
-  background: rgba(0,0,0,0.45);
+/* Créneau non travaillé (pause méridienne) */
+.page-edt .edt-off{
+  height: 36px;
+  text-align: center;
+  vertical-align: middle;
+  color: var(--texte-doux);
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--or-16);
+  opacity: 0.55;
 }
 
-/* 4. TOPBAR ADAPTÉE */
-.page-edt .topbar select{ font-size: 13px; }
+/* Bandeau des totaux par classe */
+.edt-totaux{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px;
+  font-size: 0.80rem;
+  border-top: 1px solid var(--or-22);
+}
 
-/* 5. VERSION TABLETTE (iPad 9 ~810px) */
-@media (max-width: 900px){
+.edt-totaux em{
+  color: var(--texte-doux);
+  font-style: italic;
+}
 
-  :root{ --edt-left-w: 220px; }
+.edt-total-item{
+  font-family: 'Poiret One', sans-serif;
+  letter-spacing: 0.04em;
+  color: #1a1208;                     /* fond pastel posé par le JS */
+  border: 1px solid var(--or-30);
+  padding: 3px 8px;
+}
 
-  .page-edt .edt-leftpanel{
-    min-width: 200px;
-    max-width: 240px;
-  }
+.edt-total-general{
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--accent-or);
+  margin-left: 10px;
+}
 
-  .page-edt .edt-leftpanel span{
-    font-size: 0.76rem;
-  }
+/* Scrollbars des panneaux EDT */
+.page-edt .edt-palette::-webkit-scrollbar,
+.page-edt .edt-rightpanel::-webkit-scrollbar{ width: 4px; height: 4px; }
+.page-edt .edt-palette::-webkit-scrollbar-track,
+.page-edt .edt-rightpanel::-webkit-scrollbar-track{ background: var(--cadre-bg); }
+.page-edt .edt-palette::-webkit-scrollbar-thumb,
+.page-edt .edt-rightpanel::-webkit-scrollbar-thumb{ background: var(--or-55); border-radius: 0; }
 
-  .page-edt .edt-cell{
-    height: 64px;
-    font-size: 13px;
-  }
 
-  .page-edt .topbar{ gap: 4px; }
+/* =====================================================
+   15. PAGE BULLETINS HG
+   ===================================================== */
 
-  .page-edt .edt-meta{
-    padding: 3px 8px;
-    font-size: 12px;
-  }
+.page-bulletins{ max-width: 900px; margin: 0 auto; }
+
+.bulletins-topbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(232,160,48,0.20);
+}
+
+.bulletins-controls{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bulletins-body{
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-top: 14px;
+}
+
+.bulletins-liste{
+  flex: 0 0 280px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.bulletins-panneau{ flex: 1; min-width: 0; }
+
+/* Ligne élève */
+.bulletin-row{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-left: 2px solid transparent;
+  background: rgba(255,255,255,0.02);
+  margin-bottom: 3px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.bulletin-row:hover{
+  background: rgba(232,160,48,0.05);
+  border-left-color: rgba(232,160,48,0.40);
+}
+
+.bulletin-row.active{
+  background: rgba(42,106,204,0.16);
+  border-left-color: var(--accent-bleu);
+}
+
+.bulletin-row-head{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulletin-row .eleve-nom{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  color: var(--texte-clair);
+}
+
+.bulletin-apercu{
+  font-size: 0.74rem;
+  color: var(--texte-doux);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Navigation dans le panneau */
+.panneau-nav{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--or-22);
+}
+
+.panneau-nav strong{
+  font-family: 'Cinzel', serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.10em;
+  color: var(--accent-or-vif);
+}
+
+.panneau-actions{ margin-top: 14px; }
+
+/* Tableau des paramètres */
+.params-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.params-table th{
+  text-align: left;
+  font-family: 'Poiret One', sans-serif;
+  font-weight: 400;
+  font-size: 0.82rem;
+  color: var(--texte-doux);
+  padding: 6px 10px 6px 0;
+  width: 44%;
+  border-bottom: 1px solid var(--or-10);
+}
+
+.params-table td{
+  padding: 6px 0;
+  font-size: 0.88rem;
+  color: var(--texte-clair);
+  border-bottom: 1px solid var(--or-10);
+}
+
+/* Badges de paramètre */
+.badge.ok{
+  display: inline-block;
+  background: rgba(232,160,48,0.18);
+  border: 1px solid var(--or-45);
+  color: var(--accent-or-vif);
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  padding: 2px 10px;
+}
+
+.badge.manquant{
+  display: inline-block;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--texte-doux);
+}
+
+.badge-modere{
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #f5a030;
+  margin-left: 8px;
+}
+
+/* Données de vie scolaire */
+.params-events{
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--surface-bg);
+  border: 1px solid rgba(232,160,48,0.20);
+  border-left: 3px solid var(--or-55);
+}
+
+.params-events h5{
+  font-family: 'Cinzel', serif;
+  font-size: 0.70rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  margin: 0 0 10px 0;
+}
+
+.events-row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.85rem;
+  color: var(--texte-doux);
+}
+
+.events-row strong{
+  color: var(--texte-clair);
+  font-weight: 700;
+}
+
+.event-alerte,
+.event-alerte strong{
+  color: #f5a030;
+  font-weight: 600;
+}
+
+.events-textes{
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.event-texte{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.80rem;
+  font-style: italic;
+  color: var(--texte-doux);
+  padding-left: 8px;
+  border-left: 2px solid rgba(232,160,48,0.25);
+}
+
+/* Bulletin généré */
+.panneau-bulletin{
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: rgba(6,14,32,0.80);
+  border: 1px solid rgba(232,160,48,0.35);
+  border-left: 3px solid var(--accent-or);
+}
+
+.panneau-bulletin h4{
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-or);
+  margin: 0 0 10px 0;
+}
+
+.bulletin-texte-apercu{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  color: #e8f0fc;
+  margin: 8px 0;
+}
+
+/* Module de correction */
+.module-ecriture{
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: rgba(6,14,32,0.80);
+  border: 1px solid var(--or-30);
+}
+
+.module-ecriture h4{
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-or);
+  margin: 0 0 10px 0;
+}
+
+.module-ecriture textarea{
+  width: 100%;
+  line-height: 1.6;
+}
+
+.module-actions{
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 
 /* =====================================================
-   PAGE PP — STRUCTURE PRINCIPALE
+   16. PAGE PP
    ===================================================== */
 
-.page-pp {
+.page-pp{
   max-width: 860px;
   margin: 0 auto;
   display: flex;
@@ -1387,7 +1816,7 @@ textarea:focus{
   gap: 12px;
 }
 
-.pp-topbar {
+.pp-topbar{
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1396,50 +1825,44 @@ textarea:focus{
   border-bottom: 1px solid rgba(232,160,48,0.20);
 }
 
-.pp-topbar h1 { margin: 0; }
+.pp-topbar h1{ margin: 0; }
 
-.pp-topbar select {
+.pp-topbar select{
   font-family: 'Poiret One', sans-serif;
-  background: rgba(2,6,18,0.62);
-  color: var(--texte-clair);
-  border: 1px solid rgba(232,160,48,0.30);
-  padding: 6px 28px 6px 10px;
   font-size: 0.90rem;
   letter-spacing: 0.06em;
+  background: rgba(2,6,18,0.62);
+  color: var(--texte-clair);
+  border: 1px solid var(--or-30);
+  padding: 6px 28px 6px 10px;
 }
 
-
-/* =====================================================
-   PAGE PP — LISTE ÉLÈVES
-   ===================================================== */
-
-.pp-liste {
+/* Liste des élèves */
+.pp-liste{
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 
-.pp-row {
+.pp-row{
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
+  min-height: 52px;
   border-left: 2px solid transparent;
   background: rgba(255,255,255,0.02);
   transition: background 0.15s, border-color 0.15s;
-  min-height: 52px;
 }
 
-.pp-row:hover {
+.pp-row:hover{
   background: rgba(232,160,48,0.05);
   border-left-color: rgba(232,160,48,0.40);
 }
 
-.pp-row:nth-child(even) {
-  background: rgba(255,255,255,0.015);
-}
+.pp-row:nth-child(even){ background: rgba(255,255,255,0.015); }
 
-.pp-row-info {
+.pp-row-info{
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1447,83 +1870,78 @@ textarea:focus{
   min-width: 0;
 }
 
-.pp-nom {
+.pp-nom{
   font-family: 'Poiret One', sans-serif;
   font-size: 0.92rem;
   letter-spacing: 0.06em;
   color: var(--texte-clair);
 }
 
-.pp-badges {
+.pp-badges{
   display: flex;
   gap: 8px;
   font-size: 0.80rem;
 }
 
-.pp-menu-btn {
+.pp-menu-btn{
   font-family: 'Cinzel', serif;
   font-size: 1.10rem;
   font-weight: 700;
   padding: 8px 16px;
   min-width: 48px;
   min-height: 48px;
-  border-color: rgba(232,160,48,0.35);
+  border-color: var(--or-30);
   clip-path: none;
   flex-shrink: 0;
 }
 
-
-/* =====================================================
-   PAGE PP — BOTTOM SHEET (MENU ÉLÈVE)
-   Style natif iOS/iPadOS — glisse depuis le bas
-   ===================================================== */
-
-.pp-overlay {
+/* Menu élève — panneau glissant depuis le bas */
+.pp-overlay{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
   z-index: 3000;
+  background: rgba(0,0,0,0.55);
 }
 
-.pp-sheet {
+.pp-sheet{
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 3001;
-  background: #06112a;
-  border-top: 2px solid rgba(232,160,48,0.55);
+  background: var(--bleu-fond-alt);
+  border-top: 2px solid var(--or-55);
   border-radius: 0;
   padding: 0 0 env(safe-area-inset-bottom, 0);
   box-shadow: 0 -4px 40px rgba(0,0,0,0.80);
   animation: pp-sheet-up 0.22s ease-out;
 }
 
-@keyframes pp-sheet-up {
+@keyframes pp-sheet-up{
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
 
-.pp-sheet-inner {
+.pp-sheet-inner{
   display: flex;
   flex-direction: column;
   padding: 16px 20px 20px;
   gap: 8px;
 }
 
-.pp-sheet-titre {
+.pp-sheet-titre{
   font-family: 'Cinzel', serif;
   font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: 0.12em;
-  color: var(--accent-or-vif);
   text-align: center;
+  color: var(--accent-or-vif);
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(232,160,48,0.22);
   margin-bottom: 4px;
+  border-bottom: 1px solid var(--or-22);
 }
 
-.pp-sheet-btn {
+.pp-sheet-btn{
   font-family: 'Poiret One', sans-serif;
   font-size: 1rem;
   letter-spacing: 0.08em;
@@ -1531,21 +1949,21 @@ textarea:focus{
   text-align: left;
   padding: 14px 18px;
   min-height: 52px;
-  border: 1px solid rgba(232,160,48,0.22);
-  background: rgba(255,255,255,0.03);
+  background: var(--surface-bg);
   color: var(--texte-clair);
+  border: 1px solid var(--or-22);
   clip-path: none;
   border-radius: 0;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .pp-sheet-btn:hover,
-.pp-sheet-btn:active {
+.pp-sheet-btn:active{
   background: rgba(232,160,48,0.10);
-  border-color: rgba(232,160,48,0.55);
+  border-color: var(--or-55);
 }
 
-.pp-sheet-fermer {
+.pp-sheet-fermer{
   margin-top: 6px;
   text-align: center;
   font-size: 0.85rem;
@@ -1555,12 +1973,8 @@ textarea:focus{
   min-height: 48px;
 }
 
-
-/* =====================================================
-   PAGE PP — MODALES
-   ===================================================== */
-
-.pp-modal-wrap {
+/* Modales PP */
+.pp-modal-wrap{
   position: fixed;
   inset: 0;
   z-index: 4000;
@@ -1572,87 +1986,65 @@ textarea:focus{
   justify-content: center;
 }
 
-.pp-modal {
+.pp-modal{
   background: #040c1c;
   border: 1px solid rgba(232,160,48,0.32);
   border-top: 2px solid rgba(232,160,48,0.78);
   width: 100%;
   max-width: 720px;
   min-height: 200px;
-  clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
-  box-shadow: 0 0 60px rgba(0,0,0,0.90), 0 0 30px rgba(232,160,48,0.10);
   margin: auto;
+  clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
+  box-shadow: 0 0 60px rgba(0,0,0,0.90), 0 0 30px var(--or-10);
 }
 
-.pp-modal-head {
+.pp-modal-head{
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px 12px;
-  border-bottom: 1px solid rgba(232,160,48,0.22);
+  border-bottom: 1px solid var(--or-22);
 }
 
-.pp-modal-head h2 {
+.pp-modal-head h2{
   margin: 0;
+  padding: 0;
   font-size: 0.90rem;
   letter-spacing: 0.12em;
   border: none;
-  padding: 0;
 }
 
-.pp-modal-close {
+.pp-modal-close{
   font-size: 1rem;
   padding: 6px 12px;
   min-width: 44px;
   min-height: 44px;
+  border-color: var(--or-30);
   clip-path: none;
-  border-color: rgba(232,160,48,0.30);
 }
 
-.pp-modal-body {
+.pp-modal-body{
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.pp-modal-foot {
+.pp-modal-foot{
   padding: 12px 20px 16px;
-  border-top: 1px solid rgba(232,160,48,0.16);
+  border-top: 1px solid var(--or-16);
   display: flex;
   justify-content: flex-end;
 }
 
-.btn-save {
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.90rem;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  padding: 10px 24px;
-  min-height: 48px;
-  background: rgba(232,160,48,0.12);
-  border-color: var(--accent-or);
-  color: var(--accent-or-vif);
-  clip-path: polygon(7px 0%, 100% 0%, calc(100% - 7px) 100%, 0% 100%);
-}
-
-.btn-save:hover {
-  background: rgba(232,160,48,0.22);
-  box-shadow: 0 0 12px rgba(232,160,48,0.45);
-}
-
-
-/* =====================================================
-   PAGE PP — SECTIONS ET BOUTONS CHOIX
-   ===================================================== */
-
-.pp-section {
+/* Sections de formulaire */
+.pp-section{
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.pp-label {
+.pp-label{
   font-family: 'Cinzel', serif;
   font-size: 0.72rem;
   letter-spacing: 0.12em;
@@ -1660,70 +2052,40 @@ textarea:focus{
   color: var(--texte-doux);
 }
 
-.pp-terminee {
+.pp-terminee{
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
   font-size: 0.85rem;
   color: var(--texte-clair);
+  cursor: pointer;
 }
 
-.choix-groupe {
+.choix-groupe{
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.btn-choix {
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
-  text-transform: none;
-  padding: 8px 14px;
-  min-height: 44px;
-  border: 1px solid rgba(232,160,48,0.28);
-  background: rgba(255,255,255,0.03);
-  color: var(--texte-clair);
-  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
-  transition: all 0.15s ease;
-}
-
-.btn-choix:hover {
-  border-color: rgba(232,160,48,0.55);
-  background: rgba(232,160,48,0.08);
-}
-
-.btn-choix.active {
-  background: rgba(232,160,48,0.20);
-  border-color: var(--accent-or-vif);
-  color: var(--accent-or-vif);
-  box-shadow: 0 0 8px rgba(232,160,48,0.35);
-}
-
-
-/* =====================================================
-   PAGE PP — DONNÉES IMPORTÉES (LECTURE SEULE)
-   ===================================================== */
-
-.pp-stats-row {
+/* Données importées, lecture seule */
+.pp-stats-row{
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.pp-stat {
+.pp-stat{
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(232,160,48,0.15);
   padding: 8px 12px;
   min-width: 64px;
+  background: var(--surface-bg);
+  border: 1px solid rgba(232,160,48,0.15);
 }
 
-.pp-stat-label {
+.pp-stat-label{
   font-family: 'Cinzel', serif;
   font-size: 0.62rem;
   letter-spacing: 0.10em;
@@ -1731,77 +2093,69 @@ textarea:focus{
   color: var(--texte-doux);
 }
 
-.pp-stat-val {
+.pp-stat-val{
   font-family: 'Poiret One', sans-serif;
   font-size: 1rem;
   letter-spacing: 0.04em;
   color: var(--texte-clair);
 }
 
-.pp-input-num {
+.pp-input-num{
   font-family: 'Poiret One', sans-serif;
-  background: rgba(2,6,18,0.62);
-  color: var(--texte-clair);
-  border: 1px solid rgba(232,160,48,0.28);
-  padding: 8px 12px;
-  width: 120px;
   font-size: 1rem;
   text-align: center;
+  width: 120px;
+  padding: 8px 12px;
+  background: rgba(2,6,18,0.62);
+  color: var(--texte-clair);
+  border: 1px solid var(--or-30);
 }
 
-.pp-hint {
-  font-size: 0.80rem;
-  color: var(--texte-doux);
-  font-style: italic;
+.pp-hint{
   margin: 0;
+  font-size: 0.80rem;
+  font-style: italic;
+  color: var(--texte-doux);
 }
 
-
-/* =====================================================
-   PAGE PP — ONGLETS TRIMESTRE (MODALE SUIVI)
-   ===================================================== */
-
-.pp-tri-tabs {
+/* Onglets trimestre */
+.pp-tri-tabs{
   display: flex;
   gap: 6px;
   margin-bottom: 4px;
 }
 
-.pp-tri-tab {
+.pp-tri-tab{
   font-family: 'Cinzel', serif;
   font-size: 0.75rem;
   letter-spacing: 0.14em;
   padding: 8px 20px;
   min-height: 44px;
-  border-color: rgba(232,160,48,0.28);
+  border-color: var(--or-30);
   clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
 }
 
-.pp-tri-tab.active {
+.pp-tri-tab.active{
   background: rgba(232,160,48,0.16);
   border-color: var(--accent-or-vif);
   color: var(--accent-or-vif);
-  box-shadow: 0 0 8px rgba(232,160,48,0.30);
+  box-shadow: 0 0 8px var(--or-30);
 }
 
-
-/* =====================================================
-   PAGE PP — RÉUNIONS PARENTS
-   ===================================================== */
-
-.pp-reunions-grid {
+/* Réunions parents */
+.pp-reunions-grid{
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.pp-reunion-row {
+.pp-reunion-row{
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.pp-reunion-label {
+.pp-reunion-label{
   font-family: 'Poiret One', sans-serif;
   font-size: 0.85rem;
   letter-spacing: 0.06em;
@@ -1810,83 +2164,77 @@ textarea:focus{
   flex-shrink: 0;
 }
 
-
-/* =====================================================
-   PAGE PP — BILAN
-   ===================================================== */
-
-.pp-bilan-section {
-  border-top: 1px solid rgba(232,160,48,0.16);
+/* Bilan */
+.pp-bilan-section{
+  border-top: 1px solid var(--or-16);
   padding-top: 14px;
 }
 
-.pp-bilan-section h3 {
+.pp-bilan-section h3{
   font-size: 0.78rem;
   letter-spacing: 0.12em;
   color: var(--accent-or);
   margin-bottom: 10px;
-  border: none;
   padding: 0;
+  border: none;
 }
 
-.pp-bilan-grid {
+.pp-bilan-grid{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 8px;
 }
 
-.pp-bilan-grid > div {
+.pp-bilan-grid > div{
   font-size: 0.82rem;
   color: var(--texte-doux);
   padding: 4px 0;
 }
 
-.pp-bilan-grid > div b {
-  color: var(--texte-clair);
+.pp-bilan-grid > div b{
   display: block;
   font-size: 0.70rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--texte-clair);
   margin-bottom: 2px;
 }
 
-.pp-bilan-table {
+.pp-bilan-table{
   width: 100%;
   border-collapse: collapse;
   font-size: 0.78rem;
   letter-spacing: 0.04em;
 }
 
-.pp-bilan-table th {
+.pp-bilan-table th{
   font-family: 'Cinzel', serif;
   font-size: 0.62rem;
   letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--texte-doux);
-  padding: 5px 8px;
-  border-bottom: 1px solid rgba(232,160,48,0.22);
   text-align: center;
+  padding: 5px 8px;
   background: rgba(0,0,0,0.30);
+  border-bottom: 1px solid var(--or-22);
 }
 
-.pp-bilan-table td {
+.pp-bilan-table td{
   padding: 6px 8px;
   text-align: center;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
   color: var(--texte-clair);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-.pp-bilan-table tr:first-child td {
-  color: var(--accent-or);
-}
+.pp-bilan-table tr:first-child td{ color: var(--accent-or); }
 
-.pp-reunions-bilan {
+.pp-reunions-bilan{
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
-.pp-reunion-bilan {
+.pp-reunion-bilan{
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1896,7 +2244,7 @@ textarea:focus{
   min-width: 70px;
 }
 
-.pp-resultat {
+.pp-resultat{
   font-size: 1rem;
   color: var(--accent-or-vif);
   padding: 8px 0;
@@ -1904,146 +2252,487 @@ textarea:focus{
 
 
 /* =====================================================
-   BOUTONS IFST INVESTISSEMENT / POSTURE / ÉTUDES PP
-   (réutilisent .btn-invest, .btn-posture, .btn-etudes
-    dans classesHG — même style que btn-comp mais plus grands)
+   17. PAGE PROFIL ÉLÈVE
+   Reprend les codes visuels de la page PP :
+   sections à filet or, tableaux sans bordures verticales,
+   libellés en petites capitales Cinzel.
    ===================================================== */
 
-.btn-invest,
-.btn-posture,
-.btn-etudes {
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.82rem;
+.page-profil{
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Barre de recherche */
+.profil-topbar{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(232,160,48,0.20);
+}
+
+.profil-topbar h1{ margin: 0; }
+
+.profil-topbar input[type="text"]{
+  min-width: 240px;
+  font-size: 0.90rem;
   letter-spacing: 0.06em;
-  text-transform: none;
-  padding: 8px 14px;
+}
+
+.profil-topbar select{
+  font-size: 0.88rem;
+  letter-spacing: 0.06em;
+}
+
+/* Corps : liste à gauche, détail à droite */
+.profil-body{
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin-top: 14px;
+}
+
+/* Liste des élèves */
+.profil-liste{
+  flex: 0 0 260px;
+  max-height: 72vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.profil-liste p{
+  font-size: 0.82rem;
+  font-style: italic;
+  padding: 8px;
+}
+
+.profil-liste::-webkit-scrollbar{ width: 4px; }
+.profil-liste::-webkit-scrollbar-track{ background: var(--cadre-bg); }
+.profil-liste::-webkit-scrollbar-thumb{ background: var(--or-45); border-radius: 0; }
+
+.profil-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
   min-height: 44px;
-  border: 1px solid rgba(232,160,48,0.28);
-  background: rgba(255,255,255,0.03);
+  margin-bottom: 2px;
+  background: rgba(255,255,255,0.02);
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.profil-row:nth-child(even){ background: rgba(255,255,255,0.015); }
+
+.profil-row:hover{
+  background: rgba(232,160,48,0.06);
+  border-left-color: rgba(232,160,48,0.45);
+}
+
+.profil-row.active{
+  background: rgba(42,106,204,0.18);
+  border-left-color: var(--accent-bleu);
+}
+
+.profil-nom{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.05em;
   color: var(--texte-clair);
-  clip-path: polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%);
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.btn-invest:hover,
-.btn-posture:hover,
-.btn-etudes:hover {
-  border-color: rgba(232,160,48,0.55);
-  background: rgba(232,160,48,0.08);
+.profil-row.active .profil-nom{ color: var(--accent-or-vif); }
+
+.profil-classe{
+  font-family: 'Cinzel', serif;
+  font-size: 0.64rem;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  flex-shrink: 0;
 }
 
-.btn-invest.active,
-.btn-posture.active,
-.btn-etudes.active {
-  background: rgba(232,160,48,0.20);
-  border-color: var(--accent-or-vif);
+/* Panneau de détail */
+.profil-detail{
+  flex: 1;
+  min-width: 0;
+  max-height: 72vh;
+  overflow-y: auto;
+  padding: 14px 18px;
+  background: var(--panneau-bg);
+  border: 1px solid var(--or-30);
+  border-top: 1px solid var(--or-55);
+}
+
+.profil-detail::-webkit-scrollbar{ width: 4px; }
+.profil-detail::-webkit-scrollbar-track{ background: var(--cadre-bg); }
+.profil-detail::-webkit-scrollbar-thumb{ background: var(--or-45); border-radius: 0; }
+
+.profil-vide{
+  padding: 30px 20px;
+  text-align: center;
+  font-style: italic;
+  color: var(--texte-doux);
+}
+
+.profil-inner h2{
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
   color: var(--accent-or-vif);
-  box-shadow: 0 0 8px rgba(232,160,48,0.35);
+  text-shadow: 0 0 14px rgba(232,160,48,0.30);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--or-30);
+}
+
+/* Sections : filet or en haut, comme le bilan PP */
+.profil-section{
+  border-top: 1px solid var(--or-16);
+  padding-top: 14px;
+  margin-bottom: 18px;
+}
+
+.profil-section:first-of-type{
+  border-top: none;
+  padding-top: 0;
+}
+
+.profil-section h3{
+  font-family: 'Cinzel', serif;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-or);
+  margin-bottom: 12px;
+  padding: 0;
+  border: none;
+}
+
+.profil-section h3 small{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--texte-doux);
+  margin-left: 8px;
+}
+
+.profil-section h4{
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  margin: 14px 0 8px 0;
+}
+
+.profil-section > p{
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--texte-doux);
+}
+
+/* Grille identité — libellés en capitales au-dessus */
+.profil-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.profil-grid > div{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.86rem;
+  color: var(--texte-clair);
+  padding: 4px 0;
+}
+
+.profil-grid > div b{
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  margin-bottom: 3px;
+}
+
+/* Statistiques en pastilles */
+.profil-stats{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.profil-stats > span{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--texte-doux);
+  background: var(--surface-bg);
+  border: 1px solid rgba(232,160,48,0.15);
+}
+
+.profil-stats > span b{
+  font-size: 0.95rem;
+  color: var(--accent-or-vif);
+  font-weight: 600;
+}
+
+/*
+   Tableaux : mêmes codes que .pp-bilan-table.
+   Pas de bordures verticales, lignes horizontales fines,
+   en-têtes Cinzel sur fond noir.
+*/
+.profil-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.80rem;
+  letter-spacing: 0.04em;
+}
+
+.profil-table th{
+  font-family: 'Cinzel', serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  text-align: left;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.30);
+  border: none;
+  border-bottom: 1px solid var(--or-22);
+}
+
+.profil-table thead th:not(:first-child){ text-align: center; }
+
+.profil-table td{
+  padding: 6px 10px;
+  color: var(--texte-clair);
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.profil-table tbody tr:hover{ background: rgba(232,160,48,0.04); }
+
+/* Première colonne : intitulé de la compétence */
+.profil-table td:first-child{
+  color: var(--texte-doux);
+  font-size: 0.78rem;
+}
+
+/* Valeurs I / F / S / TS */
+.profil-ifst{
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent-or-vif);
+}
+
+/* Séparateur avant les lignes de synthèse */
+.profil-sep td{
+  border-top: 1px solid var(--or-30);
+  padding-top: 9px;
+}
+
+/* Lignes de synthèse : valeurs centrées, teinte or douce */
+.profil-sep ~ tr td:not(:first-child),
+.profil-sep td:not(:first-child){
+  text-align: center;
+  color: var(--accent-or);
+  font-size: 0.76rem;
+}
+
+/* Observations */
+.profil-observations{ margin-top: 12px; }
+
+.profil-obs{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.80rem;
+  font-style: italic;
+  color: var(--texte-doux);
+  padding: 4px 0 4px 10px;
+  margin-bottom: 3px;
+  border-left: 2px solid rgba(232,160,48,0.25);
+}
+
+/* Bulletins — même traitement que le panneau bulletin */
+.profil-bulletin{
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: rgba(6,14,32,0.80);
+  border: 1px solid rgba(232,160,48,0.30);
+  border-left: 3px solid var(--accent-or);
+}
+
+.profil-bulletin h4{
+  font-family: 'Cinzel', serif;
+  font-size: 0.70rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-or);
+  margin: 0 0 8px 0;
+}
+
+.profil-bulletin p{
+  font-family: 'Poiret One', sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  color: #e8f0fc;
+  margin: 0;
 }
 
 
 /* =====================================================
-   RESPONSIVE — iPAD 9 PORTRAIT (≤ 820px)
+   18. RESPONSIVE
    ===================================================== */
 
-@media (max-width: 820px) {
+/* ——— Tablette et petit écran (≤ 900px) ——— */
+@media (max-width: 900px){
 
-  /* Header : tabs plus compacts */
-  .ag-tabs button {
+  :root{ --edt-left-w: 220px; }
+
+  .page-edt .topbar{ gap: 4px; }
+
+  .page-edt .edt-cell{
+    height: 64px;
+    font-size: 0.80rem;
+  }
+
+  .edt-palette{
+    flex: 0 0 130px;
+    padding: 6px;
+  }
+
+  .edt-pastille{
+    font-size: 0.72rem;
+    padding: 4px 7px;
+  }
+
+  #semSelect{ min-width: 180px; }
+}
+
+/* ——— iPad 9 portrait (≤ 820px) ——— */
+@media (max-width: 820px){
+
+  .ag-tabs button{
     font-size: 0.62rem;
     padding: 6px 10px 5px;
     letter-spacing: 0.08em;
   }
 
-  .ag-brand h1 {
+  .ag-brand h1{
     font-size: 0.90rem;
     letter-spacing: 0.14em;
   }
 
-  /* App padding réduit */
-  #app { padding: 10px; }
+  #app{ padding: 10px; }
 
-  /* Modales PP : plein écran sur portrait */
-  .pp-modal-wrap { padding: 0; align-items: flex-end; }
-  .pp-modal {
+  /* Modales PP en plein écran */
+  .pp-modal-wrap{
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .pp-modal{
     max-width: 100%;
     min-height: 60vh;
     max-height: 92vh;
     overflow-y: auto;
     border-left: none;
     border-right: none;
-    clip-path: polygon(12px 0%, 100% 0%, 100% 100%, 0% 100%, 0% 12px);
   }
 
-  /* PP liste : plus grand pour le toucher */
-  .pp-row { padding: 12px 10px; min-height: 58px; }
-  .pp-nom { font-size: 1rem; }
+  .pp-row{
+    padding: 12px 10px;
+    min-height: 58px;
+  }
 
-  /* Boutons de choix : plus hauts pour le doigt */
+  .pp-nom{ font-size: 1rem; }
+
   .btn-choix,
   .btn-invest,
   .btn-posture,
-  .btn-etudes {
+  .btn-etudes{
     min-height: 48px;
     padding: 10px 14px;
     font-size: 0.85rem;
   }
 
-  /* Classes HG : plan salle moins de colonnes */
-  .page-classeshg .plan-salle {
-    grid-template-columns: repeat(4, 1fr);
-  }
+  .page-classeshg .plan-salle{ grid-template-columns: repeat(4, 1fr); }
 
-  /* Page salle : tables plus larges */
-  .page-salle .table {
+  .page-salle .table{
     width: 80px;
     height: 64px;
     font-size: 0.70rem;
   }
 
-  /* Bulletins : plein largeur */
+  /* Pages centrées : pleine largeur */
   .page-bulletins,
   .page-pp,
-  .page-archives { max-width: 100%; }
+  .page-archives,
+  .page-profil{ max-width: 100%; }
+
+  /* Listes et détails empilés */
+  .bulletins-body,
+  .profil-body{ flex-direction: column; }
+
+  .bulletins-liste,
+  .profil-liste{
+    flex: 1 1 auto;
+    width: 100%;
+    max-height: 30vh;
+  }
+
+  .profil-detail{
+    width: 100%;
+    max-height: none;
+  }
 }
 
+/* ——— iPad 9 paysage (821px – 1100px) ——— */
+@media (min-width: 821px) and (max-width: 1100px){
 
-/* =====================================================
-   RESPONSIVE — iPAD 9 PAYSAGE (821px–1100px)
-   ===================================================== */
-
-@media (min-width: 821px) and (max-width: 1100px) {
-
-  /* Header : tabs légèrement réduits */
-  .ag-tabs button {
+  .ag-tabs button{
     font-size: 0.65rem;
     padding: 7px 12px 5px;
     letter-spacing: 0.10em;
   }
 
-  /* EDT en paysage */
-  :root { --edt-left-w: 260px; }
+  :root{ --edt-left-w: 260px; }
 
-  .page-edt .edt-cell {
+  .page-edt .edt-cell{
     height: 68px;
-    font-size: 13px;
+    font-size: 0.80rem;
   }
 
-  /* Classes HG : 5 colonnes plan salle */
-  .page-classeshg .plan-salle {
-    grid-template-columns: repeat(5, 1fr);
-  }
+  .page-classeshg .plan-salle{ grid-template-columns: repeat(5, 1fr); }
 
-  /* PP modal en paysage : centré, pas trop large */
-  .pp-modal { max-width: 680px; }
+  .pp-modal{ max-width: 680px; }
+
+  .profil-liste{ flex: 0 0 220px; }
 }
 
+/* ——— Écrans tactiles : cibles d'au moins 44px ——— */
+@media (pointer: coarse){
 
-/* =====================================================
-   TOUCH — ZONES MINIMUM 44px (TOUTES PAGES)
-   ===================================================== */
-
-@media (pointer: coarse) {
   button,
   .btn,
   .btn-comp,
@@ -2054,572 +2743,15 @@ textarea:focus{
   .pp-menu-btn,
   .pp-sheet-btn,
   .pp-tri-tab,
-  .ag-tabs button {
+  .ag-tabs button{
     min-height: 44px;
   }
 
-  /* Lignes élèves touchables */
-  .page-classeshg .eleve-row { min-height: 44px; }
-  .bulletin-row              { min-height: 48px; }
-  .pp-row                    { min-height: 52px; }
-}
-
-/* =====================================================
-   BULLETINS HG — DONNÉES SALLE + MODÉRATEUR
-   ===================================================== */
-
-.params-events {
-  margin-top: 14px;
-  padding: 12px 14px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(232,160,48,0.20);
-  border-left: 3px solid rgba(232,160,48,0.55);
-}
-
-.params-events h5 {
-  font-family: 'Cinzel', serif;
-  font-size: 0.70rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--texte-doux);
-  margin: 0 0 10px 0;
-}
-
-.events-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.85rem;
-  color: var(--texte-doux);
-}
-
-.events-row strong {
-  color: var(--texte-clair);
-  font-weight: 700;
-}
-
-.event-alerte {
-  color: #f5a030 !important;
-  font-weight: 600;
-}
-
-.event-alerte strong {
-  color: #f5a030 !important;
-}
-
-.events-textes {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.event-texte {
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.80rem;
-  color: var(--texte-doux);
-  font-style: italic;
-  padding-left: 8px;
-  border-left: 2px solid rgba(232,160,48,0.25);
-}
-
-.badge-modere {
-  font-size: 0.72rem;
-  color: #f5a030;
-  margin-left: 8px;
-  letter-spacing: 0.06em;
-}
-
-/* =====================================================
-   BULLETINS HG — TEXTE GÉNÉRÉ (contraste)
-   ===================================================== */
-
-.bulletin-texte-apercu {
-  font-size: 0.92rem;
-  color: #e8f0fc;
-  line-height: 1.7;
-  margin: 8px 0;
-  letter-spacing: 0.02em;
-  font-family: 'Poiret One', sans-serif;
-}
-
-.panneau-bulletin {
-  margin-top: 16px;
-  padding: 14px 16px;
-  background: rgba(6, 14, 32, 0.80);
-  border: 1px solid rgba(232,160,48,0.35);
-  border-left: 3px solid var(--accent-or);
-}
-
-.panneau-bulletin h4 {
-  font-family: 'Cinzel', serif;
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent-or);
-  margin: 0 0 10px 0;
-}
-
-/* =====================================================
-   IMPORT/EXPORT — GESTION ÉLÈVES
-   ===================================================== */
-
-.gestion-eleve-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(232,160,48,0.10);
-}
-
-.gestion-eleve-nom {
-  flex: 1;
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.88rem;
-  color: var(--texte-clair);
-  letter-spacing: 0.04em;
-}
-
-.btn-suppr-eleve {
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  min-height: 36px;
-  border-color: rgba(192,48,32,0.55);
-  color: #f08080;
-}
-
-.btn-suppr-eleve:hover {
-  border-color: rgba(192,48,32,0.90);
-  background: rgba(192,48,32,0.12);
-  box-shadow: 0 0 8px rgba(192,48,32,0.35);
-  color: #ffaaaa;
-}
-
-
-/* =====================================================
-   REFONTE LISIBILITÉ & BOUTONS — v2
-   Surcharge ciblée du thème Art Déco
-   ===================================================== */
-
-/* ── Texte général plus lisible ── */
-:root {
-  --texte-clair: #f0f4ff;
-  --texte-doux:  #a0b8d8;
-}
-
-body {
-  font-size: 15px;
-}
-
-p {
-  color: var(--texte-doux);
-  font-size: 0.95rem;
-}
-
-label {
-  font-family: 'Poiret One', sans-serif;
-  color: var(--texte-clair);
-  font-size: 0.92rem;
-  letter-spacing: 0.04em;
-}
-
-/* ── Titres plus contrastés ── */
-h1 {
-  font-size: 1.25rem;
-  color: var(--accent-or-vif);
-  text-shadow: 0 0 18px rgba(232,160,48,0.35);
-}
-
-h2 {
-  font-size: 1rem;
-  color: var(--texte-clair);
-  border-bottom-color: rgba(232,160,48,0.40);
-}
-
-h3 {
-  font-size: 0.88rem;
-  color: var(--accent-or);
-}
-
-/* ── BOUTONS — aspect visuel distinct ──
-   Remplace le fond transparent par un fond semi-opaque
-   avec dégradé subtil, texte en gras, taille augmentée.
-   L'état hover devient clairement visible.
-   ── */
-button,
-.btn {
-  font-size: 0.88rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  padding: 10px 20px;
-  min-height: 40px;
-
-  /* Fond visible au repos */
-  background: rgba(232,160,48,0.10);
-  color: var(--accent-or-vif);
-  border: 1.5px solid rgba(232,160,48,0.55);
-
-  /* Légère ombre pour donner du relief */
-  box-shadow: 0 2px 6px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.06);
-  transition: all 0.18s ease;
-}
-
-button:hover,
-.btn:hover {
-  background: rgba(232,160,48,0.22);
-  border-color: var(--accent-or-vif);
-  color: #fff;
-  box-shadow:
-    0 0 10px rgba(232,160,48,0.55),
-    0 0 24px rgba(232,160,48,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.10);
-}
-
-button:active,
-.btn:active {
-  background: rgba(232,160,48,0.30);
-  transform: translateY(1px);
-  box-shadow: 0 0 6px rgba(232,160,48,0.70);
-}
-
-/* ── Boutons d'action principaux (save, validate) ── */
-.btn-save,
-#valider,
-#genererTousBtn,
-#exportCsvBtn {
-  background: linear-gradient(135deg, rgba(232,160,48,0.25), rgba(192,80,20,0.18));
-  border-color: var(--accent-or);
-  color: var(--accent-or-vif);
-  font-weight: 700;
-}
-
-/* ── Boutons IFST dans modales (compétences) ── */
-.btn-comp,
-.btn-invest,
-.btn-posture,
-.btn-etudes,
-.btn-choix {
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 8px 14px;
-  min-height: 40px;
-  background: rgba(10,22,50,0.80);
-  color: var(--texte-doux);
-  border: 1.5px solid rgba(232,160,48,0.30);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
-}
-
-.btn-comp:hover,
-.btn-invest:hover,
-.btn-posture:hover,
-.btn-etudes:hover,
-.btn-choix:hover {
-  background: rgba(232,160,48,0.12);
-  color: var(--texte-clair);
-  border-color: rgba(232,160,48,0.60);
-}
-
-.btn-comp.active,
-.btn-invest.active,
-.btn-posture.active,
-.btn-etudes.active,
-.btn-choix.active {
-  background: rgba(232,160,48,0.28);
-  border-color: var(--accent-or-vif);
-  color: #fff;
-  box-shadow: 0 0 10px rgba(232,160,48,0.50), inset 0 1px 0 rgba(255,255,255,0.12);
-}
-
-/* ── Onglets de navigation ── */
-.ag-tabs button {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--texte-clair);
-  background: rgba(232,160,48,0.06);
-  border: 1px solid rgba(232,160,48,0.25);
-  border-bottom: 2px solid rgba(232,160,48,0.25);
-  padding: 8px 14px 7px;
-  min-height: 38px;
-}
-
-.ag-tabs button:hover {
-  background: rgba(232,160,48,0.14);
-  color: var(--accent-or-vif);
-  border-color: rgba(232,160,48,0.55);
-  box-shadow: 0 0 10px rgba(232,160,48,0.30);
-}
-
-/* ── Animation liseré carte : ralentissement ── */
-@keyframes ag-card-glow {
-  0%   { background-position:  300% 0; }
-  100% { background-position: -300% 0; }
-}
-
-.card::before {
-  background-size: 300% 100%;
-  animation: ag-card-glow 10s linear infinite;
-}
-
-/* ── Page Import/Export : layout allégé ── */
-.page-importexport {
-  max-width: 780px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.page-importexport .card {
-  padding: 12px 16px;
-}
-
-.page-importexport .card-head {
-  padding-bottom: 8px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid rgba(232,160,48,0.18);
-}
-
-.page-importexport .card-head h2 {
-  font-size: 0.88rem;
-  margin-bottom: 4px;
-  border: none;
-  padding: 0;
-}
-
-.page-importexport .card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.page-importexport .hint {
-  font-size: 0.78rem;
-  color: var(--texte-doux);
-  font-style: italic;
-}
-
-.page-importexport .status {
-  font-size: 0.85rem;
-  min-height: 22px;
-  color: var(--texte-doux);
-}
-
-/* ── Inputs et selects plus lisibles ── */
-input, select, textarea {
-  font-size: 0.92rem;
-  color: var(--texte-clair);
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: rgba(160,184,216,0.55);
-}
-
-select option {
-  background: #06112a;
-  color: var(--texte-clair);
-}
-
-/* ── Statut / badges ── */
-.badge.ok {
-  display: inline-block;
-  background: rgba(232,160,48,0.18);
-  border: 1px solid rgba(232,160,48,0.45);
-  color: var(--accent-or-vif);
-  font-weight: 600;
-  padding: 2px 10px;
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
-}
-
-.badge.manquant {
-  display: inline-block;
-  color: var(--texte-doux);
-  font-size: 0.82rem;
-  font-style: italic;
-}
-
-/* ── Tableau paramètres bulletin ── */
-.params-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.88rem;
-}
-
-.params-table th {
-  text-align: left;
-  color: var(--texte-doux);
-  font-family: 'Poiret One', sans-serif;
-  font-weight: 400;
-  font-size: 0.82rem;
-  padding: 6px 10px 6px 0;
-  width: 44%;
-  border-bottom: 1px solid rgba(232,160,48,0.10);
-}
+  .page-classeshg .eleve-row{ min-height: 44px; }
+  .bulletin-row{ min-height: 48px; }
+  .pp-row{ min-height: 52px; }
+  .profil-row{ min-height: 48px; }
 
-.params-table td {
-  padding: 6px 0;
-  color: var(--texte-clair);
-  border-bottom: 1px solid rgba(232,160,48,0.10);
-  font-size: 0.88rem;
-}
-
-/* =====================================================
-   PAGE CLASSES HG — SELECTS ADAPTATION + PLACE
-   Contraste forcé pour Safari/iPad (texte visible)
-   ===================================================== */
-
-.page-classeshg .opt-adapt select,
-.page-classeshg .opt-place select {
-  background-color: #0a1628;
-  color: #f0f4ff;
-  border: 1px solid rgba(232,160,48,0.40);
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.78rem;
-  -webkit-text-fill-color: #f0f4ff;
-  opacity: 1;
-}
-
-.page-classeshg .opt-adapt select option,
-.page-classeshg .opt-place select option {
-  background-color: #0a1628;
-  color: #f0f4ff;
-  -webkit-text-fill-color: #f0f4ff;
-}
-
-/* Sélection active — valeur non vide visible */
-.page-classeshg .opt-adapt select:not([value=""]),
-.page-classeshg .opt-place select:not([value=""]) {
-  color: #f5c060;
-  -webkit-text-fill-color: #f5c060;
-  border-color: rgba(232,160,48,0.65);
-}
-
-/* =====================================================
-   PAGE CLASSES HG — SELECTS ADAPTATION + PLACE (v2)
-   Annule le bloc précédent, approche compatible Safari
-   ===================================================== */
-
-.page-classeshg .opt-adapt select,
-.page-classeshg .opt-place select {
-  background-color: transparent;
-  color: var(--texte-clair);
-  -webkit-text-fill-color: unset;
-  border: 1px solid rgba(232,160,48,0.40);
-  font-family: 'Poiret One', sans-serif;
-  font-size: 0.78rem;
-  opacity: 1;
-}
-
-.page-classeshg .opt-adapt select option,
-.page-classeshg .opt-place select option {
-  background-color: #0a1628;
-  color: #f0f4ff;
-  -webkit-text-fill-color: unset;
-}
-
-.edt-palette {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px;
-  align-content: flex-start;
-  max-width: 180px;
-}
-.edt-pastille {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 0.85em;
-  color: #222;
-}
-.edt-pastille.active {
-  font-weight: bold;
-}
-
-.edt-palette .edt-pastille {
-  color: #222 !important;
-}
-
-<button id="valider">Valider${(() => {
-          const n = compterModifications();
-          return n ? ` (${n})` : "";
-        })()}</button>
-
-                              .edt-grid .edt-cell {
-  color: #222 !important;
-}
-
-.edt-propag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.9em;
-}
-.profil-topbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 8px;
-}
-.profil-topbar input[type="text"] { min-width: 220px; }
-
-.profil-body {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-.profil-liste {
-  flex: 0 0 260px;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-.profil-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
-  border-bottom: 1px solid #eee;
-  cursor: pointer;
-}
-.profil-row:hover { background: #f5f5f5; }
-.profil-row.active { background: #e8f0fe; font-weight: bold; }
-.profil-classe { color: #666; font-size: 0.85em; }
-
-.profil-detail { flex: 1; }
-.profil-vide { color: #888; padding: 20px; }
-
-.profil-section {
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #eee;
-}
-.profil-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 6px;
-}
-.profil-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin: 6px 0;
-}
-.profil-table { border-collapse: collapse; width: 100%; }
-.profil-table th, .profil-table td {
-  border: 1px solid #ddd;
-  padding: 4px 8px;
-  text-align: left;
-}
-.profil-ifst { text-align: center; font-weight: bold; }
-.profil-sep td { border-top: 2px solid #999; }
-.profil-obs {
-  padding: 4px 0;
-  color: #444;
-  font-style: italic;
+  /* Exception : les pastilles doivent rester compactes */
+  .edt-pastille{ min-height: 32px; }
 }
-.profil-bulletin { margin-bottom: 12px; }
-.profil-bulletin p { line-height: 1.5; }
