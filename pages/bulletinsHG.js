@@ -396,7 +396,6 @@ async function chargerElevesClasse() {
   parametres      = {};
   parametresValid = {};
   bulletins       = await chargerBulletinsClasse(classeActiveId, periodeActive);
-}
   eleveActifIndex = null;
 }
 
@@ -777,7 +776,7 @@ async function genererTous() {
         console.error(`Sauvegarde bulletin ${eleve.nom} :`, err);
       }
     }
-
+  }
   if (btn) { btn.disabled = false; btn.textContent = "⚡ Générer tous"; }
   refreshListe();
   if (eleveActifIndex !== null) await ouvrirPanneau(eleveActifIndex);
