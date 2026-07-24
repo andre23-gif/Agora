@@ -24,7 +24,6 @@ let bulletins       = {};     // eleveId → { texte, statut: 'genere'|'valide' 
 
 let eleveActifIndex = null;
 
-const ANNEE_COURANTE = window.appAnneeCourante || "2024-2025";
 
 /* -------------------------------------------------------
    CONSTANTES MÉTIER
@@ -128,7 +127,9 @@ async function getCompetencesEleve(eleveId, anneeId, periode) {
 }
 
 async function getSeancesPeriode(classeId, anneeId, periode) {
-  const anneeStart = parseInt(ANNEE_COURANTE.split("-")[0]);
+  const libelle = window.appAnneeCourante;
+  if (!libelle) return [];
+  const anneeStart = parseInt(libelle.split("-")[0]);
   const anneeEnd   = anneeStart + 1;
   const ranges = {
     T1: [`${anneeStart}-09-01`, `${anneeStart}-12-31`],
@@ -794,17 +795,18 @@ function exporterCSV() {
     return;
   }
 
+  const annee = window.appAnneeCourante || "";
   let csv = "annee;periode;classe;prenom;nom;bulletin_hg\n";
   avec.forEach(e => {
     const texte = `"${bulletins[e.id].texte.replace(/"/g, '""')}"`;
-    csv += `${ANNEE_COURANTE};${periodeActive};${classeActive};${e.prenom};${e.nom};${texte}\n`;
+    csv += `${annee};${periodeActive};${classeActive};${e.prenom};${e.nom};${texte}\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement("a");
   a.href     = url;
-  a.download = `bulletins_HG_${ANNEE_COURANTE}_${periodeActive}_${classeActive}.csv`;
+  a.download = `bulletins_HG_${annee}_${periodeActive}_${classeActive}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
