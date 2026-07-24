@@ -318,4 +318,196 @@ function renderCompetences() {
           </tr>
           <tr>
             <td>Études personnelles</td>
-            ${TRIMESTRES.map(t =>
+            ${TRIMESTRES.map(t => `<td>${c[t]?.etudes_personnelles || "—"}</td>`).join("")}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderVieScolaire() {
+  const ev = profil.events;
+
+  return `
+    <div class="profil-section">
+      <h3>Vie scolaire <small>(${profil.nbSeances} séance(s) enregistrée(s))</small></h3>
+      <div class="profil-stats">
+        <span>Absences <b>${ev.absences}</b></span>
+        <span>Retards <b>${ev.retards}</b></span>
+        <span>Devoirs non faits <b>${ev.devoirs}</b></span>
+        <span>Oublis matériel <b>${ev.oublis}</b></span>
+        <span>Absent au contrôle <b>${ev.absentControle}</b></span>
+      </div>
+      ${ev.textes.length ? `
+        <div class="profil-observations">
+          <h4>Observations (${ev.textes.length})</h4>
+          ${ev.textes.map(t => `<div class="profil-obs">— ${escapeHtml(t)}</div>`).join("")}
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+function renderParticipation() {
+  const p = profil.participation;
+
+  if (p.moyenne === null) {
+    return `<div class="profil-section"><h3>Participation</h3><p>Aucune participation saisie.</p></div>`;
+  }
+
+  const detail = Object.entries(p.detail)
+    .map(([k, v]) => `<span>${escapeHtml(k)} <b>${v}</b></span>`).join("");
+
+  return `
+    <div class="profil-section">
+      <h3>Participation</h3>
+      <div class="profil-stats">
+        <span>Moyenne <b>${p.moyenne.toFixed(2)}</b> / 3</span>
+        <span>Relevés <b>${p.nb}</b></span>
+      </div>
+      <div class="profil-stats">${detail}</div>
+    </div>
+  `;
+}
+
+function renderBulletins() {
+  const b = profil.bulletins;
+  const presents = TRIMESTRES.filter(t => b[t]);
+
+  if (!presents.length) {
+    return `<div class="profil-section"><h3>Bulletins HG</h3><p>Aucun bulletin généré.</p></div>`;
+  }
+
+  return `
+    <div class="profil-section">
+      <h3>Bulletins HG</h3>
+      ${presents.map(t => `
+        <div class="profil-bulletin">
+          <h4>${t} ${b[t].statut === "valide" ? "✅" : "🟠"}</h4>
+          <p>${escapeHtml(b[t].texte)}</p>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderPP() {
+  const s  = profil.pp.suivi;
+  const tr = profil.pp.trimestres;
+  const re = profil.pp.reunions;
+
+  const val  = v => v || "—";
+  const bool = v => v === true ? "Oui" : v === false ? "Non" : "—";
+  const moy  = v => v != null ? Number(v).toFixed(2) : "—";
+
+  return `
+    <div class="profil-section">
+      <h3>Suivi PP</h3>
+
+      <h4>Rentrée</h4>
+      <div class="profil-grid">
+        <div><b>LV1</b> ${val(s.lv1)}</div>
+        <div><b>LV2</b> ${val(s.lv2)}</div>
+        <div><b>Option</b> ${val(s.option_facultative)}</div>
+        <div><b>CFG</b> ${bool(s.cfg)}</div>
+        <div><b>AESH</b> ${bool(s.aesh)}</div>
+        <div><b>Droit image</b> ${bool(s.droit_image)}</div>
+        <div><b>Aménagements</b> ${(s.amenagements || []).join(", ") || "Aucun"}</div>
+      </div>
+
+      <h4>Stage</h4>
+      <div class="profil-grid">
+        <div><b>Statut</b> ${val(s.stage_statut)}</div>
+        <div><b>Conventions</b> ${val(s.stage_conventions)}</div>
+        <div><b>Livret</b> ${val(s.stage_livret)}</div>
+        <div><b>Note oral</b> ${s.stage_note_oral ?? "—"}</div>
+      </div>
+
+      <h4>Par trimestre</h4>
+      <table class="profil-table">
+        <thead>
+          <tr><th>Tri</th><th>Moy</th><th>Abs</th><th>Ret</th>
+              <th>Récompense</th><th>Orientation</th></tr>
+        </thead>
+        <tbody>
+          ${TRIMESTRES.map(t => {
+            const d = tr[t] || {};
+            return `<tr>
+              <td>${t}</td><td>${moy(d.moyenne)}</td>
+              <td>${d.absences ?? "—"}</td><td>${d.retards ?? "—"}</td>
+              <td>${val(d.recompense)}</td><td>${val(d.orientation)}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+
+      <h4>Réunions parents</h4>
+      <div class="profil-stats">
+        ${Object.keys(re).length
+          ? Object.entries(re).map(([k, v]) => `<span>${escapeHtml(k)} ${v ? "✅" : "❌"}</span>`).join("")
+          : "<span>Aucune donnée</span>"}
+      </div>
+    </div>
+  `;
+}
+
+/* -------------------------------------------------------
+   EVENTS
+------------------------------------------------------- */
+
+export function bindProfilEleveEvents() {
+
+  const champ = document.getElementById("profilRecherche");
+  if (champ) {
+    champ.oninput = (e) => {
+      recherche = e.target.value;
+      rafraichirListe();
+    };
+  }
+
+  const selClasse = document.getElementById("profilClasse");
+  if (selClasse) {
+    selClasse.onchange = (e) => {
+      classeFiltre = e.target.value;
+      rafraichirListe();
+    };
+  }
+
+  bindListe();
+}
+
+function bindListe() {
+  document.querySelectorAll(".profil-row[data-eleveid]").forEach(row => {
+    row.onclick = async () => {
+      const id = row.dataset.eleveid;
+      eleveActif = tousEleves.find(x => String(x.id) === String(id));
+      profil = null;
+
+      rafraichirListe();
+      rafraichirDetail();
+
+      try {
+        profil = await chargerProfil(eleveActif);
+      } catch (err) {
+        console.error("Chargement profil :", err);
+      }
+      rafraichirDetail();
+    };
+  });
+}
+
+function rafraichirListe() {
+  const liste = document.getElementById("profilListe");
+  if (liste) {
+    liste.innerHTML = renderListe(elevesFiltres());
+    bindListe();
+  }
+}
+
+function rafraichirDetail() {
+  const detail = document.getElementById("profilDetail");
+  if (detail) {
+    detail.innerHTML = eleveActif ? renderDetail() : "<p class='profil-vide'>Sélectionne un élève.</p>";
+  }
+}
