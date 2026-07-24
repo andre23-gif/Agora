@@ -346,10 +346,19 @@ async function loadWeekStatusIndex() {
 
 
 
-  weekStatusIndex = new Map();
+weekStatusIndex = new Map();
 
   (data || []).forEach(r => {
-// Marqueur hors_serie, lu directement dans edt_weeks
+    weekStatusIndex.set(String(r.iso_lundi), {
+      has_data: !!r.has_data,
+      type: r.type,
+      trimestre: r.trimestre,
+      semestre: r.semestre,
+      last_update: r.last_update || null
+    });
+  });
+
+  // Marqueur hors_serie, lu directement dans edt_weeks
   const { data: weeks } = await sb
     .from("edt_weeks")
     .select("iso_lundi, hors_serie")
@@ -361,22 +370,6 @@ async function loadWeekStatusIndex() {
     prev.hors_serie = !!w.hors_serie;
     weekStatusIndex.set(key, prev);
   });
-    weekStatusIndex.set(String(r.iso_lundi), {
-
-      has_data: !!r.has_data,
-
-      type: r.type,
-
-      trimestre: r.trimestre,
-
-      semestre: r.semestre,
-
-      last_update: r.last_update || null
-
-    });
-
-  });
-
 }
 
 
