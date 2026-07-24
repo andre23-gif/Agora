@@ -65,7 +65,6 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrenR3Y3lycXN6cXdpY3lxbnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NDI3NDgsImV4cCI6MjA5MzExODc0OH0.2ZJdCCijDCAb-UDrjaxOLz9hlnFaZuE_K3ncG9KDQYE";
 
     window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    window.appAnneeCourante = "2025-2026";
   </script>
 
   <!-- =====================================================
@@ -122,6 +121,19 @@ window.__salle_init = salleModule.initSalle;
       throw e; // stop net : évite état incohérent
     }
 
+// Année scolaire active, lue depuis la base
+    try {
+      const { data: anneeRow } = await window.sb.schema("agoram")
+        .from("annees").select("libelle").eq("active", true).maybeSingle();
+      window.appAnneeCourante = anneeRow?.libelle || null;
+      if (!window.appAnneeCourante) {
+        console.warn("Aucune année active en base.");
+      }
+    } catch (e) {
+      console.error("Lecture année active impossible :", e);
+      window.appAnneeCourante = null;
+    }
+    
     const app = document.getElementById("app");
 
     // =====================================================
