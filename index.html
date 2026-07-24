@@ -45,6 +45,7 @@
       <button id="navClassesHG">Classes HG</button>
       <button id="navBulletinsHG">Bulletins HG</button>
       <button id="navPP">PP</button>
+      <button id="navProfil">Profil élève</button>
       <button id="navEDT">EDT</button>
       <button id="navImportExport">Import / Export</button>
       <button id="navArchives">Archives</button>
@@ -99,6 +100,7 @@ async function importPage(relPath) {
     let renderClassesHG, bindClassesHGEvents;
     let renderBulletinsHG, bindBulletinsHGEvents;
     let renderPP, bindPPEvents;
+    let renderProfilEleve, bindProfilEleveEvents;
     let renderEmploiDuTemps, bindEmploiDuTempsEvents;
     let renderImportExport, bindImportExportEvents;
     let renderArchives, bindArchivesEvents;
@@ -110,6 +112,7 @@ window.__salle_init = salleModule.initSalle;
      ({ renderClassesHG, bindClassesHGEvents } = await importPage("./pages/classesHG.js"));
       ({ renderBulletinsHG, bindBulletinsHGEvents } = await importPage("./pages/bulletinsHG.js"));
       ({ renderPP, bindPPEvents } = await importPage("./pages/pp.js"));
+      ({ renderProfilEleve, bindProfilEleveEvents } = await importPage("./pages/profilEleveHG.js"));
       ({ renderEmploiDuTemps, bindEmploiDuTempsEvents } = await importPage("./pages/emploiDuTemps.js"));
       ({ renderImportExport, bindImportExportEvents } = await importPage("./pages/importExport.js"));
       ({ renderArchives, bindArchivesEvents } = await importPage("./pages/archives.js"));
@@ -205,6 +208,9 @@ document.getElementById("navClassesHG").onclick = () =>
     document.getElementById("navPP").onclick = () =>
       afficher(renderPP, bindPPEvents);
 
+    document.getElementById("navProfil").onclick = () =>
+      afficher(renderProfilEleve, bindProfilEleveEvents);
+    
     document.getElementById("navEDT").onclick = () =>
       afficher(renderEmploiDuTemps, bindEmploiDuTempsEvents);
 
